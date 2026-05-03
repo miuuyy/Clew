@@ -447,8 +447,7 @@ input[type="number"] {
 .richKatex {
   display: inline-flex;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   vertical-align: -0.08em;
   color: inherit;
 }
@@ -457,20 +456,6 @@ input[type="number"] {
   color: inherit;
   font-size: 1.04em;
   line-height: 1.2;
-}
-
-.quizPrompt .richKatex,
-.quizChoiceText .richKatex,
-.inlineQuizQuestion .richKatex,
-.inlineQuizChoice .richKatex {
-  scrollbar-width: none;
-}
-
-.quizPrompt .richKatex::-webkit-scrollbar,
-.quizChoiceText .richKatex::-webkit-scrollbar,
-.inlineQuizQuestion .richKatex::-webkit-scrollbar,
-.inlineQuizChoice .richKatex::-webkit-scrollbar {
-  display: none;
 }
 
 .chatMetaRow {
