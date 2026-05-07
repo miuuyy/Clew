@@ -143,7 +143,6 @@ Useful helpers:
 ## Open Source
 
 - [Contributing guide](CONTRIBUTING.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
 - [MIT License](LICENSE)
 
 ## Contact
