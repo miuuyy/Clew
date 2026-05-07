@@ -147,5 +147,5 @@ Useful helpers:
 
 ## Contact
 
-- Email: [johnymaarrete@gmail.com](mailto:johnymaarrete@gmail.com)
-- LinkedIn: [aleksandr-vechenkov-037b00377](https://www.linkedin.com/in/aleksandr-vechenkov-037b00377/)
+- Email: [aleksandr.hum.hackcode@gmail.com](mailto:aleksandr.hum.hackcode@gmail.com)
+- LinkedIn: [aleksandr-h-037b00377](https://www.linkedin.com/in/aleksandr-h-037b00377/)
