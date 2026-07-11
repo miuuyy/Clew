@@ -134,9 +134,9 @@
 }
 
 :root[data-theme="light"] .settingsSwitchActive {
-  background: var(--mm-accent-green);
-  border-color: color-mix(in srgb, var(--mm-accent-green) 72%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mm-accent-green) 28%, rgba(31, 110, 52, 0.18));
+  background: var(--clew-accent-primary);
+  border-color: color-mix(in srgb, var(--clew-accent-primary) 72%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--clew-accent-primary) 28%, rgba(31, 110, 52, 0.18));
 }
 
 :root[data-theme="light"] .settingsSwitchKnob {
@@ -147,7 +147,7 @@
 
 :root[data-theme="light"] .settingsSwitchActive .settingsSwitchKnob {
   background: #ffffff;
-  border-color: color-mix(in srgb, var(--mm-accent-green) 24%, transparent);
+  border-color: color-mix(in srgb, var(--clew-accent-primary) 24%, transparent);
 }
 
 :root[data-theme="light"] .sidebarDivider,
@@ -156,7 +156,7 @@
 }
 
 :root[data-theme="light"] .sidebarBrand {
-  color: var(--mm-accent-green);
+  color: var(--clew-accent-primary);
 }
 
 :root[data-theme="light"] .sidebarAvatar {
@@ -250,9 +250,9 @@
 }
 
 :root[data-theme="light"] .pageStatControlActive {
-  background: var(--mm-accent-green-soft-bg);
-  border-color: var(--mm-accent-green-soft-border);
-  color: var(--mm-accent-green-soft-text);
+  background: var(--clew-accent-soft-bg);
+  border-color: var(--clew-accent-soft-border);
+  color: var(--clew-accent-soft-text);
   width: auto;
   min-width: max-content;
   padding: 6px 12px;
@@ -311,9 +311,9 @@
 
 :root[data-theme="light"] .pageStatComplete,
 :root[data-theme="light"] .pageStatGood {
-  background: var(--mm-accent-green-soft-bg);
-  border-color: color-mix(in srgb, var(--mm-accent-green) 72%, transparent);
-  color: var(--mm-accent-green-soft-text);
+  background: var(--clew-accent-soft-bg);
+  border-color: color-mix(in srgb, var(--clew-accent-primary) 72%, transparent);
+  color: var(--clew-accent-soft-text);
 }
 
 :root[data-theme="light"] .pageStatControl svg {
@@ -656,7 +656,7 @@
 }
 
 :root[data-theme="light"] .workspaceShellLightDockMode .assistantInput:focus {
-  border-color: var(--mm-accent-green);
+  border-color: var(--clew-accent-primary);
   background: var(--field-bg-focus);
 }
 
@@ -991,8 +991,8 @@
 
 :root[data-theme="light"] .assistantSendButton,
 :root[data-theme="light"] .emptyStateAction {
-  background: var(--mm-accent-green);
-  color: var(--mm-accent-green-text);
+  background: var(--clew-accent-primary);
+  color: var(--clew-accent-on-primary);
   border: 1px solid transparent;
   box-shadow: 0 14px 28px rgba(195, 90, 44, 0.18);
   font-weight: 700;
@@ -1009,7 +1009,7 @@
 
 :root[data-theme="light"] .assistantSendButton:hover,
 :root[data-theme="light"] .emptyStateAction:hover {
-  background: var(--mm-accent-green-hover);
+  background: var(--clew-accent-primary-hover);
   border-color: transparent;
   color: #ffffff;
 }

@@ -132,8 +132,8 @@
 :root[data-theme="light"] .btn.btnSave,
 :root[data-theme="light"] .btn.btnStart,
 :root[data-theme="light"] .startQuizButton {
-  background: var(--mm-accent-green) !important;
-  color: var(--mm-accent-green-text) !important;
+  background: var(--clew-accent-primary) !important;
+  color: var(--clew-accent-on-primary) !important;
   border: 1px solid transparent !important;
   box-shadow: 0 14px 28px rgba(195, 90, 44, 0.18);
   font-weight: 700;
@@ -172,7 +172,7 @@
 :root[data-theme="light"] .btn.btnSave:hover,
 :root[data-theme="light"] .btn.btnStart:hover,
 :root[data-theme="light"] .startQuizButton:hover {
-  background: var(--mm-accent-green-hover) !important;
+  background: var(--clew-accent-primary-hover) !important;
   color: #ffffff !important;
 }
 
@@ -1012,7 +1012,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--mm-accent-green);
+  color: var(--clew-accent-primary);
   flex-shrink: 0;
 }
 
@@ -1547,4 +1547,3 @@
   opacity: 0.95 !important;
   box-shadow: none !important;
 }
-

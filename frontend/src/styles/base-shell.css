@@ -45,17 +45,17 @@
   --shadow-strong: rgba(45, 43, 40, 0.14);
   --grid-line: rgba(45, 43, 40, 0.045);
   --text-secondary: rgba(45, 43, 40, 0.72);
-  --mm-accent-green: #cf6e45;
-  --mm-accent-green-hover: #bd613b;
-  --mm-accent-green-text: #fffaf6;
-  --mm-accent-green-soft-bg: rgba(207, 110, 69, 0.12);
-  --mm-accent-green-soft-border: rgba(207, 110, 69, 0.28);
-  --mm-accent-green-soft-text: rgba(217, 119, 87, 0.96);
-  --mm-accent-ember: #a65939;
-  --mm-accent-clay: #c7593a;
-  --mm-accent-mustard: #f2b23c;
-  --mm-accent-soft: #d9a185;
-  --mm-accent-tint: #f6e3d8;
+  --clew-accent-primary: #cf6e45;
+  --clew-accent-primary-hover: #bd613b;
+  --clew-accent-on-primary: #fffaf6;
+  --clew-accent-soft-bg: rgba(207, 110, 69, 0.12);
+  --clew-accent-soft-border: rgba(207, 110, 69, 0.28);
+  --clew-accent-soft-text: rgba(217, 119, 87, 0.96);
+  --clew-accent-ember: #a65939;
+  --clew-accent-clay: #c7593a;
+  --clew-accent-mustard: #f2b23c;
+  --clew-accent-soft: #d9a185;
+  --clew-accent-tint: #f6e3d8;
   --light-flat-bg: #faf9f6;
   --light-soft-bg: #f0e9df;
   --light-soft-hover: #f5f1eb;
@@ -1506,7 +1506,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--mm-accent-green);
+  color: var(--clew-accent-primary);
   cursor: grab;
 }
 
@@ -1542,7 +1542,7 @@ body {
   position: absolute;
   inset: 4px;
   border-radius: 999px;
-  background: var(--mm-accent-tint);
+  background: var(--clew-accent-tint);
   opacity: 0;
   transform: scale(0.82);
   transition: opacity 180ms ease, transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1);

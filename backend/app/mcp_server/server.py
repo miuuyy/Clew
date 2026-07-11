@@ -146,7 +146,7 @@ TOOLS: list[types.Tool] = [
 
 
 def _resolve_db_path() -> Path:
-    explicit = os.environ.get("MAPMIND_DB_PATH") or os.environ.get("KG_DB_PATH")
+    explicit = os.environ.get("CLEW_DB_PATH") or os.environ.get("KG_DB_PATH")
     if explicit:
         return Path(explicit).expanduser().resolve()
     return get_settings().db_path
@@ -225,7 +225,7 @@ async def run_stdio() -> None:
     if not db_path.exists():
         raise FileNotFoundError(
             "Clew database not found. Run Clew once to create it or set "
-            f"MAPMIND_DB_PATH/KG_DB_PATH explicitly. Expected path: {db_path}"
+            f"CLEW_DB_PATH/KG_DB_PATH explicitly. Expected path: {db_path}"
         )
     logger.info("clew-study-assist starting with db=%s", db_path)
     repository = GraphRepository(db_path)

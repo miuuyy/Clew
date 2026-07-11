@@ -103,7 +103,7 @@ before replying.
 By default the server reads from `backend/data/knowledge_graph.sqlite3`
 inside your Clew clone. If you want to point it at a different
 database (for example a second workspace, or a shared path), set
-`MAPMIND_DB_PATH` on the server entry:
+`CLEW_DB_PATH` on the server entry:
 
 ```json
 {
@@ -111,7 +111,7 @@ database (for example a second workspace, or a shared path), set
     "Clew Study Assist": {
       "command": "/absolute/path/to/clew/.venv/bin/clew-study-assist",
       "env": {
-        "MAPMIND_DB_PATH": "/path/to/other/knowledge_graph.sqlite3"
+        "CLEW_DB_PATH": "/path/to/other/knowledge_graph.sqlite3"
       }
     }
   }
@@ -120,7 +120,7 @@ database (for example a second workspace, or a shared path), set
 
 The server resolves the database path in this order:
 
-1. `MAPMIND_DB_PATH` environment variable
+1. `CLEW_DB_PATH` environment variable
 2. `KG_DB_PATH` environment variable (shared with the Clew backend)
 3. The default `backend/data/knowledge_graph.sqlite3` inside your clone
 

@@ -1142,14 +1142,14 @@
 
 :root[data-theme="light"] .emptyStateAction {
   background: transparent !important;
-  color: var(--mm-accent-green) !important;
+  color: var(--clew-accent-primary) !important;
   border: 0 !important;
   box-shadow: none !important;
 }
 
 :root[data-theme="light"] .emptyStateAction:hover {
   background: transparent !important;
-  color: var(--mm-accent-green-hover) !important;
+  color: var(--clew-accent-primary-hover) !important;
   border-color: transparent !important;
 }
 
@@ -2429,14 +2429,18 @@ button.btn.btnDanger,
 }
 
 /* Selected quiz choices use the light quiz palette. */
-:root[data-theme="light"] .quizChoiceSelected,
-:root[data-theme="light"] .quizChoiceSelected:hover {
+:root[data-theme="light"] .quizChoice.quizChoiceSelected,
+:root[data-theme="light"] .quizChoice.quizChoiceSelected:hover {
   background: #f0e9df !important;
   border-color: #d97757 !important;
   color: rgba(111, 44, 17, 0.98) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme="light"] .quizChoice.quizChoiceSelected .quizChoiceText {
+  color: inherit !important;
 }
 
 /* Wrong quiz review state carries signal through text, not glass. */
