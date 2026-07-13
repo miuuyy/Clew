@@ -42,6 +42,12 @@ class RepositoryGraphTests(unittest.TestCase):
 
         self.assertEqual(graph.title, "External Graph")
 
+    def test_repository_waits_for_short_lived_sqlite_writer_contention(self) -> None:
+        with self.repository._connect() as conn:  # noqa: SLF001
+            busy_timeout_ms = conn.execute("PRAGMA busy_timeout").fetchone()[0]
+
+        self.assertEqual(busy_timeout_ms, 30_000)
+
     def test_delete_last_graph_leaves_empty_workspace(self) -> None:
         workspace = self.repository.delete_graph("mathematics-demo")
 

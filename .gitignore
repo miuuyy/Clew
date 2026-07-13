@@ -47,3 +47,4 @@ logs/
 .claude/skills/*
 !.claude/skills/obsidian-to-clew-import
 .playwright-cli/
+.hosted-runtime/
