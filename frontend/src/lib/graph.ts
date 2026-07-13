@@ -34,6 +34,19 @@ export function isPrerequisiteEdge(relation: string): boolean {
   return relation === "requires";
 }
 
+export function computeRootTopicIds(graph: Pick<GraphEnvelope, "topics" | "edges">): Set<string> {
+  const prerequisiteTargets = new Set(
+    graph.edges
+      .filter((edge) => isPrerequisiteEdge(edge.relation))
+      .map((edge) => edge.target_topic_id),
+  );
+  return new Set(
+    graph.topics
+      .filter((topic) => !prerequisiteTargets.has(topic.id))
+      .map((topic) => topic.id),
+  );
+}
+
 function isClosedTopic(topic: Topic | undefined): boolean {
   return topic?.state === "solid" || topic?.state === "mastered";
 }
@@ -110,22 +123,16 @@ export function computeFocusData(
   }
 
   const parentsByChild = new Map<string, string[]>();
-  const indegree = new Map<string, number>();
   const byId = new Map(graph.topics.map((topic) => [topic.id, topic]));
   for (const topic of graph.topics) {
     parentsByChild.set(topic.id, []);
-    indegree.set(topic.id, 0);
   }
   for (const edge of graph.edges) {
     if (!isPrerequisiteEdge(edge.relation)) continue;
     parentsByChild.set(edge.target_topic_id, [...(parentsByChild.get(edge.target_topic_id) ?? []), edge.source_topic_id]);
-    indegree.set(edge.target_topic_id, (indegree.get(edge.target_topic_id) ?? 0) + 1);
   }
 
-  const rootIds = new Set<string>();
-  for (const topic of graph.topics) {
-    if ((indegree.get(topic.id) ?? 0) === 0) rootIds.add(topic.id);
-  }
+  const rootIds = computeRootTopicIds(graph);
 
   const frontierEdgeIds = new Set<string>();
   for (const topic of graph.topics) {

@@ -1141,11 +1141,21 @@
 }
 
 :root[data-theme="light"] .lightWorkspaceTopicBullet {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: 999px;
   background: rgba(161, 153, 144, 0.72);
   flex-shrink: 0;
+}
+
+:root[data-theme="light"] .lightWorkspaceTopicBulletRoot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px dashed rgba(113, 104, 95, 0.58);
+  border-radius: 999px;
+  pointer-events: none;
 }
 
 :root[data-theme="light"] .lightWorkspaceTopicBulletNeutral {

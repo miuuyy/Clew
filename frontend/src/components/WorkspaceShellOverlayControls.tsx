@@ -1,5 +1,5 @@
 import React from "react";
-import { LockSimple, LockSimpleOpen, Moon, PencilSimple, SunDim } from "@phosphor-icons/react";
+import { Cube, Graph, LockSimple, LockSimpleOpen, Moon, PencilSimple, SunDim } from "@phosphor-icons/react";
 
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphAssessment, WorkspaceEnvelope, GraphEnvelope } from "../lib/types";
@@ -10,6 +10,8 @@ type GraphSummary = {
   completedCount: number;
   reviewCount: number;
 };
+
+export type GraphViewMode = "2d" | "3d";
 
 export function GraphStatItems({
   activeGraph,
@@ -85,6 +87,8 @@ export function OverlayControls({
   copy,
   setGraphLayoutEditing,
   setGraphLayoutDraft,
+  graphViewMode,
+  setGraphViewMode,
 }: {
   activeGraph: GraphEnvelope | null;
   themeMode: "light" | "dark";
@@ -98,6 +102,8 @@ export function OverlayControls({
   copy: AppCopy;
   setGraphLayoutEditing: React.Dispatch<React.SetStateAction<boolean>>;
   setGraphLayoutDraft: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }> | null>>;
+  graphViewMode: GraphViewMode;
+  setGraphViewMode: React.Dispatch<React.SetStateAction<GraphViewMode>>;
 }): React.JSX.Element {
   return (
     <>
@@ -114,6 +120,24 @@ export function OverlayControls({
       ) : null}
       {activeGraph ? (
         <button
+          className={`floatingStatusButton ${graphViewMode === "3d" ? "floatingStatusButtonActive" : ""}`}
+          onClick={() => {
+            if (graphLayoutEditing) {
+              setGraphLayoutEditing(false);
+              setGraphLayoutDraft(null);
+            }
+            setGraphViewMode((current) => current === "2d" ? "3d" : "2d");
+          }}
+          type="button"
+          title={graphViewMode === "2d" ? "Switch to 3D graph" : "Switch to 2D graph"}
+          aria-label={graphViewMode === "2d" ? "Switch to 3D graph" : "Switch to 2D graph"}
+          aria-pressed={graphViewMode === "3d"}
+        >
+          {graphViewMode === "2d" ? <Cube size={15} weight="bold" /> : <Graph size={15} weight="bold" />}
+        </button>
+      ) : null}
+      {activeGraph && graphViewMode === "2d" ? (
+        <button
           className={`floatingStatusButton ${viewportCenteredZoom ? "floatingStatusButtonActive" : ""}`}
           onClick={() => setViewportCenteredZoom((value: boolean) => !value)}
           type="button"
@@ -123,7 +147,7 @@ export function OverlayControls({
           {viewportCenteredZoom ? <LockSimple size={15} weight="bold" /> : <LockSimpleOpen size={15} weight="bold" />}
         </button>
       ) : null}
-      {activeGraph ? (
+      {activeGraph && graphViewMode === "2d" ? (
         <button
           className={`pageStat pageStatControl ${graphLayoutEditing ? "pageStatControlActive" : ""}`}
           onClick={() => {
@@ -140,7 +164,7 @@ export function OverlayControls({
           {graphLayoutEditing ? copy.graphStats.saveLayout : <PencilSimple size={13} weight="bold" />}
         </button>
       ) : null}
-      {graphLayoutEditing ? (
+      {graphViewMode === "2d" && graphLayoutEditing ? (
         <button
           className="pageStat layoutCancelBtn"
           onClick={() => {

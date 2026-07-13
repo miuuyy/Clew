@@ -94,7 +94,11 @@ export function useTopicPopover({
     (next: TopicAnchorPoint | null) => {
       const current = selectedTopicAnchorRef.current;
       if (isMobileViewport && current && next) return;
-      if (!popoverFollowAnchor && current && next) return;
+      if (!popoverFollowAnchor) {
+        if (shouldKeepCurrentAnchor(current, next)) return;
+        setSelectedTopicAnchor(next);
+        return;
+      }
       if (shouldKeepCurrentAnchor(current, next)) return;
       const now = typeof performance !== "undefined" ? performance.now() : Date.now();
       const elapsed = now - lastAnchorCommitAtRef.current;

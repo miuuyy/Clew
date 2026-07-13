@@ -3,7 +3,7 @@ import { CaretDown, CaretRight, Check, DownloadSimple, FolderOpen, FolderSimple,
 
 import type { GraphChatState } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
-import { formatTopicState, getTopicStateTone } from "../lib/graph";
+import { computeRootTopicIds, formatTopicState, getTopicStateTone } from "../lib/graph";
 import { AssistantComposer } from "./assistant/AssistantComposer";
 import { AssistantSessionList } from "./assistant/AssistantSessionList";
 import { AssistantThread } from "./assistant/AssistantThread";
@@ -174,6 +174,7 @@ export function LightWorkspaceWindow({
           const isActiveGraph = graph.graph_id === activeGraph?.graph_id;
           const isExpanded = lightWorkspaceExpandedGraphId === graph.graph_id;
           const completedTopics = graph.topics.filter((topic) => topic.state === "solid" || topic.state === "mastered").length;
+          const rootTopicIds = computeRootTopicIds(graph);
 
           return (
             <section
@@ -271,6 +272,7 @@ export function LightWorkspaceWindow({
                   {graph.topics.length > 0 ? (
                     graph.topics.map((topic) => {
                       const isSelectedTopic = isActiveGraph && selectedTopicId === topic.id;
+                      const isRootTopic = rootTopicIds.has(topic.id);
                       const topicStateTone = getTopicStateTone(topic.state);
                       return (
                         <button
@@ -284,7 +286,7 @@ export function LightWorkspaceWindow({
                           type="button"
                         >
                           <span
-                            className={`lightWorkspaceTopicBullet lightWorkspaceTopicBullet${topicStateTone === "good" ? "Good" : topicStateTone === "warn" ? "Warn" : "Neutral"}`}
+                            className={`lightWorkspaceTopicBullet lightWorkspaceTopicBullet${topicStateTone === "good" ? "Good" : topicStateTone === "warn" ? "Warn" : "Neutral"} ${isRootTopic ? "lightWorkspaceTopicBulletRoot" : ""}`}
                           />
                           <span className="lightWorkspaceTopicLabel">{topic.title}</span>
                         </button>

@@ -28,6 +28,7 @@ import { AssistantSessionList } from "./assistant/AssistantSessionList";
 import { AssistantThread } from "./assistant/AssistantThread";
 import { ClewLoader } from "./ClewLoader";
 import { TopStatsOverlay } from "./TopStatsOverlay";
+import type { GraphViewMode } from "./WorkspaceShellOverlayControls";
 import type {
   Artifact,
   ChatMessage,
@@ -45,9 +46,11 @@ type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
 
   const noop = () => {};
   const LIGHT_WORKSPACE_EXPANDED_GRAPH_STORAGE_KEY = "knowledge_graph_light_workspace_expanded_graph_v1";
+const GRAPH_VIEW_MODE_STORAGE_KEY = "knowledge_graph_view_mode_v1";
 
 // Keep closing windows mounted briefly so the exit animation can complete.
 const WINDOW_CLOSE_MS = 110;
+const Graph3DCanvas = React.lazy(() => import("./Graph3DCanvas").then((module) => ({ default: module.Graph3DCanvas })));
 
 function useDelayedUnmount(isOpen: boolean, delayMs: number): { rendered: boolean; closing: boolean } {
   const [rendered, setRendered] = React.useState<boolean>(isOpen);
@@ -178,6 +181,7 @@ type TopicDetailsProps = {
   addTopicResource: (topicId: string, url: string) => Promise<void>;
   addTopicArtifact: (topicId: string, title: string, body: string) => Promise<void>;
   selectedTopic: Topic | null;
+  selectedTopicAnchor: TopicAnchorPoint | null;
   popoverPosition: PopoverPosition | null;
   topicPopoverRef: React.RefObject<HTMLDivElement | null>;
   popoverDragRef: React.MutableRefObject<{ pointerX: number; pointerY: number; startX: number; startY: number } | null>;
@@ -330,6 +334,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
     addTopicResource,
     addTopicArtifact,
     selectedTopic,
+    selectedTopicAnchor,
     popoverPosition,
     topicPopoverRef,
     popoverDragRef,
@@ -409,6 +414,20 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
       return null;
     }
   });
+  const [graphViewMode, setGraphViewMode] = React.useState<GraphViewMode>(() => {
+    try {
+      return localStorage.getItem(GRAPH_VIEW_MODE_STORAGE_KEY) === "3d" ? "3d" : "2d";
+    } catch {
+      return "2d";
+    }
+  });
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(GRAPH_VIEW_MODE_STORAGE_KEY, graphViewMode);
+    } catch {
+      // Storage is optional; the selected renderer still works for this session.
+    }
+  }, [graphViewMode]);
   const showMobileOverlay = isMobileViewport && !isSettingsOpen;
   const showCompactDesktopOverlay = topOverlayCompact && !isMobileViewport && !isSettingsOpen;
   const showInlineDesktopOverlay = !topOverlayCompact && !isMobileViewport && !isSettingsOpen;
@@ -672,6 +691,34 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
   const visibleMessages = currentChatState.messages.filter((message) => !message.hidden);
   const pathTitles = focusData.pathLayers.flat().map((entry) => entry.title);
   const selectedTopicClosed = selectedTopic?.state === "solid" || selectedTopic?.state === "mastered";
+  const topicPopoverConnector = React.useMemo(() => {
+    if (graphViewMode !== "3d" || !selectedTopic || !selectedTopicAnchor || !popoverPosition || isMobileViewport) return null;
+    const width = topicPopoverRef.current?.offsetWidth ?? 380;
+    const height = topicPopoverRef.current?.offsetHeight ?? 320;
+    const left = popoverPosition.left;
+    const top = popoverPosition.top;
+    const right = left + width;
+    const bottom = top + height;
+    const anchorInsidePopover = selectedTopicAnchor.x >= left
+      && selectedTopicAnchor.x <= right
+      && selectedTopicAnchor.y >= top
+      && selectedTopicAnchor.y <= bottom;
+    if (anchorInsidePopover) return null;
+
+    const exitsLeft = selectedTopicAnchor.x < left;
+    const startX = exitsLeft ? left - 2 : right + 2;
+    const startY = top + height / 2;
+    const direction = selectedTopicAnchor.x >= startX ? 1 : -1;
+    const horizontalDistance = Math.abs(selectedTopicAnchor.x - startX);
+    const bend = Math.max(36, Math.min(150, horizontalDistance * 0.42));
+    const path = [
+      `M ${startX} ${startY}`,
+      `C ${startX + direction * bend} ${startY},`,
+      `${selectedTopicAnchor.x - direction * bend * 0.52} ${selectedTopicAnchor.y},`,
+      `${selectedTopicAnchor.x} ${selectedTopicAnchor.y}`,
+    ].join(" ");
+    return { path };
+  }, [graphViewMode, isMobileViewport, popoverPosition, selectedTopic, selectedTopicAnchor, topicPopoverRef]);
 
   React.useEffect(() => {
     if (!experimentalLightDesktop) return;
@@ -1084,6 +1131,8 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
           startGraphLayoutEdit={startGraphLayoutEdit}
           setGraphLayoutEditing={setGraphLayoutEditing}
           setGraphLayoutDraft={setGraphLayoutDraft}
+          graphViewMode={graphViewMode}
+          setGraphViewMode={setGraphViewMode}
         />
 
         <TopStatsOverlay
@@ -1115,6 +1164,8 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
           startGraphLayoutEdit={startGraphLayoutEdit}
           setGraphLayoutEditing={setGraphLayoutEditing}
           setGraphLayoutDraft={setGraphLayoutDraft}
+          graphViewMode={graphViewMode}
+          setGraphViewMode={setGraphViewMode}
         />
 
         <TopStatsOverlay
@@ -1146,6 +1197,8 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
           startGraphLayoutEdit={startGraphLayoutEdit}
           setGraphLayoutEditing={setGraphLayoutEditing}
           setGraphLayoutDraft={setGraphLayoutDraft}
+          graphViewMode={graphViewMode}
+          setGraphViewMode={setGraphViewMode}
         />
 
         <div ref={shellSurfaceRef} className={`workspaceShell ${experimentalLightDesktop ? "workspaceShellLightDockMode" : ""}`}>
@@ -1164,7 +1217,24 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                     <CrosshairSimple size={18} weight="bold" />
                   </button>
                 ) : null}
-                {activeGraph ? (
+                {activeGraph && graphViewMode === "3d" ? (
+                  <React.Suspense fallback={<div className="graph3dLoading">Preparing 3D space…</div>}>
+                    <Graph3DCanvas
+                      key={`graph-3d:${activeGraph.graph_id}`}
+                      topics={activeGraph.topics}
+                      edges={activeGraph.edges}
+                      zones={activeGraph.zones}
+                      selectedTopicId={selectedTopicId}
+                      rootIds={focusData.rootIds}
+                      pathNodeIds={focusData.pathNodeIds}
+                      pathEdgeIds={focusData.pathEdgeIds}
+                      frontierEdgeIds={focusData.frontierEdgeIds}
+                      onSelectTopic={handleSelectTopic}
+                      onSelectedTopicAnchorChange={handleSelectedTopicAnchorChange}
+                      themeMode={themeMode}
+                    />
+                  </React.Suspense>
+                ) : activeGraph ? (
                   <GraphCanvas
                     key={`graph:${activeGraph.graph_id}`}
                     topics={activeGraph.topics}
@@ -1239,6 +1309,12 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                       </div>
                     ) : null}
                   </div>
+                ) : null}
+
+                {topicPopoverConnector ? (
+                  <svg className="topicPopoverConnector" aria-hidden="true">
+                    <path className="topicPopoverConnectorLine" d={topicPopoverConnector.path} />
+                  </svg>
                 ) : null}
 
                 {selectedTopic && popoverPosition ? (

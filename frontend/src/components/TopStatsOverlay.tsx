@@ -2,7 +2,7 @@ import React from "react";
 
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphAssessment, GraphEnvelope, WorkspaceEnvelope } from "../lib/types";
-import { GraphStatItems, OverlayControls } from "./WorkspaceShellOverlayControls";
+import { GraphStatItems, OverlayControls, type GraphViewMode } from "./WorkspaceShellOverlayControls";
 
 type GraphSummary = {
   topicCount: number;
@@ -38,6 +38,8 @@ export type TopStatsOverlayProps = {
   setGraphLayoutDraft: React.Dispatch<
     React.SetStateAction<Record<string, { x: number; y: number }> | null>
   >;
+  graphViewMode: GraphViewMode;
+  setGraphViewMode: React.Dispatch<React.SetStateAction<GraphViewMode>>;
 };
 
 /**
@@ -71,6 +73,8 @@ export function TopStatsOverlay({
   startGraphLayoutEdit,
   setGraphLayoutEditing,
   setGraphLayoutDraft,
+  graphViewMode,
+  setGraphViewMode,
 }: TopStatsOverlayProps): React.JSX.Element | null {
   if (!visible) return null;
   return (
@@ -114,6 +118,8 @@ export function TopStatsOverlay({
           copy={copy}
           setGraphLayoutEditing={setGraphLayoutEditing}
           setGraphLayoutDraft={setGraphLayoutDraft}
+          graphViewMode={graphViewMode}
+          setGraphViewMode={setGraphViewMode}
         />
       </div>
     </div>

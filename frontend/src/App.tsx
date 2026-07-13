@@ -1395,6 +1395,7 @@ export default function App(): React.JSX.Element {
           addTopicResource,
           addTopicArtifact,
           selectedTopic,
+          selectedTopicAnchor,
           popoverPosition,
           topicPopoverRef,
           popoverDragRef,
