@@ -10,7 +10,7 @@ type SupportedProvider = "gemini" | "openai";
 
 const DEFAULT_PROVIDER_MODELS: Record<SupportedProvider, string[]> = {
   openai: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.1", "gpt-4.1", "gpt-4.1-mini"],
-  gemini: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-pro-preview", "gemini-3-flash-preview"],
+  gemini: ["gemini-3.7-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-pro-preview", "gemini-3-flash-preview"],
 };
 
 type ModeOption<T extends string> = {

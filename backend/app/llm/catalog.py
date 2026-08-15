@@ -14,8 +14,9 @@ class ProviderCatalogEntry:
 PROVIDER_CATALOG: dict[str, ProviderCatalogEntry] = {
     "gemini": ProviderCatalogEntry(
         provider_id="gemini",
-        default_model="gemini-2.5-pro",
+        default_model="gemini-3.7-flash",
         model_options=(
+            "gemini-3.7-flash",
             "gemini-2.5-pro",
             "gemini-2.5-flash",
             "gemini-2.5-flash-lite",
