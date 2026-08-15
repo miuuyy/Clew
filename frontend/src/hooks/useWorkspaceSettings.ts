@@ -48,8 +48,8 @@ export function useWorkspaceSettings({
 }: UseWorkspaceSettingsArgs): UseWorkspaceSettingsResult {
   const [drafts, setDraftsState] = useState<SettingsDrafts>({
     provider: "gemini",
-    model: "gemini-2.5-pro",
-    modelPreset: "gemini-2.5-pro",
+    model: "gemini-3.7-flash",
+    modelPreset: "gemini-3.7-flash",
     geminiApiKey: "",
     openaiApiKey: "",
     openaiBaseUrl: "https://api.openai.com/v1",
