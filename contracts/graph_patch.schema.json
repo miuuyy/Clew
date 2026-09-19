@@ -1,142 +1,615 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://knowledge-graph.local/contracts/graph_patch.schema.json",
-  "title": "GraphProposal",
-  "type": "object",
-  "required": ["graph_id", "user_prompt", "summary", "assistant_message", "operations"],
-  "properties": {
-    "graph_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "user_prompt": {
-      "type": "string",
-      "minLength": 1
-    },
-    "summary": {
-      "type": "string",
-      "minLength": 1
-    },
-    "assistant_message": {
-      "type": "string",
-      "minLength": 1
-    },
-    "confidence": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
-    "warnings": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "assumptions": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "operations": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["op"],
-        "properties": {
-          "op": {
-            "type": "string",
-            "enum": [
-              "upsert_topic",
-              "remove_topic",
-              "upsert_edge",
-              "remove_edge",
-              "upsert_zone",
-              "set_mastery"
-            ]
-          },
-          "topic_id": { "type": "string" },
-          "edge_id": { "type": "string" },
-          "zone_id": { "type": "string" },
-          "state": {
-            "type": "string",
-            "enum": [
-              "not_started",
-              "learning",
-              "shaky",
-              "solid",
-              "mastered",
-              "needs_review"
-            ]
-          },
-          "topic": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "title": { "type": "string" },
-              "slug": { "type": "string" },
-              "description": { "type": "string" },
-              "difficulty": { "type": "number" },
-              "estimated_minutes": { "type": "integer", "minimum": 0 },
-              "level": { "type": "integer", "minimum": 0 },
-              "state": {
-                "type": "string",
-                "enum": [
-                  "not_started",
-                  "learning",
-                  "shaky",
-                  "solid",
-                  "mastered",
-                  "needs_review"
-                ]
-              },
-              "zones": {
-                "type": "array",
-                "items": { "type": "string" }
-              },
-              "resources": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["label", "url"],
-                  "properties": {
-                    "label": { "type": "string" },
-                    "url": { "type": "string" }
-                  }
-                }
-              }
-            },
-            "required": ["id", "title", "slug"]
-          },
-          "edge": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "source_topic_id": { "type": "string" },
-              "target_topic_id": { "type": "string" },
-              "relation": {
-                "type": "string",
-                "enum": ["requires", "supports", "bridges", "extends", "reviews"]
-              },
-              "rationale": { "type": "string" }
-            },
-            "required": ["id", "source_topic_id", "target_topic_id", "relation"]
-          },
-          "zone": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "title": { "type": "string" },
-              "kind": { "type": "string" },
-              "color": { "type": "string" },
-              "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
-              "topic_ids": {
-                "type": "array",
-                "items": { "type": "string" }
-              }
-            },
-            "required": ["id", "title", "kind", "color", "topic_ids"]
-          }
+  "$defs": {
+    "GraphOperation": {
+      "properties": {
+        "op_id": {
+          "title": "Op Id",
+          "type": "string"
         },
-        "additionalProperties": false
-      }
+        "op": {
+          "enum": [
+            "upsert_topic",
+            "upsert_edge",
+            "upsert_zone"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "entity_kind": {
+          "enum": [
+            "topic",
+            "edge",
+            "zone",
+            "mastery"
+          ],
+          "title": "Entity Kind",
+          "type": "string"
+        },
+        "status": {
+          "default": "proposed",
+          "enum": [
+            "proposed",
+            "reviewed",
+            "rejected",
+            "applied"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        },
+        "topic_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topic Id"
+        },
+        "edge_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Edge Id"
+        },
+        "zone_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone Id"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_started",
+                "learning",
+                "shaky",
+                "solid",
+                "mastered",
+                "needs_review"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State"
+        },
+        "topic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProposalTopic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "edge": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProposalEdge"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "zone": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProposalZone"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "op_id",
+        "op",
+        "entity_kind"
+      ],
+      "title": "GraphOperation",
+      "type": "object"
+    },
+    "ProposalEdge": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source_topic_id": {
+          "title": "Source Topic Id",
+          "type": "string"
+        },
+        "target_topic_id": {
+          "title": "Target Topic Id",
+          "type": "string"
+        },
+        "relation": {
+          "default": "requires",
+          "enum": [
+            "requires",
+            "supports",
+            "bridges",
+            "extends",
+            "reviews"
+          ],
+          "title": "Relation",
+          "type": "string"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        },
+        "weight": {
+          "default": 1.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "source_topic_id",
+        "target_topic_id"
+      ],
+      "title": "ProposalEdge",
+      "type": "object"
+    },
+    "ProposalIntent": {
+      "properties": {
+        "user_prompt": {
+          "default": "",
+          "title": "User Prompt",
+          "type": "string"
+        },
+        "target_goal": {
+          "default": "",
+          "title": "Target Goal",
+          "type": "string"
+        },
+        "instructions": {
+          "default": "",
+          "title": "Instructions",
+          "type": "string"
+        }
+      },
+      "title": "ProposalIntent",
+      "type": "object"
+    },
+    "ProposalOpenQuestion": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "impact": {
+          "default": "medium",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Impact",
+          "type": "string"
+        },
+        "suggested_resolution": {
+          "default": "",
+          "title": "Suggested Resolution",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "message"
+      ],
+      "title": "ProposalOpenQuestion",
+      "type": "object"
+    },
+    "ProposalProvenance": {
+      "properties": {
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "grounding_used": {
+          "default": false,
+          "title": "Grounding Used",
+          "type": "boolean"
+        },
+        "generated_at": {
+          "format": "date-time",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "search_queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Search Queries",
+          "type": "array"
+        },
+        "source_urls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Urls",
+          "type": "array"
+        }
+      },
+      "title": "ProposalProvenance",
+      "type": "object"
+    },
+    "ProposalSourceBundle": {
+      "properties": {
+        "raw_text": {
+          "default": "",
+          "title": "Raw Text",
+          "type": "string"
+        },
+        "source_items": {
+          "items": {
+            "$ref": "#/$defs/SourceTopicSeed"
+          },
+          "title": "Source Items",
+          "type": "array"
+        },
+        "grounding_enabled": {
+          "default": true,
+          "title": "Grounding Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "ProposalSourceBundle",
+      "type": "object"
+    },
+    "ProposalTopic": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "slug": {
+          "title": "Slug",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "difficulty": {
+          "default": 0.0,
+          "title": "Difficulty",
+          "type": "number"
+        },
+        "estimated_minutes": {
+          "default": 0,
+          "title": "Estimated Minutes",
+          "type": "integer"
+        },
+        "level": {
+          "default": 0,
+          "title": "Level",
+          "type": "integer"
+        },
+        "state": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "learning",
+            "shaky",
+            "solid",
+            "mastered",
+            "needs_review"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "zones": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Zones",
+          "type": "array"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/ResourceLink"
+          },
+          "title": "Resources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "slug"
+      ],
+      "title": "ProposalTopic",
+      "type": "object"
+    },
+    "ProposalZone": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "color": {
+          "default": "",
+          "title": "Color",
+          "type": "string"
+        },
+        "intensity": {
+          "default": 0.5,
+          "title": "Intensity",
+          "type": "number"
+        },
+        "topic_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Topic Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind"
+      ],
+      "title": "ProposalZone",
+      "type": "object"
+    },
+    "ResourceLink": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "kind": {
+          "default": "reference",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "url"
+      ],
+      "title": "ResourceLink",
+      "type": "object"
+    },
+    "SourceLink": {
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "title": "SourceLink",
+      "type": "object"
+    },
+    "SourceTopicSeed": {
+      "properties": {
+        "title": {
+          "maxLength": 240,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Description",
+          "type": "string"
+        },
+        "estimated_minutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Minutes"
+        },
+        "testing_notes": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Testing Notes",
+          "type": "string"
+        },
+        "links": {
+          "items": {
+            "$ref": "#/$defs/SourceLink"
+          },
+          "title": "Links",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "SourceTopicSeed",
+      "type": "object"
     }
   },
-  "additionalProperties": false
+  "properties": {
+    "protocol_version": {
+      "default": "2.0",
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "kind": {
+      "default": "graph_proposal",
+      "enum": [
+        "graph_proposal",
+        "apply_plan",
+        "quiz_closure",
+        "rollback"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "workspace_id": {
+      "default": "default",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "graph_id": {
+      "title": "Graph Id",
+      "type": "string"
+    },
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_graph_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mode": {
+      "enum": [
+        "ingest_topics",
+        "expand_goal"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "intent": {
+      "$ref": "#/$defs/ProposalIntent"
+    },
+    "source_bundle": {
+      "$ref": "#/$defs/ProposalSourceBundle"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "assistant_message": {
+      "default": "",
+      "title": "Assistant Message",
+      "type": "string"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "open_questions": {
+      "items": {
+        "$ref": "#/$defs/ProposalOpenQuestion"
+      },
+      "title": "Open Questions",
+      "type": "array"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/GraphOperation"
+      },
+      "title": "Operations",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ProposalProvenance"
+    }
+  },
+  "required": [
+    "base_graph_version",
+    "graph_id",
+    "mode",
+    "operations",
+    "proposal_id"
+  ],
+  "title": "GraphProposalEnvelope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clew.local/contracts/graph_patch.schema.json"
 }

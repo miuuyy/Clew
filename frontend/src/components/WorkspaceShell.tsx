@@ -1,3 +1,4 @@
+import type { AgentControls } from "./assistant/AgentInteraction";
 import React from "react";
 import { BookBookmark, BugBeetle, CaretDown, CaretLeft, CaretRight, ChatCircleDots, Check, CrosshairSimple, DownloadSimple, GearSix, List, PencilSimple, SquaresFour } from "@phosphor-icons/react";
 
@@ -199,6 +200,7 @@ type TopicDetailsProps = {
 };
 
 type AssistantWorkspaceProps = {
+  agentControls: AgentControls;
   assistantResizing: boolean;
   handleAssistantResize: (startX: number) => void;
   chatSessions: ChatSessionSummary[];
@@ -351,6 +353,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
     markTopicFinished,
   } = topicDetails;
   const {
+    agentControls,
     assistantResizing,
     handleAssistantResize,
     chatSessions,
@@ -852,6 +855,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
   const chatWindowAnim = useDelayedUnmount(lightChatPanelOpen, WINDOW_CLOSE_MS);
   const lightChatWindow = chatWindowAnim.rendered ? (
     <LightChatWindow
+      agentControls={agentControls}
       chatWindowRef={chatWindowRef}
       chatWindowPosition={chatWindowPosition}
       assistantWidth={assistantWidth}
@@ -1537,6 +1541,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
 
             <div className="sessionShadow" />
             <AssistantThread
+              agentControls={agentControls}
               copy={copy}
               chatViewportRef={chatViewportRef}
               chatThreadLoading={chatThreadLoading}
@@ -1551,6 +1556,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
             />
 
             <AssistantComposer
+              agentControls={agentControls}
               copy={copy}
               chatError={chatError}
               chatSessionsError={chatSessionsError}

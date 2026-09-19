@@ -22,7 +22,6 @@ from app.services.repository_storage import (
     load_current_workspace,
     load_workspace_snapshot,
     purge_graph_runtime_state,
-    save_workspace_secrets,
 )
 from app.services.zone_style_service import resolve_zone_style
 
@@ -35,6 +34,14 @@ class ChatSessionNotFoundError(KeyError):
 
 
 class ChatSessionDeletionError(ValueError):
+    pass
+
+
+class RepositoryConflictError(ValueError):
+    pass
+
+
+class ProposalConflictError(RepositoryConflictError):
     pass
 
 
@@ -86,6 +93,17 @@ class GraphRepository:
         reason: str | None,
         parent_snapshot_id: int | None,
     ) -> int:
+        if not conn.in_transaction:
+            conn.execute("BEGIN IMMEDIATE")
+        current = load_current_workspace(conn)
+        if current.snapshot.id != parent_snapshot_id:
+            raise RepositoryConflictError("The workspace changed during this update. Refresh and try again.")
+        old_graphs = {graph.graph_id: graph for graph in current.workspace.graphs}
+        for graph in workspace.graphs:
+            old = old_graphs.get(graph.graph_id)
+            if old is None or old.model_dump() != graph.model_dump():
+                # Snapshot ids never go backwards, including rollback and graph recreation.
+                graph.version = max(graph.version, current.snapshot.id + 1)
         snapshot_id = insert_snapshot(
             conn,
             workspace,
@@ -240,7 +258,11 @@ class GraphRepository:
             rows = conn.execute(
                 """
                 SELECT s.session_id, s.graph_id, s.topic_id, s.title, s.created_at, s.updated_at,
-                       (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = s.session_id) as message_count
+                       (SELECT COUNT(DISTINCT CASE WHEN m.role = 'assistant'
+                            THEN 'assistant:' || COALESCE(NULLIF(json_extract(m.payload_json, '$.reply_id'), ''), m.message_id)
+                            ELSE 'user:' || m.message_id END)
+                        FROM chat_messages m WHERE m.session_id = s.session_id
+                        AND COALESCE(json_extract(m.payload_json, '$.hidden'), 0) = 0) as message_count
                 FROM chat_sessions s
                 WHERE s.graph_id = ?
                 ORDER BY s.topic_id IS NOT NULL, s.updated_at DESC
@@ -363,39 +385,45 @@ class GraphRepository:
         return self._thread_from_session(refreshed, graph_id, messages)
 
     def apply_proposal(self, proposal: GraphProposal) -> WorkspaceEnvelope:
-        current = self.current()
-        workspace = WorkspaceDocument.model_validate(deepcopy(current.workspace.model_dump()))
-        graph_map = {graph.graph_id: graph for graph in workspace.graphs}
-        graph = graph_map.get(proposal.graph_id)
-        if graph is None:
-            raise ValueError(f"graph {proposal.graph_id} not found")
-
-        topic_map = {topic.id: topic for topic in graph.topics}
-        edge_map = {edge.id: edge for edge in graph.edges}
-        zone_map = {zone.id: zone for zone in graph.zones}
-
-        for operation in proposal.operations:
-            self._apply_operation(operation, topic_map, edge_map, zone_map, graph.graph_id)
-
-        self._synchronize_zone_memberships(topic_map, zone_map)
-        graph.topics = list(topic_map.values())
-        graph.edges = list(edge_map.values())
-        graph.zones = list(zone_map.values())
-        graph.version += 1
-        workspace.active_graph_id = graph.graph_id
-        graph_map[graph.graph_id] = graph
-        workspace.graphs = list(graph_map.values())
-
+        if not proposal.proposal_id or proposal.base_graph_version is None:
+            raise ProposalConflictError("This proposal has no graph revision. Prepare a new proposal before applying it.")
+        canonical = proposal.model_dump_json()
         with self._connect() as conn:
-            snapshot_id = self._insert_snapshot(
-                conn,
-                workspace,
-                source="proposal.apply",
-                reason=proposal.summary,
-                parent_snapshot_id=current.snapshot.id,
-            )
-
-        return self.snapshot(snapshot_id)
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("CREATE TABLE IF NOT EXISTS proposal_applications (proposal_id TEXT PRIMARY KEY, graph_id TEXT NOT NULL, payload_json TEXT NOT NULL, snapshot_id INTEGER NOT NULL)")
+            receipt = conn.execute("SELECT * FROM proposal_applications WHERE proposal_id = ?", (proposal.proposal_id,)).fetchone()
+            if receipt is not None:
+                if receipt["payload_json"] != canonical:
+                    raise ProposalConflictError("This proposal id was already used for different changes.")
+                return load_current_workspace(conn)
+            current = load_current_workspace(conn)
+            workspace = WorkspaceDocument.model_validate(deepcopy(current.workspace.model_dump()))
+            graph = next((item for item in workspace.graphs if item.graph_id == proposal.graph_id), None)
+            if graph is None:
+                raise ValueError(f"graph {proposal.graph_id} not found")
+            if graph.version != proposal.base_graph_version:
+                raise ProposalConflictError("The graph changed after this proposal was prepared. Ask the agent to prepare it against the current graph.")
+            topic_map = {topic.id: topic for topic in graph.topics}
+            edge_map = {edge.id: edge for edge in graph.edges}
+            zone_map = {zone.id: zone for zone in graph.zones}
+            for operation in proposal.operations:
+                self._apply_operation(operation, topic_map, edge_map, zone_map, graph.graph_id)
+            self._synchronize_zone_memberships(topic_map, zone_map)
+            graph.topics = list(topic_map.values())
+            graph.edges = list(edge_map.values())
+            graph.zones = list(zone_map.values())
+            graph.version += 1
+            workspace.active_graph_id = graph.graph_id
+            snapshot_id = self._insert_snapshot(conn, workspace, source="proposal.apply", reason=proposal.summary, parent_snapshot_id=current.snapshot.id)
+            conn.execute("INSERT INTO proposal_applications VALUES (?, ?, ?, ?)", (proposal.proposal_id, graph.graph_id, canonical, snapshot_id))
+            # Graph commit and the receipt shown in chat are one transaction.
+            rows = conn.execute("SELECT message_id, payload_json FROM chat_messages WHERE graph_id = ?", (graph.graph_id,)).fetchall()
+            for row in rows:
+                message = json.loads(row["payload_json"])
+                if ((message.get("proposal") or {}).get("proposal_envelope") or {}).get("proposal_id") == proposal.proposal_id:
+                    message["proposal_applied"] = True
+                    conn.execute("UPDATE chat_messages SET payload_json = ? WHERE message_id = ?", (json.dumps(message), row["message_id"]))
+            return load_workspace_snapshot(conn, snapshot_id)
 
     def snapshot(self, snapshot_id: int) -> WorkspaceEnvelope:
         with self._connect() as conn:
@@ -734,7 +762,6 @@ class GraphRepository:
         reasons = apply_workspace_config_update(workspace, request)
 
         with self._connect() as conn:
-            save_workspace_secrets(conn, workspace)
             snapshot_id = self._insert_snapshot(
                 conn,
                 workspace,

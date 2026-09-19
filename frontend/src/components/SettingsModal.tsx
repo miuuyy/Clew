@@ -1,18 +1,13 @@
 import React from "react";
 
 import { Card } from "./Card";
-import { MEMORY_MODE_OPTIONS, THINKING_MODE_OPTIONS, type MemoryMode, type SettingsDraftSetters, type SettingsDrafts, type ThinkingMode } from "../lib/appContracts";
+import { CodexAccountPanel } from "./CodexAccountPanel";
+import type { CodexAccountController } from "../hooks/useCodexAccount";
+import { MEMORY_MODE_OPTIONS, type MemoryMode, type SettingsDraftSetters, type SettingsDrafts } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphEnvelope, SnapshotRecord, WorkspaceConfig, WorkspaceEnvelope } from "../lib/types";
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
-type SupportedProvider = "gemini" | "openai";
-
-const DEFAULT_PROVIDER_MODELS: Record<SupportedProvider, string[]> = {
-  openai: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.1", "gpt-4.1", "gpt-4.1-mini"],
-  gemini: ["gemini-3.7-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-pro-preview", "gemini-3-flash-preview"],
-};
-
 type ModeOption<T extends string> = {
   id: T;
   label: string;
@@ -27,12 +22,7 @@ type SettingsModalProps = {
   currentConfig: WorkspaceConfig | null;
   drafts: SettingsDrafts;
   setDrafts: SettingsDraftSetters;
-  geminiKeyLockedByEnv: boolean;
-  openaiKeyLockedByEnv: boolean;
-  providerOptions: string[];
-  openaiBaseUrlLockedByEnv: boolean;
-  activeThinkingOption: ModeOption<ThinkingMode>;
-  activeThinkingValues: string;
+  codex: CodexAccountController;
   activeMemoryOption: ModeOption<MemoryMode>;
   activeMemoryValues: string;
   activeGraph: GraphEnvelope | null;
@@ -55,12 +45,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     currentConfig,
     drafts,
     setDrafts,
-    geminiKeyLockedByEnv,
-    openaiKeyLockedByEnv,
-    providerOptions,
-    openaiBaseUrlLockedByEnv,
-    activeThinkingOption,
-    activeThinkingValues,
+    codex,
     activeMemoryOption,
     activeMemoryValues,
     activeGraph,
@@ -75,19 +60,6 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     saveSettings,
   } = props;
   const {
-    provider: providerDraft,
-    model: modelDraft,
-    modelPreset: modelPresetDraft,
-    geminiApiKey: geminiApiKeyDraft,
-    openaiApiKey: openaiApiKeyDraft,
-    openaiBaseUrl: openaiBaseUrlDraft,
-    showOpenAIEndpoint: showOpenAIEndpointDraft,
-    thinkingMode: thinkingModeDraft,
-    plannerMaxTokens: plannerMaxTokensDraft,
-    plannerThinkingBudget: plannerThinkingBudgetDraft,
-    orchestratorMaxTokens: orchestratorMaxTokensDraft,
-    quizMaxTokens: quizMaxTokensDraft,
-    assistantMaxTokens: assistantMaxTokensDraft,
     assistantNickname: assistantNicknameDraft,
     persona: personaDraft,
     disableIdleAnimations: disableIdleAnimationsDraft,
@@ -106,19 +78,6 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     quizPassCount: quizPassCountDraft,
   } = drafts;
   const {
-    provider: setProviderDraft,
-    model: setModelDraft,
-    modelPreset: setModelPresetDraft,
-    geminiApiKey: setGeminiApiKeyDraft,
-    openaiApiKey: setOpenaiApiKeyDraft,
-    openaiBaseUrl: setOpenaiBaseUrlDraft,
-    showOpenAIEndpoint: setShowOpenAIEndpointDraft,
-    thinkingMode: setThinkingModeDraft,
-    plannerMaxTokens: setPlannerMaxTokensDraft,
-    plannerThinkingBudget: setPlannerThinkingBudgetDraft,
-    orchestratorMaxTokens: setOrchestratorMaxTokensDraft,
-    quizMaxTokens: setQuizMaxTokensDraft,
-    assistantMaxTokens: setAssistantMaxTokensDraft,
     assistantNickname: setAssistantNicknameDraft,
     persona: setPersonaDraft,
     disableIdleAnimations: setDisableIdleAnimationsDraft,
@@ -135,12 +94,6 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     quizQuestionCount: setQuizQuestionCountDraft,
     quizPassCount: setQuizPassCountDraft,
   } = setDrafts;
-  const resolvedProvider = providerDraft === "openai" ? "openai" : "gemini";
-  const providerModelOptions = (
-    providerDraft === currentConfig?.ai_provider
-      ? currentConfig.model_options
-      : DEFAULT_PROVIDER_MODELS[resolvedProvider]
-  ) ?? [];
   const snapshotsScrollRef = React.useRef<HTMLDivElement | null>(null);
   const [snapshotsScrolledTop, setSnapshotsScrolledTop] = React.useState(false);
   const [snapshotsScrolledBottom, setSnapshotsScrolledBottom] = React.useState(false);
@@ -174,7 +127,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
       className="quizOverlay settingsOverlay"
       style={{ zIndex: 100 }}
     >
-      <div className="settingsModal">
+      <div className="settingsModal" role="dialog" aria-modal="true" aria-label={copy.settings.workspaceConfiguration}>
         <div className="settingsContent">
           <div className="settingsContentHeader">
             <h2>{copy.settings.workspaceConfiguration}</h2>
@@ -192,195 +145,13 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
             <div className="settingsConfigSurface">
               <div className="settingsConfigGrid">
                 <div className="settingsPrimaryColumn">
+                  <CodexAccountPanel codex={codex} drafts={drafts} setDrafts={setDrafts} />
                   <section className="settingsPanel settingsPanelWide">
-                    <div className="settingsPanelHeader">
-                      <div>
-                        <div className="settingsPanelEyebrow">{copy.settingsPanel.providersEyebrow}</div>
-                        <div className="settingsPanelTitle">{copy.settingsPanel.modelProviderTitle}</div>
-                      </div>
-                    </div>
+                    <div className="settingsPanelHeader"><div>
+                      <div className="settingsPanelEyebrow">Preferences</div>
+                      <div className="settingsPanelTitle">Assistant and workspace</div>
+                    </div></div>
                     <div className="settingsPanelBody">
-                      <div className="settingsLead">
-                        {copy.settingsPanel.modelProviderLead}
-                      </div>
-                      <div className="settingsInlineFields">
-                        <label className="field">
-                          <span className="fieldLabel">{copy.settingsPanel.providerLabel}</span>
-                          <select
-                            className="input"
-                            value={providerDraft}
-                            onChange={(event) => {
-                              const nextProvider = event.target.value;
-                              const nextOptions = DEFAULT_PROVIDER_MODELS[nextProvider === "openai" ? "openai" : "gemini"];
-                              setProviderDraft(nextProvider);
-                              setModelDraft((current) => nextOptions.includes(current) ? current : nextOptions[0]);
-                              setModelPresetDraft((current) => current !== "__custom__" && nextOptions.includes(current) ? current : nextOptions[0]);
-                            }}
-                          >
-                            {providerOptions.map((providerId) => (
-                              <option key={providerId} value={providerId}>{providerId}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field">
-                          <span className="fieldLabel">{copy.settingsPanel.modelLabel}</span>
-                          <select
-                            className="input"
-                            value={modelPresetDraft}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setModelPresetDraft(nextValue);
-                              if (nextValue !== "__custom__") {
-                                setModelDraft(nextValue);
-                              }
-                            }}
-                          >
-                            {providerModelOptions.map((modelId) => (
-                              <option key={modelId} value={modelId}>{modelId}</option>
-                            ))}
-                            <option value="__custom__">{copy.settingsPanel.customModelOption}</option>
-                          </select>
-                        </label>
-                      </div>
-                      {modelPresetDraft === "__custom__" ? (
-                        <label className="field">
-                          <span className="fieldLabel">{copy.settingsPanel.customModelId}</span>
-                          <input
-                            className="input"
-                            value={modelDraft}
-                            onChange={(event) => setModelDraft(event.target.value)}
-                            placeholder={providerDraft === "openai" ? "gpt-5.4-mini" : "gemini-3.1-pro"}
-                          />
-                        </label>
-                      ) : null}
-                      <label className="field">
-                        <span className="fieldLabel">{copy.settingsPanel.geminiApiKey}</span>
-                        <input
-                          className="input"
-                          value={geminiKeyLockedByEnv ? copy.settingsPanel.providedByEnv : geminiApiKeyDraft}
-                          onChange={(event) => setGeminiApiKeyDraft(event.target.value)}
-                          placeholder={copy.settingsPanel.geminiApiKeyPlaceholder}
-                          disabled={geminiKeyLockedByEnv}
-                        />
-                      </label>
-                      {geminiKeyLockedByEnv ? (
-                        <div className="settingsInlineNotice">
-                          {copy.settingsPanel.geminiApiKeyEnvNotice}
-                        </div>
-                      ) : null}
-                      <label className="field">
-                        <span className="fieldLabel">{copy.settingsPanel.openaiApiKey}</span>
-                        <input
-                          className="input"
-                          value={openaiKeyLockedByEnv ? copy.settingsPanel.providedByEnv : openaiApiKeyDraft}
-                          onChange={(event) => setOpenaiApiKeyDraft(event.target.value)}
-                          placeholder={copy.settingsPanel.openaiApiKeyPlaceholder}
-                          disabled={openaiKeyLockedByEnv}
-                        />
-                      </label>
-                      {openaiKeyLockedByEnv ? (
-                        <div className="settingsInlineNotice">
-                          {copy.settingsPanel.openaiApiKeyEnvNotice}
-                        </div>
-                      ) : null}
-                      {providerDraft === "openai" ? (
-                        <>
-                          <div className="mutedSmall" style={{ marginTop: -4 }}>
-                            <button
-                              type="button"
-                              onClick={() => setShowOpenAIEndpointDraft((current) => !current)}
-                              style={{
-                                appearance: "none",
-                                border: 0,
-                                background: "transparent",
-                                color: themeModeDraft === "light" ? "rgba(17,24,39,0.62)" : "rgba(255,255,255,0.62)",
-                                padding: 0,
-                                font: "inherit",
-                                cursor: "pointer",
-                                textDecoration: "underline",
-                                textUnderlineOffset: "3px",
-                              }}
-                            >
-                              {showOpenAIEndpointDraft ? copy.settingsPanel.hideCustomEndpoint : copy.settingsPanel.useCustomEndpoint}
-                            </button>
-                          </div>
-                          {showOpenAIEndpointDraft ? (
-                            <>
-                              <label className="field">
-                                <span className="fieldLabel">{copy.settingsPanel.openaiEndpointLabel}</span>
-                                <input
-                                  className="input"
-                                  value={openaiBaseUrlDraft}
-                                  onChange={(event) => setOpenaiBaseUrlDraft(event.target.value)}
-                                  placeholder="https://api.openai.com/v1"
-                                  disabled={openaiBaseUrlLockedByEnv}
-                                />
-                              </label>
-                              <div className="settingsInlineNotice">
-                                {copy.settingsPanel.openaiEndpointHelp}
-                              </div>
-                            </>
-                          ) : null}
-                          {openaiBaseUrlLockedByEnv ? (
-                            <div className="settingsInlineNotice">
-                              {copy.settingsPanel.openaiEndpointEnvNotice}
-                            </div>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </div>
-                  </section>
-                  <section className="settingsPanel settingsPanelWide">
-                    <div className="settingsPanelHeader">
-                      <div>
-                        <div className="settingsPanelEyebrow">{copy.settingsPanel.aiBehavior}</div>
-                        <div className="settingsPanelTitle">{copy.settingsPanel.thinking}</div>
-                      </div>
-                    </div>
-                    <div className="settingsPanelBody">
-                      <div className="settingsLead">
-                        {copy.settingsPanel.thinkingLead}
-                      </div>
-                      <div className="thinkingModeSwitch">
-                        {THINKING_MODE_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            className={`thinkingModeChip ${thinkingModeDraft === option.id ? "thinkingModeChipActive" : ""}`}
-                            onClick={() => setThinkingModeDraft(option.id)}
-                            type="button"
-                          >
-                            <span className="thinkingModeChipLabel">{option.label}</span>
-                            <span className="thinkingModeChipTitle">{option.title}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="settingsInlineNotice">
-                        <strong>{activeThinkingOption.label}</strong>: {activeThinkingValues}
-                      </div>
-                      {thinkingModeDraft === "custom" ? (
-                        <div className="settingsInlineFields">
-                          <label className="field">
-                            <span className="fieldLabel">{copy.settingsPanel.plannerMaxOutputTokens}</span>
-                            <input className="input" type="number" step={100} value={plannerMaxTokensDraft} onChange={(event) => setPlannerMaxTokensDraft(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)} />
-                          </label>
-                          <label className="field">
-                            <span className="fieldLabel">{copy.settingsPanel.plannerThinkingBudget}</span>
-                            <input className="input" type="number" step={100} value={plannerThinkingBudgetDraft} onChange={(event) => setPlannerThinkingBudgetDraft(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)} />
-                          </label>
-                          <label className="field">
-                            <span className="fieldLabel">{copy.settingsPanel.orchestratorMaxOutputTokens}</span>
-                            <input className="input" type="number" step={100} value={orchestratorMaxTokensDraft} onChange={(event) => setOrchestratorMaxTokensDraft(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)} />
-                          </label>
-                          <label className="field">
-                            <span className="fieldLabel">{copy.settingsPanel.quizMaxOutputTokens}</span>
-                            <input className="input" type="number" step={100} value={quizMaxTokensDraft} onChange={(event) => setQuizMaxTokensDraft(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)} />
-                          </label>
-                          <label className="field">
-                            <span className="fieldLabel">{copy.settingsPanel.assistantMaxOutputTokens}</span>
-                            <input className="input" type="number" step={100} value={assistantMaxTokensDraft} onChange={(event) => setAssistantMaxTokensDraft(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)} />
-                          </label>
-                        </div>
-                      ) : null}
                       <label className="field">
                         <span className="fieldLabel">{copy.settingsPanel.assistantNickname}</span>
                         <input
@@ -458,7 +229,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
                     </div>
                     <div className="settingsPanelBody">
                       <div className="settingsLead">
-                        {copy.settingsPanel.memoryLead}
+                        Codex keeps each conversation. These settings control the fresh graph context and the initial import of an existing chat.
                       </div>
                       <div className="thinkingModeSwitch settingsPresetSwitch">
                         {MEMORY_MODE_OPTIONS.map((option) => (
@@ -480,7 +251,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
                         <>
                           <div className="settingsInlineFields">
                             <label className="field">
-                              <span className="fieldLabel">{copy.settingsPanel.memoryHistoryLimit}</span>
+                              <span className="fieldLabel">Messages to import when connecting an existing chat</span>
                               <input
                                 className="input"
                                 type="number"

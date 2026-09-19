@@ -33,7 +33,6 @@ choose_node_bin_dir() {
 }
 
 PYTHON_BIN="$(choose_python)"
-DEFAULT_NODE_BIN_DIR="$(dirname "$(command -v node)")"
 NODE_BIN_DIR="$(choose_node_bin_dir)"
 PATH="$NODE_BIN_DIR:$PATH"
 
@@ -53,14 +52,17 @@ wait_for_listener() {
 
 if [[ ! -d "$VENV_DIR" ]]; then
   "$PYTHON_BIN" -m venv "$VENV_DIR"
-elif [[ "$("$VENV_DIR/bin/python" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')" != "$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')" ]]; then
-  rm -rf "$VENV_DIR"
-  "$PYTHON_BIN" -m venv "$VENV_DIR"
+elif ! "$VENV_DIR/bin/python" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))'; then
+  echo "The existing .venv needs Python 3.11 or newer. Recreate it explicitly before starting Clew." >&2
+  exit 1
 fi
 
 source "$VENV_DIR/bin/activate"
 
 export PIP_DISABLE_PIP_VERSION_CHECK=1
+if ! python -c 'import pip' >/dev/null 2>&1; then
+  python -m ensurepip --upgrade >/dev/null
+fi
 if [[ ! -f "$BACKEND_STAMP" || "$BACKEND_PYPROJECT" -nt "$BACKEND_STAMP" ]]; then
   python -m pip install -e "$ROOT_DIR/backend" >/dev/null
   touch "$BACKEND_STAMP"
@@ -127,26 +129,8 @@ if ! wait_for_listener "$BACKEND_PORT" 15; then
 fi
 
 if ! wait_for_listener "$FRONTEND_PORT" 12; then
-  echo "Vite did not open $FRONTEND_PORT. Falling back to static frontend server." >&2
-  kill "$FRONTEND_PID" 2>/dev/null || true
-  wait "$FRONTEND_PID" 2>/dev/null || true
-
-  (
-    cd "$ROOT_DIR/frontend"
-    if [[ ! -f "dist/index.html" ]]; then
-      if ! PATH="$DEFAULT_NODE_BIN_DIR:$PATH" npm run build >/dev/null 2>&1; then
-        echo "Static frontend build failed and dist is missing." >&2
-        exit 1
-      fi
-    fi
-    python3 -m http.server "$FRONTEND_PORT" --bind 127.0.0.1 --directory dist
-  ) &
-  FRONTEND_PID=$!
-
-  if ! wait_for_listener "$FRONTEND_PORT" 15; then
-    echo "Frontend failed to start on $FRONTEND_PORT" >&2
-    exit 1
-  fi
+  echo "Vite failed to start on $FRONTEND_PORT. See its error above." >&2
+  exit 1
 fi
 
 echo "Backend:  http://127.0.0.1:$BACKEND_PORT"

@@ -1,18 +1,34 @@
+from contextlib import asynccontextmanager
+
 import time
 import traceback
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from app.services.repository import RepositoryConflictError
 
 from app.api.routes import router
-from app.core.config import get_settings
+from app.api.deps import get_repository
+from app.agent.runtime import CodexRuntime
+from app.core.config import Settings, get_settings
 from app.services.debug_log_service import get_debug_log_service
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
-    app = FastAPI(title=settings.app_name)
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        runtime = CodexRuntime(settings, get_repository(settings))
+        app.state.agent_runtime = runtime
+        try:
+            yield
+        finally:
+            await runtime.close()
+
+    app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    app.dependency_overrides[get_settings] = lambda: settings
     debug_logs = get_debug_log_service(settings.root_dir)
     app.add_middleware(
         CORSMiddleware,
@@ -21,6 +37,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.exception_handler(RepositoryConflictError)
+    async def conflict_error(request: Request, exc: RepositoryConflictError):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @app.middleware("http")
     async def debug_error_logging(request: Request, call_next):

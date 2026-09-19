@@ -1,69 +1,27 @@
-import React from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import type { CodexModel, WorkspaceConfig } from "../lib/types";
 
-import type { WorkspaceEnvelope } from "../lib/types";
-import { chatModelStorageKey, readStoredChatModel } from "../lib/appStatePersistence";
-
-type WorkspaceConfig = WorkspaceEnvelope["workspace"]["config"] | null | undefined;
-
-export function resolveSelectedChatModel(params: {
-  current: string | null;
-  storedModel: string | null;
-  chatModelOptions: string[];
-  defaultModel: string | null | undefined;
-  graphChanged: boolean;
-}): string | null {
-  const { current, storedModel, chatModelOptions, defaultModel, graphChanged } = params;
-  if (chatModelOptions.length === 0) return null;
-  if (!graphChanged && current && chatModelOptions.includes(current)) return current;
-  if (storedModel && chatModelOptions.includes(storedModel)) return storedModel;
-  return defaultModel ?? chatModelOptions[0];
+export function resolveCodexModel(explicit: string | null, defaultModel: string | null | undefined, models: CodexModel[]): string | null {
+  return explicit ?? defaultModel ?? models.find((item) => item.isDefault)?.model ?? null;
 }
-
-export function useChatModelSelection(config: WorkspaceConfig, graphId: string | null | undefined): {
-  chatModelOptions: string[];
-  selectedChatModel: string | null;
-  setSelectedChatModel: React.Dispatch<React.SetStateAction<string | null>>;
+const storageKey = (graphId: string) => `clew_codex_model_v1:${graphId}`;
+function storedModel(graphId: string): string | null {
+  try { return localStorage.getItem(storageKey(graphId)); } catch { return null; }
+}
+export function useChatModelSelection(config: WorkspaceConfig | null, graphId: string | null, models: CodexModel[]): {
+  chatModelOptions: string[]; selectedChatModel: string | null; setSelectedChatModel: Dispatch<SetStateAction<string | null>>;
 } {
-  const [selectedChatModel, setSelectedChatModel] = React.useState<string | null>(null);
-  const previousGraphIdRef = React.useRef<string | null | undefined>(graphId);
-
-  const chatModelOptions = React.useMemo(() => {
-    if (!config) return [] as string[];
-    return Array.from(new Set([...(config.model_options ?? []), config.default_model].filter(Boolean)));
-  }, [config]);
-
-  React.useEffect(() => {
-    if (chatModelOptions.length === 0) {
-      setSelectedChatModel(null);
-      previousGraphIdRef.current = graphId;
-      return;
-    }
-    const graphChanged = previousGraphIdRef.current !== graphId;
-    previousGraphIdRef.current = graphId;
-    const storedModel = graphId ? readStoredChatModel(graphId) : null;
-    setSelectedChatModel((current) => {
-      return resolveSelectedChatModel({
-        current,
-        storedModel,
-        chatModelOptions,
-        defaultModel: config?.default_model,
-        graphChanged,
-      });
-    });
-  }, [chatModelOptions, config?.default_model, graphId]);
-
-  React.useEffect(() => {
-    if (!graphId) return;
-    try {
-      if (selectedChatModel && chatModelOptions.includes(selectedChatModel)) {
-        localStorage.setItem(chatModelStorageKey(graphId), selectedChatModel);
-      } else {
-        localStorage.removeItem(chatModelStorageKey(graphId));
-      }
-    } catch {
-      // Ignore localStorage write failures.
-    }
-  }, [chatModelOptions, graphId, selectedChatModel]);
-
+  const [selections, setSelections] = useState<Record<string, string | null>>({});
+  const key = graphId ?? "";
+  const explicit = key in selections ? selections[key] : storedModel(key);
+  const selectedChatModel = resolveCodexModel(explicit, config?.default_model, models);
+  const chatModelOptions = useMemo(() => Array.from(new Set([...(selectedChatModel ? [selectedChatModel] : []), ...models.map((item) => item.model)])), [models, selectedChatModel]);
+  const setSelectedChatModel: Dispatch<SetStateAction<string | null>> = (value) => {
+    const next = typeof value === "function" ? value(selectedChatModel) : value;
+    setSelections((current) => ({ ...current, [key]: next }));
+    try { if (next) localStorage.setItem(storageKey(key), next); else localStorage.removeItem(storageKey(key)); } catch { /* Optional UI preference. */ }
+  };
+  // A separate key intentionally starts Codex choices fresh after the provider migration.
+  // An unavailable explicit Codex choice remains visible and is rejected by the server.
   return { chatModelOptions, selectedChatModel, setSelectedChatModel };
 }

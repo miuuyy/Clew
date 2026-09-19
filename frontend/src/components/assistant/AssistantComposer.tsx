@@ -1,4 +1,5 @@
 import React from "react";
+import type { AgentControls } from "./AgentInteraction";
 
 import type { GraphChatState } from "../../lib/appContracts";
 import type { AppCopy } from "../../lib/appCopy";
@@ -11,6 +12,7 @@ type AssistantTemplate = {
 
 export type AssistantComposerProps = {
   copy: AppCopy;
+  agentControls: AgentControls;
   chatError: string | null;
   chatSessionsError: string | null;
   applyError: string | null;
@@ -27,6 +29,7 @@ export type AssistantComposerProps = {
 
 export function AssistantComposer({
   copy,
+  agentControls,
   chatError,
   chatSessionsError,
   applyError,
@@ -42,7 +45,8 @@ export function AssistantComposer({
 }: AssistantComposerProps): React.JSX.Element {
   return (
     <div className="assistantComposerWrap">
-      {chatError ? <div className="inlineNotice inlineNoticeError">{chatError}</div> : null}
+      {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{chatError}<button className="btn btn-sm" type="button" onClick={agentControls.reconnect}>Reconnect chat</button></div> : null}
+      {!agentControls.authenticated ? <div className="codexChatConnect"><span>Connect Codex to start learning.</span><button className="btn btn-sm" type="button" onClick={agentControls.connect}>Sign in with ChatGPT</button></div> : null}
       {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{chatSessionsError}</div> : null}
       {applyError ? <div className="inlineNotice inlineNoticeError">{applyError}</div> : null}
       <div className="assistantTemplates">
@@ -98,34 +102,23 @@ export function AssistantComposer({
             }))
           }
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
-              sendChat();
+              if (!chatLoading && !chatThreadLoading && agentControls.authenticated) sendChat();
             }
           }}
           placeholder={copy.sessions.composerPlaceholder}
         />
         <button
           className="assistantSendButton assistantSendButtonIcon"
-          disabled={chatLoading || chatThreadLoading || !currentChatState.input.trim()}
-          onClick={() => sendChat()}
+          disabled={chatThreadLoading || (!chatLoading && (!currentChatState.input.trim() || !agentControls.authenticated))}
+          onClick={() => chatLoading ? void agentControls.stop() : sendChat()}
+          aria-label={chatLoading ? "Stop Codex" : "Send message"}
+          title={chatLoading ? "Stop Codex" : "Send message"}
           type="button"
         >
           {chatLoading ? (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="animate-spin"
-            >
-              <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-              <path d="M12 2a10 10 0 0 1 10 10" />
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg>
           ) : (
             <svg
               width="15"

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   MEMORY_MODE_OPTIONS,
-  THINKING_MODE_OPTIONS,
   type SettingsDraftSetters,
   type SettingsDrafts,
   type ThemeMode,
@@ -11,9 +10,8 @@ import {
   buildWorkspaceConfigPatch,
   deriveSettingsDrafts,
   isSettingsDirty,
-  type SettingsLocks,
 } from "../lib/settingsController";
-import type { WorkspaceConfig, WorkspaceEnvelope } from "../lib/types";
+import type { WorkspaceConfig } from "../lib/types";
 
 type WorkspaceConfigUpdater = (patch: Record<string, unknown>) => Promise<void>;
 
@@ -28,10 +26,7 @@ type UseWorkspaceSettingsArgs = {
 type UseWorkspaceSettingsResult = {
   drafts: SettingsDrafts;
   setDrafts: SettingsDraftSetters;
-  locks: SettingsLocks;
   settingsDirty: boolean;
-  activeThinkingOption: (typeof THINKING_MODE_OPTIONS)[number];
-  activeThinkingValues: string;
   activeMemoryOption: (typeof MEMORY_MODE_OPTIONS)[number];
   activeMemoryValues: string;
   liveDisableIdleAnimations: boolean;
@@ -47,19 +42,8 @@ export function useWorkspaceSettings({
   initialThemeMode,
 }: UseWorkspaceSettingsArgs): UseWorkspaceSettingsResult {
   const [drafts, setDraftsState] = useState<SettingsDrafts>({
-    provider: "gemini",
-    model: "gemini-3.7-flash",
-    modelPreset: "gemini-3.7-flash",
-    geminiApiKey: "",
-    openaiApiKey: "",
-    openaiBaseUrl: "https://api.openai.com/v1",
-    showOpenAIEndpoint: false,
-    thinkingMode: "default",
-    plannerMaxTokens: 200000,
-    plannerThinkingBudget: 12288,
-    orchestratorMaxTokens: 16384,
-    quizMaxTokens: 4096,
-    assistantMaxTokens: 800,
+    model: "",
+    reasoningEffort: "",
     assistantNickname: "",
     persona: "",
     disableIdleAnimations: false,
@@ -87,33 +71,17 @@ export function useWorkspaceSettings({
     }));
   }, [config, initialThemeMode]);
 
-  const locks = useMemo<SettingsLocks>(
-    () => ({
-      geminiKeyLockedByEnv: config?.gemini_api_key_source === "env",
-      openaiKeyLockedByEnv: config?.openai_api_key_source === "env",
-      openaiBaseUrlLockedByEnv: config?.openai_base_url_source === "env",
-    }),
-    [config?.gemini_api_key_source, config?.openai_api_key_source, config?.openai_base_url_source],
-  );
-
   const settingsDirty = useMemo(
     () =>
       isSettingsDirty({
         config,
         drafts,
-        locks,
-        straightEdgeLinesEnabled,
+            straightEdgeLinesEnabled,
       }),
-    [config, drafts, locks, straightEdgeLinesEnabled],
+    [config, drafts, straightEdgeLinesEnabled],
   );
 
-  const activeThinkingOption = THINKING_MODE_OPTIONS.find((option) => option.id === drafts.thinkingMode) ?? THINKING_MODE_OPTIONS[1];
   const activeMemoryOption = MEMORY_MODE_OPTIONS.find((option) => option.id === drafts.memoryMode) ?? MEMORY_MODE_OPTIONS[1];
-
-  const activeThinkingValues =
-    drafts.thinkingMode === "custom"
-      ? `Planner ${drafts.plannerMaxTokens.toLocaleString()} · thinking ${drafts.plannerThinkingBudget.toLocaleString()} · orchestrator ${drafts.orchestratorMaxTokens.toLocaleString()} · quiz ${drafts.quizMaxTokens.toLocaleString()} · assistant ${drafts.assistantMaxTokens.toLocaleString()}`
-      : activeThinkingOption.description;
 
   const activeMemoryValues =
     drafts.memoryMode === "custom"
@@ -128,19 +96,8 @@ export function useWorkspaceSettings({
   }
 
   const setDrafts: SettingsDraftSetters = {
-    provider: (value) => updateDraft("provider", value),
     model: (value) => updateDraft("model", value),
-    modelPreset: (value) => updateDraft("modelPreset", value),
-    geminiApiKey: (value) => updateDraft("geminiApiKey", value),
-    openaiApiKey: (value) => updateDraft("openaiApiKey", value),
-    openaiBaseUrl: (value) => updateDraft("openaiBaseUrl", value),
-    showOpenAIEndpoint: (value) => updateDraft("showOpenAIEndpoint", value),
-    thinkingMode: (value) => updateDraft("thinkingMode", value),
-    plannerMaxTokens: (value) => updateDraft("plannerMaxTokens", value),
-    plannerThinkingBudget: (value) => updateDraft("plannerThinkingBudget", value),
-    orchestratorMaxTokens: (value) => updateDraft("orchestratorMaxTokens", value),
-    quizMaxTokens: (value) => updateDraft("quizMaxTokens", value),
-    assistantMaxTokens: (value) => updateDraft("assistantMaxTokens", value),
+    reasoningEffort: (value) => updateDraft("reasoningEffort", value),
     assistantNickname: (value) => updateDraft("assistantNickname", value),
     persona: (value) => updateDraft("persona", value),
     disableIdleAnimations: (value) => updateDraft("disableIdleAnimations", value),
@@ -165,7 +122,7 @@ export function useWorkspaceSettings({
 
   function saveSettings(): void {
     if (!config) return;
-    const patch = buildWorkspaceConfigPatch({ config, drafts, locks });
+    const patch = buildWorkspaceConfigPatch({ config, drafts });
     if (drafts.straightEdgeLines !== straightEdgeLinesEnabled) {
       setStraightEdgeLinesEnabled(drafts.straightEdgeLines);
     }
@@ -177,10 +134,7 @@ export function useWorkspaceSettings({
   return {
     drafts,
     setDrafts,
-    locks,
     settingsDirty,
-    activeThinkingOption,
-    activeThinkingValues,
     activeMemoryOption,
     activeMemoryValues,
     liveDisableIdleAnimations: drafts.disableIdleAnimations,

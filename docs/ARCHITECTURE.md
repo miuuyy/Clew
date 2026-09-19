@@ -1,218 +1,114 @@
 # Architecture
 
-This file explains how the public `main` branch is shaped as a codebase and as a product boundary.
+Clew is a local, graph-first learning workspace. Codex owns the agent loop; Clew owns the graph, review UI, study tools, grading and snapshots. [ADR 0005](adr/0005-codex-native-agent-runtime.md) records this boundary.
 
-Clew is not a generic note system and not a broad autonomous agent platform. It is a graph-first learning workspace with a deliberately narrow AI loop.
+## Product guarantees
 
-## Product boundary
+- The graph is the center of truth; a topic is the study unit.
+- The model submits proposals. Only the user's Apply action changes the graph.
+- Accepted changes and manual study actions create reversible workspace snapshots.
+- Formal completion follows deterministic quiz/prerequisite rules.
+- The local edition and hosted product remain separate surfaces.
 
-The local edition keeps a few hard guarantees:
+## Agent flow
 
-1. `Topic` is the core study unit.
-2. The graph is the center of truth.
-3. AI does not silently mutate the graph.
-4. Accepted changes become snapshot history.
-5. Completion is attached to closure logic, not just visual toggles.
-
-These guarantees matter more than convenience hacks.
-
-## Repository architecture
-
-The repository is compact, but the responsibilities are intentionally split.
-
-```text
-Clew/
-├── backend/         FastAPI app, domain model, repository, providers, tests
-├── frontend/        React workspace, graph canvas, dialogs, settings, logs
-├── contracts/       JSON transport files used by graph flows
-├── docs/            Engineering docs, ADRs, release notes, site FAQ source
-└── scripts/         Local development helpers
+```mermaid
+sequenceDiagram
+    participant UI as Clew UI
+    participant API as Clew backend
+    participant C as Codex app-server
+    participant DB as SQLite
+    UI->>API: Send message
+    API->>DB: Persist message and run
+    API->>C: thread/start or thread/resume, then turn/start
+    C-->>API: Text deltas
+    API-->>UI: Persisted, replayable chat events
+    C->>API: Native Clew tool call
+    alt Graph proposal
+        API->>API: Validate operations and graph revision
+        API-->>UI: Proposal preview
+        API-->>C: awaiting_review
+        UI->>API: Apply proposal
+        API->>DB: Revision check, snapshot and receipt in one transaction
+    else Question or learning checkpoint
+        API-->>UI: Interactive card
+        UI->>API: Answer
+        API->>DB: Persist answer
+        API-->>C: Tool result with answer
+        C-->>UI: Continue conversation through the backend stream
+    end
 ```
 
-## Package responsibilities
+A normal answer is Markdown text. There is no `answer` tool or JSON action classifier. There is no secondary planner or provider invocation behind a tool. The selected Codex model decides when to use the tools and authors their arguments.
 
-### Backend
+## Native tools
 
-`backend/` contains the FastAPI app for the local edition.
+Tools are supplied through experimental `thread/start.dynamicTools`, in the `clew` namespace. Calls arrive through `item/tool/call`; results contain native `inputText` content items. Resumed threads retain the tools registered at creation.
 
-It is responsible for:
-
-- exposing API routes for graph, chat, quiz, snapshots, and settings
-- persisting workspace state in local SQLite
-- running orchestrator and planner flows
-- holding the provider seam for Gemini, OpenAI, and OpenAI-compatible endpoints
-- validating proposals before they can be applied
-- supporting local debug logging in `main`
-
-The backend should fail honestly: if a provider cannot satisfy a contract, or a proposal cannot be validated safely, it should reject explicitly instead of inventing a fake success path.
-
-### Frontend
-
-`frontend/` contains the React graph workspace.
-
-It is responsible for:
-
-- rendering the graph canvas
-- hosting assistant and proposal review flows
-- exposing settings for provider, model, memory, closure behavior, and local debug surfaces
-- keeping graph mutation visible and reviewable
-- preserving the graph as the main surface instead of drifting into dashboard or chat-first UI
-
-### Contracts
-
-`contracts/` contains transport-facing JSON contracts used by graph mutation flows.
-
-These files are not the whole domain model. They are explicit exchange surfaces that make proposal handling inspectable, tool-friendly, and separate from ad-hoc runtime code.
-
-### Scripts
-
-`scripts/` contains small local helpers:
-
-- `dev.sh` bootstraps dependencies and starts the backend and frontend
-- `stop_dev.sh` stops local listeners on known dev ports
-- `reset_db.sh` deletes and recreates the local SQLite seed workspace
-
-The scripts should stay small, explicit, and boring.
-
-## Frontend structure
-
-| Area | Responsibility |
+| Tool | Responsibility |
 | --- | --- |
-| `frontend/src/App.tsx` | top-level app state, modal orchestration, request wiring |
-| `frontend/src/components/WorkspaceShell.tsx` | sidebar, graph chrome, workspace-level navigation |
-| `frontend/src/components/GraphCanvas.tsx` | graph rendering, layout interaction, pan and zoom behavior |
-| `frontend/src/components/SettingsModal.tsx` | provider, model, memory, thinking, debug settings |
-| `frontend/src/components/AppDialogs.tsx` | proposal, import/export, and workspace modal surfaces |
-| `frontend/src/lib/` | contracts, API helpers, graph transforms, copy, debug instrumentation |
+| `read_graph` | Fresh graph ids, revision, topology, zones and progress |
+| `read_topic` | Full topic, resources, artifacts and prerequisite status |
+| `propose_ingest` | Validate a proposal based on supplied material and show review |
+| `propose_expand` | Validate a proposed learning-path expansion and show review |
+| `ask_question` | Await a choice or free-text reply in a persistent card |
+| `present_quiz` | Await one four-choice checkpoint; return server-graded correctness |
+| `create_closure_quiz` | Validate and register a full completion test; never award progress directly |
 
-The frontend is intentionally graph-first. It should read like a workspace, not like a dashboard with a graph widget pasted in.
+Proposal tools accept explicit topic, edge and zone operations. They reject unknown references, disconnected islands, unsafe resource URLs, malformed operations and new topics claiming earned progress. They do not fabricate missing zones or silently repair semantics. The error goes back to Codex, which may correct its call.
 
-## Backend structure
+The existing completion-test button starts a separate ephemeral Codex turn with only the read and closure-quiz tools. The model supplies exactly the requested questions; Clew retains correct answers and grades submissions. The existing manual Finish action keeps its explicit prerequisite-closure behavior.
 
-| Area | Responsibility |
+## Process, authentication and permissions
+
+`CodexTransport` starts one owned `codex app-server --listen stdio://` child process. The tested native protocol is the installed Codex Desktop 0.153.4 build. Dynamic tools are experimental: an incompatible CLI produces an explicit connection or protocol error, with no alternate runtime.
+
+Clew uses a dedicated `CODEX_HOME` at `backend/data/codex` and a dedicated working directory at `backend/data/agent-workspace`. Both are ignored by Git. A project-root marker and zero project-instruction budget isolate the agent from repository coding instructions. Shell execution, files/images, browser/computer control, plugins, hooks, Codex memory generation, delegation and host skill discovery are disabled. The sandbox is read-only and approvals are `never`. The optional Web switch controls Codex's native web search.
+
+ChatGPT sign-in uses `account/login/start`, native OAuth completion notifications, `account/read`, cancellation and logout. Device-code sign-in is available as an explicit alternative. Codex owns token refresh and credential storage. Clew does not extract global Codex credentials, ask for provider API keys or proxy ChatGPT HTTP endpoints. Available models and reasoning options come from `model/list`; an unavailable explicit selection fails without substitution.
+
+The local workspace identity at `/api/v1/auth/session` remains separate from Codex account authentication. Graph editing, import/export and existing data remain usable while Codex is disconnected.
+
+The existing read-only MCP server is unchanged. Clew's internal tools do not call it. An agent Codex home containing MCP server configuration is rejected instead of starting those servers. A launcher is outside this change.
+
+## Persistence and reconnect
+
+SQLite stores graph snapshots, chat sessions/messages, quiz sessions and these agent tables:
+
+- `agent_sessions`: Clew session to native thread binding, run, turn, status and client message id.
+- `agent_events`: ordered NDJSON events with cursor ids for stream replay.
+- `agent_tool_results`: tool call receipts keyed by call id and exact arguments.
+- `proposal_applications`: accepted proposal identity, payload and snapshot receipt.
+
+The frontend merges text updates by message id, reconnects from the saved cursor, and keeps inputs separated by graph/session. Disconnecting the browser does not cancel Codex. Stop explicitly interrupts the native turn and releases pending interactions. After a backend restart, incomplete turns/cards are marked interrupted; the native thread id and all completed messages remain. Continuing resumes that thread, with no silent replacement conversation.
+
+Native items keep their individual ids and a persisted `reply_id` identifying the Clew turn. The UI presents one assistant reply with its text above nested proposal, question and quiz cards. It reveals text when the native message completes; streaming still drives progress, tool cards and reconnects. Typed `commentary` updates one preamble until an answer arrives, and completed reads do not become chat rows. An unknown message phase remains ordinary text, with no keyword-based classification. Reasoning items are not projected into the chat. Progress follows the explicit run id, so a new hidden button request cannot reopen an old reply's loader. Session counters count grouped replies and visible user messages.
+
+Each turn receives fresh, scoped graph context and confirmed proposal receipts. Existing pre-Codex messages are imported once into a new native thread as labeled historical data. Memory settings govern that initial import and fresh context blocks; Codex owns ongoing conversation history and compaction.
+
+## Review and concurrency
+
+Apply requires a proposal id and the graph revision used to prepare it. A stale or historical unversioned proposal returns HTTP 409. Repeating an already accepted identical proposal returns the current workspace without creating another snapshot. Reusing its id for different operations fails.
+
+Graph writes, snapshot creation and the chat's applied marker share one SQLite transaction. Other workspace writes compare their parent snapshot before committing, so a concurrent full-workspace update cannot erase an accepted proposal. Graph revisions remain monotonic across rollback and graph recreation. Rollback restores the whole workspace; it does not rewrite conversation history or erase historical apply receipts.
+
+## Owners
+
+| Area | Owner |
 | --- | --- |
-| `backend/app/api/routes.py` | HTTP transport and request/response mapping |
-| `backend/app/models/domain.py` | persistent workspace and graph domain model |
-| `backend/app/models/api.py` | API payload models |
-| `backend/app/services/repository.py` | SQLite persistence, snapshots, workspace config, graph state |
-| `backend/app/services/chat_orchestrator.py` | action choice for answer, quiz, or proposal |
-| `backend/app/services/proposal_planner.py` | proposal generation, coercion, validation bridge |
-| `backend/app/services/quiz_service.py` | quiz generation and closure attempts |
-| `backend/app/llm/` | provider seam, model catalog, prompts, contracts, schemas |
+| Native process, JSON-RPC multiplexing, failures | `backend/app/agent/transport.py` |
+| Auth, models, sessions, turn lifecycle | `backend/app/agent/runtime.py` |
+| Durable bindings, events and tool receipts | `backend/app/agent/store.py` |
+| Tool schemas, context and handlers | `backend/app/agent/contracts.py`, `context.py`, `tools.py` |
+| Proposal validation/normalization/preview | `backend/app/services/proposal_service.py`, `proposal_validator.py`, `proposal_normalizer.py` |
+| Graph state, snapshots and apply transaction | `backend/app/services/repository.py` |
+| Quiz validation and grading | `backend/app/services/quiz_service.py` |
+| Chat stream and interactive HTTP endpoints | `backend/app/api/chat_routes.py` |
+| Codex account endpoints | `backend/app/api/codex_routes.py` |
+| Connection UI and dynamic model settings | `useCodexAccount.ts`, `CodexAccountPanel.tsx` |
+| Chat lifecycle and event reconciliation | `useGraphChatController.ts`, `agentEvents.ts` |
+| Markdown, proposal and interaction cards | `frontend/src/components/assistant/` |
 
-## Separation of concerns
+## Verification
 
-Clew uses a few simple but important separations:
-
-### Domain state
-
-Persistent workspace state lives in SQLite and includes:
-
-- graphs
-- topics
-- edges
-- zones
-- resources and artifacts
-- snapshots
-- quiz state
-- workspace configuration
-
-### Runtime state
-
-Runtime state includes:
-
-- recent chat exchanges
-- current UI selection
-- in-flight requests
-- temporary proposal review state
-
-Some runtime state is persisted, but it is not the same thing as snapshot history.
-
-### Provider seam
-
-The model layer is not hard-coded to one provider. Providers implement the same high-level interface and are selected through workspace config.
-
-### Proposal boundary
-
-Graph mutation is proposal-based:
-
-- raw source comes in
-- a provider produces structured output
-- the planner coerces it into a draft
-- validation runs
-- the user reviews
-- the repository applies accepted state
-
-## Core loop
-
-The most important product path is:
-
-1. user sends a request
-2. context is assembled from the graph, topic, history, and config
-3. orchestrator chooses an action shape
-4. planner or assistant returns typed output
-5. user reviews if mutation is involved
-6. repository persists accepted change into snapshot history
-
-The graph stays visible through the whole process.
-
-## Domain model at a glance
-
-### Topic
-
-A topic is the canonical study unit.
-
-It can carry:
-
-- title
-- description
-- duration estimate
-- resources
-- artifacts
-- progress state
-- closure state
-
-### Edge
-
-A directed relationship between topics, usually expressing dependency.
-
-### Zone
-
-A visual grouping layer used to make large graphs readable without turning them into rigid folders.
-
-### Snapshot
-
-An immutable saved workspace state used for rollback and audit.
-
-### Workspace
-
-The top-level container for:
-
-- many subject graphs
-- shared settings
-- provider and model config
-- memory and persona settings
-
-## What is local-only in `main`
-
-The public branch is the local developer edition.
-
-That means:
-
-- SQLite is local
-- provider keys are local
-- import/export is local
-- debugging surfaces exist for the local workspace
-
-It does **not** try to replicate every hosted surface.
-
-## Non-goals
-
-This branch is not trying to ship:
-
-- broad team collaboration
-- hidden background orchestration
-- silent AI writes
-- generic productivity surfaces disconnected from the graph
-
-Those non-goals keep the architecture sharp.
+Run backend tests, frontend type checking, tests, localization and production build. The executable under `backend/tests/fixtures/` is a deterministic test peer for the real subprocess/JSON-RPC path; application code never selects it. Those tests verify integration behavior without consuming a user's model quota. A native handshake/schema check verifies the installed CLI separately. Successful authenticated inference requires the owner to complete ChatGPT sign-in.

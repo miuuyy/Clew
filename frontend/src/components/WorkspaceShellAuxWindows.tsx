@@ -1,3 +1,4 @@
+import type { AgentControls } from "./assistant/AgentInteraction";
 import React from "react";
 import { CaretDown, CaretRight, Check, DownloadSimple, FolderOpen, FolderSimple, PencilSimple } from "@phosphor-icons/react";
 
@@ -430,6 +431,7 @@ export function TopicAssetModal({
 }
 
 export function LightChatWindow({
+  agentControls,
   chatWindowRef,
   chatWindowPosition,
   assistantWidth,
@@ -472,6 +474,7 @@ export function LightChatWindow({
   sendChat,
   closing,
 }: {
+  agentControls: AgentControls;
   chatWindowRef: React.RefObject<HTMLDivElement | null>;
   chatWindowPosition: { x: number; y: number };
   assistantWidth: number;
@@ -564,6 +567,7 @@ export function LightChatWindow({
       />
       <div className="sessionShadow" />
       <AssistantThread
+        agentControls={agentControls}
         copy={copy}
         chatViewportRef={chatViewportRef}
         chatThreadLoading={chatThreadLoading}
@@ -577,6 +581,7 @@ export function LightChatWindow({
         chatComposerRef={chatComposerRef}
       />
       <AssistantComposer
+        agentControls={agentControls}
         copy={copy}
         chatError={chatError}
         chatSessionsError={chatSessionsError}

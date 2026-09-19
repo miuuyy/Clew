@@ -18,6 +18,8 @@ ADR files in this repo are meant to capture:
 - [0003 - The public local edition and hosted product stay split](0003-local-edition-and-hosted-surface-are-separate.md)
 - [0004 - External learning bridges preserve the graph boundary](0004-external-learning-bridges-preserve-the-graph-boundary.md)
 
+- [0005 - Codex owns the agent loop; Clew supplies native tools](0005-codex-native-agent-runtime.md)
+
 ## Writing rule
 
 An ADR should exist when a decision:

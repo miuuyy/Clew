@@ -1,59 +1,39 @@
-from __future__ import annotations
-
-import tempfile
 import unittest
-from pathlib import Path
-
-from fastapi.testclient import TestClient
-
-from app.api import routes
-from app.core.config import Settings
-from app.main import app
-from app.services.debug_log_service import get_debug_log_service
-from app.services.quiz_service import QuizGenerationError
-from app.services.repository import GraphRepository
-
+from unittest.mock import AsyncMock
+from app.agent.transport import CodexError
+from codex_test_support import install_client
 
 class QuizRouteTests(unittest.TestCase):
-    def setUp(self) -> None:
-        tempdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tempdir.cleanup)
-        self.root_dir = Path(tempdir.name)
-        self.repository = GraphRepository(self.root_dir / "state.sqlite3")
-        self.settings = Settings()
-        self.settings.root_dir = self.root_dir
+    def setUp(self):
+        self.client, self.repo, self.runtime = install_client(self, "closure")
+        self.url = "/api/v1/graphs/mathematics-demo/topics/arithmetics/quiz"
 
-    def test_start_quiz_returns_502_and_logs_diagnostics_when_generation_fails(self) -> None:
-        class FailingQuizService:
-            @staticmethod
-            def start_session(*args, **kwargs):  # noqa: ANN002, ANN003, ANN201
-                raise QuizGenerationError(
-                    "closure quiz generation failed: provider returned no valid questions",
-                    diagnostics={"topic_id": "arithmetics", "model": "gemini-2.5-pro"},
-                )
+    def test_quiz_start_uses_native_tool_and_public_response_hides_answers(self):
+        response = self.client.post(self.url+"/start", json={"question_count": 6})
+        self.assertEqual(response.status_code, 200, response.text)
+        session = response.json()["session"]
+        self.assertEqual(len(session["questions"]), 6)
+        self.assertNotIn("correct_choice_index", session["questions"][0])
+        second = self.client.post(self.url+"/start", json={})
+        self.assertEqual(second.json()["session"]["session_id"], session["session_id"])
+        answers = [{"question_id": q["id"], "choice_index": 1} for q in session["questions"]]
+        submitted = self.client.post(self.url+"/submit", json={"session_id": session["session_id"], "answers": answers})
+        self.assertEqual(submitted.status_code, 200, submitted.text)
+        self.assertTrue(submitted.json()["attempt"]["passed"])
+        self.assertTrue(submitted.json()["attempt"]["closure_awarded"])
+        self.assertEqual(self.client.post(self.url+"/submit", json={"session_id": session["session_id"], "answers": answers}).status_code, 404)
 
-        client = TestClient(app, raise_server_exceptions=False)
-        app.dependency_overrides[routes.get_repository] = lambda: self.repository
-        app.dependency_overrides[routes.get_quiz_service] = lambda: FailingQuizService()
-        app.dependency_overrides[routes.get_settings] = lambda: self.settings
-        self.addCleanup(app.dependency_overrides.clear)
-
-        response = client.post(
-            "/api/v1/graphs/mathematics-demo/topics/arithmetics/quiz/start",
-            json={"question_count": 6, "model": "gemini-2.5-pro"},
-        )
-
+    def test_native_failure_returns_explicit_502(self):
+        self.runtime.generate_closure_quiz = AsyncMock(side_effect=CodexError("Codex connection closed"))
+        response = self.client.post(self.url+"/start", json={})
         self.assertEqual(response.status_code, 502)
-        self.assertEqual(
-            response.json()["detail"],
-            "closure quiz generation failed: provider returned no valid questions",
-        )
+        self.assertEqual(response.json()["detail"], "Codex connection closed")
 
-        logs = get_debug_log_service(self.settings.root_dir).snapshot()
-        self.assertEqual(logs.server[0].message, "Closure quiz generation failed")
-        self.assertIn("\"topic_id\":\"arithmetics\"", logs.server[0].response_excerpt or "")
-        self.assertIn("\"model\":\"gemini-2.5-pro\"", logs.server[0].response_excerpt or "")
+    def test_open_prerequisites_block_test(self):
+        response = self.client.post("/api/v1/graphs/mathematics-demo/topics/embeddings/quiz/start", json={})
+        self.assertEqual(response.status_code, 400)
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_quiz_cannot_be_submitted_to_another_topic(self):
+        session = self.client.post(self.url+"/start", json={"question_count": 6}).json()["session"]
+        response = self.client.post("/api/v1/graphs/mathematics-demo/topics/functions/quiz/submit", json={"session_id": session["session_id"], "answers": []})
+        self.assertEqual(response.status_code, 400)

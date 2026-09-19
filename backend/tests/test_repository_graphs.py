@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from uuid import uuid4
 from pathlib import Path
 
 from app.models.api import ObsidianExportOptions
@@ -249,6 +250,7 @@ class RepositoryGraphTests(unittest.TestCase):
 
         applied = self.repository.apply_proposal(
             GraphProposal(
+                proposal_id=f"test-{uuid4().hex}", base_graph_version=self.repository.graph("mathematics-demo").version,
                 graph_id="mathematics-demo",
                 user_prompt="refresh functions topic",
                 summary="update functions topic",
@@ -285,6 +287,7 @@ class RepositoryGraphTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown zone"):
             self.repository.apply_proposal(
                 GraphProposal(
+                proposal_id=f"test-{uuid4().hex}", base_graph_version=self.repository.graph("mathematics-demo").version,
                     graph_id="mathematics-demo",
                     user_prompt="add derivatives",
                     summary="invalid zone reference",
@@ -306,6 +309,7 @@ class RepositoryGraphTests(unittest.TestCase):
     def test_apply_proposal_synchronizes_zone_memberships_bidirectionally(self) -> None:
         applied = self.repository.apply_proposal(
             GraphProposal(
+                proposal_id=f"test-{uuid4().hex}", base_graph_version=self.repository.graph("mathematics-demo").version,
                 graph_id="mathematics-demo",
                 user_prompt="link embeddings to review zone",
                 summary="sync zone membership",
@@ -347,6 +351,7 @@ class RepositoryGraphTests(unittest.TestCase):
     def test_apply_proposal_assigns_zone_style_deterministically_in_repository(self) -> None:
         applied = self.repository.apply_proposal(
             GraphProposal(
+                proposal_id=f"test-{uuid4().hex}", base_graph_version=self.repository.graph("mathematics-demo").version,
                 graph_id="mathematics-demo",
                 user_prompt="add cell processes zone",
                 summary="style zone on apply",
@@ -397,6 +402,7 @@ class RepositoryGraphTests(unittest.TestCase):
 
         applied = self.repository.apply_proposal(
             GraphProposal(
+                proposal_id=f"test-{uuid4().hex}", base_graph_version=self.repository.graph("mathematics-demo").version,
                 graph_id="mathematics-demo",
                 user_prompt="add exponential function",
                 summary="add one topic and one edge",

@@ -17,7 +17,7 @@ Clew is a local, AI-assisted workspace for studying through dependency graphs. S
 
 The graph is the workspace. AI can draft, expand, audit, and reshape it, but changes stay visible, reviewable, and reversible.
 
-Try the hosted version at [clew.my](https://clew.my), or run this repo locally when you want provider control, local state, Obsidian import/export, and MCP context.
+Try the hosted version at [clew.my](https://clew.my), or run this repo locally when you want Codex pairing, local state, Obsidian import/export, and MCP context.
 
 ## Quick Look
 
@@ -25,7 +25,7 @@ Try the hosted version at [clew.my](https://clew.my), or run this repo locally w
 - `Main move`: click a topic and see the path that leads to it
 - `Graph generation`: build a map from a goal, notes, topic list, or Obsidian vault
 - `AI boundary`: AI proposes structure; you review and apply changes
-- `Local edition`: SQLite, provider keys, Gemini/OpenAI support, import/export, MCP
+- `Local edition`: SQLite, Codex with ChatGPT sign-in, import/export, existing read-only MCP
 
 ## Quick Start
 
@@ -36,13 +36,9 @@ cp .env.example .env
 ./scripts/dev.sh
 ```
 
-Set one provider key in `.env`:
+Install the [Codex CLI](https://learn.chatgpt.com/docs/cli) and make `codex` available on PATH, or set `KG_CODEX_BINARY` in `.env`. The native integration was verified with Codex Desktop 0.153.4. Dynamic tools require a compatible current app-server build.
 
-```bash
-KG_GEMINI_API_KEY=...
-# or
-KG_OPENAI_API_KEY=...
-```
+Open **Settings → Codex → Sign in with ChatGPT**. Codex handles OAuth and token refresh in Clew's dedicated local Codex home. API keys are no longer used. The graph remains usable before signing in.
 
 Then open:
 
@@ -69,7 +65,7 @@ Instead of manually arranging a huge roadmap, you let AI draft the graph. Then y
 - `Obsidian bridge`: import a vault into Clew or export a graph back into an Obsidian-ready folder.
 - `Obsidian-to-Clew import skill`: packaged for Claude Code and Codex to audit a vault, flag blockers, and shape it into a valid Clew package.
 - `MCP context bridge`: let Claude, Cursor, or another MCP client read your Clew graphs and progress without copy-paste.
-- `Local control`: SQLite workspace, provider keys, Gemini/OpenAI support, OpenAI-compatible endpoint option, memory/persona/thinking settings.
+- `Local control`: SQLite workspace, Codex model/reasoning selection, graph context and persona settings.
 
 ## Example Use Cases
 
@@ -118,7 +114,7 @@ Instead of manually arranging a huge roadmap, you let AI draft the graph. Then y
 | Path | Role |
 | --- | --- |
 | `frontend/` | React workspace UI, graph canvas, themes, settings, dialogs, debug surfaces |
-| `backend/` | FastAPI app, repository, domain model, provider layer, planner, MCP server, tests |
+| `backend/` | FastAPI app, repository, domain model, Codex runtime, native tools, existing MCP server, tests |
 | `contracts/` | JSON contracts and transport surfaces used by graph mutation flows |
 | `docs/` | Engineering docs, ADRs, release notes, and site FAQ source |
 | `scripts/` | Local development helpers such as boot, stop, and reset |

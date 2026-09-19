@@ -31,10 +31,11 @@ const PRIVATE_TEXT_KEYS = new Set([
   "reply_message",
 ]);
 const PRIVATE_PATH_PATTERNS = [
+  /\/api\/v1\/codex(?:\/.*)?$/,
   /\/api\/v1\/workspace\/config$/,
   /\/api\/v1\/graphs\/[^/]+\/assistant$/,
   /\/api\/v1\/graphs\/[^/]+\/apply$/,
-  /\/api\/v1\/graphs\/[^/]+\/chat(?:\/stream)?$/,
+  /\/api\/v1\/graphs\/[^/]+\/chat(?:\/.*)?$/,
   /\/api\/v1\/graphs\/[^/]+\/normalize$/,
 ];
 

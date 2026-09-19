@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { ChatMessage } from "./types";
+import type { AgentStatus, ChatMessage, ReasoningEffort, WorkspaceConfig } from "./types";
 
 export const ASSISTANT_WIDTH_STORAGE_KEY = "knowledge_graph_assistant_width_v1";
 export const ASSISTANT_MAX_WIDTH = 620;
@@ -11,34 +11,7 @@ export const APP_TAGLINE = "AI-native workspace for structured learning";
 export const APP_FAVICON_LIGHT_SRC = "/clew-favicon-light-accent.png";
 export const APP_FAVICON_DARK_SRC = "/clew-favicon-dark.png";
 
-export type ThinkingMode = "low" | "default" | "custom";
 export type MemoryMode = "balanced" | "max" | "custom";
-
-export const THINKING_MODE_OPTIONS: Array<{
-  id: ThinkingMode;
-  label: string;
-  title: string;
-  description: string;
-}> = [
-  {
-    id: "low",
-    label: "Low",
-    title: "Restrained generation",
-    description: "Conservative scope. Planner 90k, thinking 2k, orchestrator 8k, quiz 3k, assistant 700.",
-  },
-  {
-    id: "default",
-    label: "Default",
-    title: "Balanced generation",
-    description: "Recommended balance. Planner 200k, thinking 12k, orchestrator 16k, quiz 4k, assistant 800.",
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    title: "Manual token budgets",
-    description: "Lets you set provider-facing generation budgets yourself instead of using a preset.",
-  },
-];
 
 export const MEMORY_MODE_OPTIONS: Array<{
   id: MemoryMode;
@@ -50,25 +23,30 @@ export const MEMORY_MODE_OPTIONS: Array<{
     id: "balanced",
     label: "Balanced",
     title: "Recommended",
-    description: "32 recent messages. Keeps graph, progress, quiz, frontier, and selected-topic context.",
+    description: "Graph, progress, quizzes, frontier, and selected topic. Imports 32 messages when connecting an existing chat.",
   },
   {
     id: "max",
     label: "Max",
     title: "Wider recall",
-    description: "64 recent messages. Keeps all context blocks for harder study sessions.",
+    description: "All graph context. Imports 64 messages when connecting an existing chat.",
   },
   {
     id: "custom",
     label: "Custom",
     title: "Manual context mix",
-    description: "Lets you choose exactly which context blocks and how much recent history the agent sees.",
+    description: "Choose fresh graph context and how much existing chat history to import. Codex retains ongoing conversations.",
   },
 ];
 
 export type GraphChatState = {
   input: string;
   messages: ChatMessage[];
+  sessionId?: string;
+  runId?: string | null;
+  status?: AgentStatus;
+  error?: string | null;
+  lastEventId?: number;
 };
 
 export type WorkspaceSurfacePayload = {
@@ -104,48 +82,11 @@ export type AuthSessionPayload = {
 
 export type ThemeMode = "dark" | "light";
 
-export type WorkspaceConfigPatch = {
-  ai_provider?: string;
-  default_model?: string;
-  gemini_api_key?: string;
-  openai_api_key?: string;
-  openai_base_url?: string;
-  thinking_mode?: ThinkingMode;
-  memory_mode?: MemoryMode;
-  planner_max_output_tokens?: number;
-  planner_thinking_budget?: number;
-  orchestrator_max_output_tokens?: number;
-  quiz_max_output_tokens?: number;
-  assistant_max_output_tokens?: number;
-  assistant_nickname?: string;
-  disable_idle_animations?: boolean;
-  persona_rules?: string;
-  quiz_question_count?: number;
-  pass_threshold?: number;
-  enable_closure_tests?: boolean;
-  debug_mode_enabled?: boolean;
-  memory_history_message_limit?: number;
-  memory_include_graph_context?: boolean;
-  memory_include_progress_context?: boolean;
-  memory_include_quiz_context?: boolean;
-  memory_include_frontier_context?: boolean;
-  memory_include_selected_topic_context?: boolean;
-};
+export type WorkspaceConfigPatch = Partial<Omit<WorkspaceConfig, "agent_backend">>;
 
 export type SettingsDrafts = {
-  provider: string;
   model: string;
-  modelPreset: string;
-  geminiApiKey: string;
-  openaiApiKey: string;
-  openaiBaseUrl: string;
-  showOpenAIEndpoint: boolean;
-  thinkingMode: ThinkingMode;
-  plannerMaxTokens: number;
-  plannerThinkingBudget: number;
-  orchestratorMaxTokens: number;
-  quizMaxTokens: number;
-  assistantMaxTokens: number;
+  reasoningEffort: ReasoningEffort | "";
   assistantNickname: string;
   persona: string;
   disableIdleAnimations: boolean;
@@ -164,34 +105,4 @@ export type SettingsDrafts = {
   quizPassCount: number;
 };
 
-export type SettingsDraftSetters = {
-  provider: Dispatch<SetStateAction<string>>;
-  model: Dispatch<SetStateAction<string>>;
-  modelPreset: Dispatch<SetStateAction<string>>;
-  geminiApiKey: Dispatch<SetStateAction<string>>;
-  openaiApiKey: Dispatch<SetStateAction<string>>;
-  openaiBaseUrl: Dispatch<SetStateAction<string>>;
-  showOpenAIEndpoint: Dispatch<SetStateAction<boolean>>;
-  thinkingMode: Dispatch<SetStateAction<ThinkingMode>>;
-  plannerMaxTokens: Dispatch<SetStateAction<number>>;
-  plannerThinkingBudget: Dispatch<SetStateAction<number>>;
-  orchestratorMaxTokens: Dispatch<SetStateAction<number>>;
-  quizMaxTokens: Dispatch<SetStateAction<number>>;
-  assistantMaxTokens: Dispatch<SetStateAction<number>>;
-  assistantNickname: Dispatch<SetStateAction<string>>;
-  persona: Dispatch<SetStateAction<string>>;
-  disableIdleAnimations: Dispatch<SetStateAction<boolean>>;
-  memoryMode: Dispatch<SetStateAction<MemoryMode>>;
-  memoryHistoryLimit: Dispatch<SetStateAction<number>>;
-  memoryIncludeGraphContext: Dispatch<SetStateAction<boolean>>;
-  memoryIncludeProgressContext: Dispatch<SetStateAction<boolean>>;
-  memoryIncludeQuizContext: Dispatch<SetStateAction<boolean>>;
-  memoryIncludeFrontierContext: Dispatch<SetStateAction<boolean>>;
-  memoryIncludeSelectedTopicContext: Dispatch<SetStateAction<boolean>>;
-  enableClosureTests: Dispatch<SetStateAction<boolean>>;
-  debugModeEnabled: Dispatch<SetStateAction<boolean>>;
-  straightEdgeLines: Dispatch<SetStateAction<boolean>>;
-  themeMode: Dispatch<SetStateAction<ThemeMode>>;
-  quizQuestionCount: Dispatch<SetStateAction<number>>;
-  quizPassCount: Dispatch<SetStateAction<number>>;
-};
+export type SettingsDraftSetters = { [K in keyof SettingsDrafts]: Dispatch<SetStateAction<SettingsDrafts[K]>> };

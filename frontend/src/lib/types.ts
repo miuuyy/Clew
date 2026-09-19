@@ -130,29 +130,20 @@ export type CreateGraphRequest = {
   description: string;
 };
 
-export type StudyAssistantRequest = {
-  prompt: string;
-  selected_topic_id?: string | null;
-  model?: string | null;
-  use_grounding: boolean;
-};
-
-export type StudyAssistantResponse = {
-  message: string;
-  model: string;
-  fallback_used: boolean;
-};
-
 export type InlineChatQuiz = {
   question: string;
   choices: string[];
   correct_index: number;
   answered_index?: number | null;
+  interaction_id?: string | null;
+  status?: "pending" | "answered" | "interrupted";
 };
 
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
+  reply_id?: string | null;
+  message_phase?: "commentary" | "final_answer" | null;
   content: string;
   hidden?: boolean;
   created_at: string;
@@ -164,9 +155,28 @@ export type ChatMessage = {
   proposal_applied?: boolean;
   proposal?: ProposalGenerateResponse | null;
   inline_quiz?: InlineChatQuiz | null;
+  question?: AgentQuestion | null;
+  closure_quiz?: TopicQuizSession | null;
+  activity?: { id: string; tool: string; status: "running" | "completed" | "failed"; detail: string } | null;
+  agent_status?: "streaming" | "completed" | "interrupted" | "failed" | null;
 };
 
+export type AgentQuestion = {
+  interaction_id: string;
+  question: string;
+  choices: string[];
+  answer?: string | null;
+  status: "pending" | "answered" | "interrupted";
+};
+export type AgentStatus = "idle" | "starting" | "running" | "waiting" | "completed" | "interrupted" | "failed";
+
 export type GraphChatThread = {
+  run_id: string | null;
+  codex_thread_id: string | null;
+  active_turn_id: string | null;
+  agent_status: AgentStatus;
+  agent_error: string | null;
+  last_event_id: number;
   session_id: string;
   graph_id: string;
   topic_id?: string | null;
@@ -186,38 +196,12 @@ export type ChatSessionSummary = {
   message_count: number;
 };
 
-export type GraphChatRequest = {
-  prompt: string;
-  messages: Array<{
-    role: "user" | "assistant";
-    content: string;
-    hidden?: boolean;
-    created_at: string;
-  }>;
-  hidden_user_message?: boolean;
-  selected_topic_id?: string | null;
-  session_id?: string | null;
-  model?: string | null;
-  use_grounding: boolean;
-};
-
-export type GraphChatResponse = {
-  session_id: string;
-  graph_id: string;
-  message: string;
-  model: string;
-  fallback_used: boolean;
-  action: "answer" | "propose_ingest" | "propose_expand";
-  proposal?: ProposalGenerateResponse | null;
-  messages: ChatMessage[];
-};
-
-export type GraphChatStreamEvent =
-  | { type: "assistant_message"; message?: ChatMessage; messages?: ChatMessage[] }
-  | { type: "planning_status"; message_id: string; label: string }
-  | { type: "proposal_ready"; message_id: string; message?: ChatMessage; messages?: ChatMessage[] }
-  | { type: "planning_error"; message_id: string; detail: string }
-  | { type: "error"; detail: string };
+export type GraphChatStreamEvent = ({ event_id?: number; session_id?: string; run_id?: string } & (
+  | { type: "thread_state"; thread: GraphChatThread }
+  | { type: "message"; message: ChatMessage }
+  | { type: "turn_status" | "turn_completed"; status: AgentStatus; error?: string | null; turn_id?: string | null }
+  | { type: "heartbeat" }
+));
 
 export type GraphAssessment = {
   graph_id: string;
@@ -300,6 +284,7 @@ export type GraphProposalEnvelope = {
   workspace_id: string;
   graph_id: string;
   proposal_id: string;
+  base_graph_version?: number | null;
   mode: ProposalMode;
   intent: {
     user_prompt: string;
@@ -336,6 +321,7 @@ export type ApplyPlanEnvelope = {
   protocol_version: string;
   kind: "apply_plan";
   proposal_id: string;
+  base_graph_version?: number | null;
   graph_id: string;
   validation: {
     ok: boolean;
@@ -374,22 +360,41 @@ export type ProposalGenerateResponse = {
   };
 };
 
-export type ProposalStreamEvent =
-  | { type: "status"; stage: string; model: string }
-  | { type: "delta"; text: string }
-  | { type: "result"; result: ProposalGenerateResponse }
-  | { type: "error"; detail: string };
+export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
+export type CodexModel = {
+  id: string;
+  model: string;
+  displayName: string;
+  description: string;
+  isDefault: boolean;
+  defaultReasoningEffort: ReasoningEffort;
+  supportedReasoningEfforts: Array<{ reasoningEffort: ReasoningEffort; description: string }>;
+};
+export type CodexLogin = {
+  type: "chatgpt" | "chatgptDeviceCode";
+  loginId: string;
+  authUrl?: string;
+  verificationUrl?: string;
+  userCode?: string;
+};
+export type CodexAccount = {
+  connected: boolean;
+  authenticated: boolean;
+  account: { type: string; email?: string; planType?: string } | null;
+  version: string;
+  login: CodexLogin | null;
+  error: string | null;
+  models: CodexModel[];
+};
 
 export type WorkspaceConfig = {
-  ai_provider: string;
-  default_model: string;
-  model_options: string[];
-  provider_options: string[];
+  agent_backend: "codex";
+  default_model: string | null;
+  reasoning_effort: ReasoningEffort | null;
   ui_language: string;
   canonical_graph_language: string;
-  use_google_search_grounding: boolean;
+  web_search_enabled: boolean;
   disable_idle_animations: boolean;
-  thinking_mode: "low" | "default" | "custom";
   memory_mode: "balanced" | "max" | "custom";
   assistant_nickname: string;
   persona_rules: string;
@@ -405,17 +410,6 @@ export type WorkspaceConfig = {
   memory_include_selected_topic_context: boolean;
   allow_explore_without_closure: boolean;
   require_prerequisite_closure_for_completion: boolean;
-  planner_max_output_tokens: number;
-  planner_thinking_budget: number;
-  orchestrator_max_output_tokens: number;
-  quiz_max_output_tokens: number;
-  assistant_max_output_tokens: number;
-  gemini_api_key: string | null;
-  openai_api_key: string | null;
-  openai_base_url: string;
-  gemini_api_key_source?: "env" | "workspace" | "unset";
-  openai_api_key_source?: "env" | "workspace" | "unset";
-  openai_base_url_source?: "env" | "workspace";
 };
 
 export type DebugLogEntry = {

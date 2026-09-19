@@ -2235,3 +2235,28 @@ select.input {
 .topicAssetTopicTitle {
   line-height: 1.2;
 }
+
+.codexAccountRow, .codexChatConnect { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.codexChatConnect { padding: 8px 2px; font-size: 12px; flex-wrap: wrap; }
+.codexDeviceCode { font-family: monospace; font-size: 1.25em; letter-spacing: .08em; user-select: all; }
+.agentQuestionForm { display: grid; gap: 8px; margin-top: 10px; }
+.agentQuestionForm .btn { justify-self: end; }
+.assistantMarkdown { white-space: normal; overflow-wrap: anywhere; line-height: 1.65; }
+.assistantMarkdown > :first-child { margin-top: 0; }
+.assistantMarkdown > :last-child { margin-bottom: 0; }
+.assistantMarkdown p, .assistantMarkdown ul, .assistantMarkdown ol, .assistantMarkdown blockquote { margin: .65em 0; }
+.assistantMarkdown ul, .assistantMarkdown ol { padding-left: 1.5em; }
+.assistantMarkdown li > p { margin: .25em 0; }
+.assistantMarkdown pre { overflow-x: auto; white-space: pre; padding: 12px; border-radius: 8px; background: rgba(127,127,127,.12); font-size: .9em; }
+.assistantMarkdown code { font-family: ui-monospace, SFMono-Regular, monospace; }
+.assistantMarkdown :not(pre) > code { background: rgba(127,127,127,.12); padding: .1em .3em; border-radius: 4px; }
+.assistantMarkdown a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.assistantMarkdown table { display: block; overflow-x: auto; border-collapse: collapse; max-width: 100%; }
+.assistantMarkdown th, .assistantMarkdown td { border: 1px solid rgba(127,127,127,.25); padding: 6px 9px; }
+.assistantMarkdown blockquote { border-left: 2px solid rgba(127,127,127,.4); padding-left: 12px; }
+.assistantMarkdown img { max-width: 100%; height: auto; border-radius: 6px; }
+.assistantMarkdown .katex-display { overflow-x: auto; overflow-y: hidden; }
+.proposalReviewDetails { margin-top: 10px; font-size: 12px; }
+.proposalReviewDetails > summary { cursor: pointer; opacity: .8; padding: 5px 0; }
+.proposalReviewItem { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid rgba(127,127,127,.18); }
+.proposalReviewItem a { color: inherit; text-decoration: underline; }

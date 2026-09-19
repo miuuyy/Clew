@@ -2,10 +2,6 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.core.config import Settings
-from app.llm import LLMProviderError, build_llm_provider
-from app.llm.prompt_templates import quiz_system_instruction
-from app.llm.contracts import QUIZ_DRAFT_SHAPE_NAME
-from app.llm.schemas import QuizQuestionSetDraft
 from app.models.domain import (
     QuizAttempt,
     QuizQuestion,
@@ -17,12 +13,6 @@ from app.models.domain import (
 )
 
 
-class QuizGenerationError(RuntimeError):
-    def __init__(self, message: str, *, diagnostics: dict | None = None):
-        super().__init__(message)
-        self.diagnostics = diagnostics or {}
-
-
 def is_prerequisite_relation(relation: str) -> bool:
     return relation == "requires"
 
@@ -30,7 +20,6 @@ def is_prerequisite_relation(relation: str) -> bool:
 class QuizService:
     def __init__(self, settings: Settings):
         self._settings = settings
-        self._provider = build_llm_provider(settings)
 
     def build_closure_status(self, graph: StudyGraph, topic_id: str) -> TopicClosureStatus:
         topic_map = {topic.id: topic for topic in graph.topics}
@@ -73,7 +62,7 @@ class QuizService:
             latest_attempt=latest_attempt,
         )
 
-    def start_session(self, graph: StudyGraph, topic_id: str, question_count: int, model: str | None = None) -> TopicQuizSession:
+    def start_session(self, graph: StudyGraph, topic_id: str, question_count: int, *, questions: list[QuizQuestion], generator: str) -> TopicQuizSession:
         topic_map = {topic.id: topic for topic in graph.topics}
         topic = topic_map.get(topic_id)
         if topic is None:
@@ -86,7 +75,7 @@ class QuizService:
             blocked_titles = [topic_map[item_id].title for item_id in closure.blocked_prerequisite_ids if item_id in topic_map]
             detail = ", ".join(blocked_titles[:6]) or "open prerequisites"
             raise ValueError(f"close prerequisite topics first: {detail}")
-        questions, generator = self._generate_questions(graph, topic, closure, question_count, model=model)
+        questions = self._validate_ai_questions(questions, question_count)
         return TopicQuizSession(
             session_id=f"quiz_{uuid4().hex[:12]}",
             graph_id=graph.graph_id,
@@ -141,155 +130,23 @@ class QuizService:
         )
         return attempt, closure, awarded_state, reviews
 
-    def _generate_questions(
-        self,
-        graph: StudyGraph,
-        topic: Topic,
-        closure: TopicClosureStatus,
-        question_count: int,
-        *,
-        model: str | None,
-    ) -> tuple[list[QuizQuestion], str]:
-        if self._provider is None:
-            raise ValueError("closure quiz generation is unavailable: missing AI provider")
-        questions = self._build_questions_with_ai(graph, topic, closure, question_count, model=model)
-        return questions, model or self._settings.default_model
-
-    def _build_questions_with_ai(
-        self,
-        graph: StudyGraph,
-        topic: Topic,
-        closure: TopicClosureStatus,
-        question_count: int,
-        *,
-        model: str | None,
-    ) -> list[QuizQuestion]:
-        if self._provider is None:
-            raise QuizGenerationError("closure quiz generation is unavailable: missing AI provider")
-        topic_map = {item.id: item for item in graph.topics}
-        parent_ids = [
-            edge.source_topic_id
-            for edge in graph.edges
-            if edge.target_topic_id == topic.id and is_prerequisite_relation(edge.relation)
-        ]
-        child_ids = [edge.target_topic_id for edge in graph.edges if edge.source_topic_id == topic.id]
-        zone_titles = [zone.title for zone in graph.zones if zone.id in topic.zones]
-        prompt = {
-            "task": "Generate a closure quiz for one study-graph topic.",
-            "requirements": {
-                "language": self._language_name(graph.language),
-                "question_count": question_count,
-                "shape": QUIZ_DRAFT_SHAPE_NAME,
-                "rules": [
-                    "Each question must have exactly 4 unique choices.",
-                    "Use only one correct choice.",
-                    "Prefer conceptual, structural, and dependency-aware questions.",
-                    "Avoid trivial identity questions unless the graph context is too sparse.",
-                    "Use the current roadmap state and prerequisite structure.",
-                    "Explanations must be concise and useful for review.",
-                ],
-            },
-            "topic": {
-                "id": topic.id,
-                "title": topic.title,
-                "description": topic.description,
-                "level": topic.level,
-                "estimated_minutes": topic.estimated_minutes,
-                "zones": zone_titles,
-            },
-            "closure": {
-                "blocked_prerequisite_titles": [topic_map[item_id].title for item_id in closure.blocked_prerequisite_ids],
-                "direct_prerequisite_titles": [topic_map[item_id].title for item_id in parent_ids],
-                "direct_unlock_titles": [topic_map[item_id].title for item_id in child_ids],
-            },
-            "graph_context": {
-                "topic_titles": [item.title for item in graph.topics],
-                "zone_titles": [zone.title for zone in graph.zones],
-            },
-        }
-        try:
-            response = self._provider.generate_structured(
-                model=model or self._settings.default_model,
-                prompt=str(prompt),
-                system_instruction=quiz_system_instruction(language_name=self._language_name(graph.language)),
-                schema=QuizQuestionSetDraft,
-                schema_name="quiz_question_set_draft",
-                max_output_tokens=int(self._settings.quiz_max_output_tokens),
-                temperature=0.3,
-                use_grounding=False,
-            )
-            question_set = response.parsed
-            questions = self._validate_ai_questions(
-                [
-                    QuizQuestion(
-                        id=f"quiz_{uuid4().hex[:8]}",
-                        prompt=item.prompt,
-                        choices=list(item.choices),
-                        correct_choice_index=item.correct_choice_index,
-                        explanation=item.explanation,
-                    )
-                    for item in question_set.questions
-                ],
-                question_count,
-            )
-            if not questions:
-                raise QuizGenerationError(
-                    "closure quiz generation failed: provider returned no valid questions",
-                    diagnostics={
-                        "graph_id": graph.graph_id,
-                        "topic_id": topic.id,
-                        "model": model or self._settings.default_model,
-                        "requested_question_count": question_count,
-                        "returned_question_count": len(question_set.questions),
-                    },
-                )
-            return questions
-        except LLMProviderError as exc:
-            diagnostics = dict(getattr(exc, "diagnostics", {}) or {})
-            diagnostics.setdefault("graph_id", graph.graph_id)
-            diagnostics.setdefault("topic_id", topic.id)
-            diagnostics.setdefault("model", model or self._settings.default_model)
-            diagnostics.setdefault("requested_question_count", question_count)
-            raise QuizGenerationError(
-                f"closure quiz generation failed: {exc}",
-                diagnostics=diagnostics,
-            ) from exc
-        except QuizGenerationError:
-            raise
-        except Exception as exc:
-            raise QuizGenerationError(
-                "closure quiz generation failed: unexpected provider error",
-                diagnostics={
-                    "graph_id": graph.graph_id,
-                    "topic_id": topic.id,
-                    "model": model or self._settings.default_model,
-                    "requested_question_count": question_count,
-                    "error_type": exc.__class__.__name__,
-                    "error_message": str(exc),
-                },
-            ) from exc
-
-    def _language_name(self, language: str) -> str:
-        return {"en": "English", "uk": "Ukrainian", "ru": "Russian"}.get(language, "English")
-
     def _validate_ai_questions(self, questions: list[QuizQuestion], question_count: int) -> list[QuizQuestion]:
-        valid: list[QuizQuestion] = []
-        seen_prompts: set[str] = set()
+        if len(questions) != question_count:
+            raise ValueError(f"Expected exactly {question_count} quiz questions; received {len(questions)}.")
+        prompts: set[str] = set()
+        ids: set[str] = set()
         for question in questions:
-            prompt_key = question.prompt.strip().lower()
-            if prompt_key in seen_prompts:
-                continue
-            if len(question.choices) != 4:
-                continue
-            if len(set(question.choices)) != 4:
-                continue
-            if question.correct_choice_index < 0 or question.correct_choice_index >= len(question.choices):
-                continue
-            seen_prompts.add(prompt_key)
-            valid.append(question)
-            if len(valid) >= question_count:
-                break
-        return valid
+            prompt = question.prompt.strip().casefold()
+            if not prompt or prompt in prompts or question.id in ids:
+                raise ValueError("Quiz questions require distinct nonempty prompts and ids.")
+            choices = [choice.strip().casefold() for choice in question.choices]
+            if len(choices) != 4 or len(set(choices)) != 4 or not all(choices):
+                raise ValueError("Every quiz question requires four distinct nonempty choices.")
+            if not 0 <= question.correct_choice_index < 4:
+                raise ValueError("Quiz correct_choice_index is out of range.")
+            prompts.add(prompt)
+            ids.add(question.id)
+        return questions
 
 
 def topic_pass_threshold(graph: StudyGraph, topic_id: str) -> float:

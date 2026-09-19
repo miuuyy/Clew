@@ -1,3 +1,4 @@
+import { useCodexAccount } from "./hooks/useCodexAccount";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { AppDialogs } from "./components/AppDialogs";
@@ -30,7 +31,6 @@ import {
   type PopoverPosition,
 } from "./lib/appUiHelpers";
 import { canPlaceFloatingRect, toFloatingRect, type FloatingRect } from "./lib/floatingDesktopLayout";
-import { markChatProposalApplied } from "./lib/chatRequests";
 import {
   buildFallbackAssessment,
   computeClosureStatus,
@@ -437,70 +437,13 @@ export default function App(): React.JSX.Element {
     setStraightEdgeLinesEnabled,
     initialThemeMode,
   });
-  const {
-    provider: providerDraft,
-    model: modelDraft,
-    modelPreset: modelPresetDraft,
-    geminiApiKey: geminiApiKeyDraft,
-    openaiApiKey: openaiApiKeyDraft,
-    openaiBaseUrl: openaiBaseUrlDraft,
-    showOpenAIEndpoint: showOpenAIEndpointDraft,
-    thinkingMode: thinkingModeDraft,
-    plannerMaxTokens: plannerMaxTokensDraft,
-    plannerThinkingBudget: plannerThinkingBudgetDraft,
-    orchestratorMaxTokens: orchestratorMaxTokensDraft,
-    quizMaxTokens: quizMaxTokensDraft,
-    assistantMaxTokens: assistantMaxTokensDraft,
-    assistantNickname: assistantNicknameDraft,
-    persona: personaDraft,
-    disableIdleAnimations: disableIdleAnimationsDraft,
-    memoryMode: memoryModeDraft,
-    memoryHistoryLimit: memoryHistoryLimitDraft,
-    memoryIncludeGraphContext: memoryIncludeGraphContextDraft,
-    memoryIncludeProgressContext: memoryIncludeProgressContextDraft,
-    memoryIncludeQuizContext: memoryIncludeQuizContextDraft,
-    memoryIncludeFrontierContext: memoryIncludeFrontierContextDraft,
-    memoryIncludeSelectedTopicContext: memoryIncludeSelectedTopicContextDraft,
-    enableClosureTests: enableClosureTestsDraft,
-    debugModeEnabled: debugModeEnabledDraft,
-    straightEdgeLines: straightEdgeLinesDraft,
-    quizQuestionCount: quizQuestionCountDraft,
-    quizPassCount: quizPassCountDraft,
-  } = settingsState.drafts;
-  const {
-    provider: setProviderDraft,
-    model: setModelDraft,
-    modelPreset: setModelPresetDraft,
-    geminiApiKey: setGeminiApiKeyDraft,
-    openaiApiKey: setOpenaiApiKeyDraft,
-    openaiBaseUrl: setOpenaiBaseUrlDraft,
-    showOpenAIEndpoint: setShowOpenAIEndpointDraft,
-    thinkingMode: setThinkingModeDraft,
-    plannerMaxTokens: setPlannerMaxTokensDraft,
-    plannerThinkingBudget: setPlannerThinkingBudgetDraft,
-    orchestratorMaxTokens: setOrchestratorMaxTokensDraft,
-    quizMaxTokens: setQuizMaxTokensDraft,
-    assistantMaxTokens: setAssistantMaxTokensDraft,
-    assistantNickname: setAssistantNicknameDraft,
-    persona: setPersonaDraft,
-    disableIdleAnimations: setDisableIdleAnimationsDraft,
-    memoryMode: setMemoryModeDraft,
-    memoryHistoryLimit: setMemoryHistoryLimitDraft,
-    memoryIncludeGraphContext: setMemoryIncludeGraphContextDraft,
-    memoryIncludeProgressContext: setMemoryIncludeProgressContextDraft,
-    memoryIncludeQuizContext: setMemoryIncludeQuizContextDraft,
-    memoryIncludeFrontierContext: setMemoryIncludeFrontierContextDraft,
-    memoryIncludeSelectedTopicContext: setMemoryIncludeSelectedTopicContextDraft,
-    enableClosureTests: setEnableClosureTestsDraft,
-    debugModeEnabled: setDebugModeEnabledDraft,
-    straightEdgeLines: setStraightEdgeLinesDraft,
-    quizQuestionCount: setQuizQuestionCountDraft,
-    quizPassCount: setQuizPassCountDraft,
-  } = settingsState.setDrafts;
+  const { disableIdleAnimations: disableIdleAnimationsDraft } = settingsState.drafts;
+  const codex = useCodexAccount();
 
   const { chatModelOptions, selectedChatModel, setSelectedChatModel } = useChatModelSelection(
     currentConfig,
     activeGraph?.graph_id ?? null,
+    codex.account?.models ?? [],
   );
   const {
     activeSessionId,
@@ -515,21 +458,20 @@ export default function App(): React.JSX.Element {
     clearChatStateForGraph,
     loadSessions,
     sendChat,
+    answerInteraction, stopChat, reconnectChat,
   } = useGraphChatController({
     activeGraph,
     selectedTopicId,
     selectedChatModel,
     defaultModel: currentConfig?.default_model ?? null,
-    memoryHistoryMessageLimit: currentConfig?.memory_history_message_limit ?? 50,
     composerUseGrounding,
-    largeGraphModelHint: copy.sessions.largeGraphModelHint,
     loadChatError: copy.errors.loadChat,
     loadChatSessionsError: copy.errors.loadChatSessions,
   });
 
   useEffect(() => {
     if (!isSettingsOpen) return;
-    setStraightEdgeLinesDraft(straightEdgeLinesEnabled);
+    settingsState.setDrafts.straightEdgeLines(straightEdgeLinesEnabled);
   }, [isSettingsOpen, straightEdgeLinesEnabled]);
 
   useEffect(() => {
@@ -554,9 +496,6 @@ export default function App(): React.JSX.Element {
     }
   }, [isMobileViewport, isSettingsOpen]);
 
-  useEffect(() => {
-    setQuizPassCountDraft((current) => Math.min(current, quizQuestionCountDraft));
-  }, [quizQuestionCountDraft]);
 
   const focusData = useMemo(() => computeFocusData(activeGraph, selectedTopicId), [activeGraph, selectedTopicId]);
   const graphSummary = useMemo(() => computeGraphSummary(activeGraph), [activeGraph]);
@@ -577,7 +516,6 @@ export default function App(): React.JSX.Element {
   );
   const sessionUser = sessionInfo?.user ?? null;
   const onboardingNeedsFirstGraph = !activeGraph && workspaceSurface?.onboarding_state === "needs_first_graph";
-  const { geminiKeyLockedByEnv, openaiKeyLockedByEnv, openaiBaseUrlLockedByEnv } = settingsState.locks;
   const liveDisableIdleAnimations =
     isSettingsOpen
       ? disableIdleAnimationsDraft
@@ -590,9 +528,7 @@ export default function App(): React.JSX.Element {
       setLogsOpen(false);
     }
   }, [debugModeEnabled]);
-  const activeThinkingOption = settingsState.activeThinkingOption;
   const activeMemoryOption = settingsState.activeMemoryOption;
-  const activeThinkingValues = settingsState.activeThinkingValues;
   const activeMemoryValues = settingsState.activeMemoryValues;
   const settingsDirty = settingsState.settingsDirty;
   const showGraphLoadingState = loading && !activeGraph;
@@ -1021,21 +957,9 @@ export default function App(): React.JSX.Element {
       }
       // Snapshot refresh should not block the main graph transition.
       void loadSnapshots();
-      try {
-        const sessionParam = activeSessionId ? `?session_id=${encodeURIComponent(activeSessionId)}` : "";
-        const thread = await markChatProposalApplied(
-          apiFetch,
-          `${API_BASE}/api/v1/graphs/${activeGraph.graph_id}/chat/messages/${messageId}/applied${sessionParam}`,
-          copy.errors.syncAppliedProposal,
-        );
-        updateCurrentChatState((current) => ({
-          ...current,
-          messages: thread.messages,
-        }));
-        setApplyError(null);
-      } catch (syncError) {
-        setApplyError(syncError instanceof Error ? syncError.message : copy.errors.syncAppliedProposal);
-      }
+      updateCurrentChatState((current) => ({ ...current,
+        messages: current.messages.map((message) => message.id === messageId ? { ...message, proposal_applied: true } : message),
+      }));
     } catch (applyLoadError) {
       setApplyError(applyLoadError instanceof Error ? applyLoadError.message : copy.errors.applyProposal);
     } finally {
@@ -1412,6 +1336,11 @@ export default function App(): React.JSX.Element {
           markTopicFinished,
         }}
         assistant={{
+          agentControls: {
+            answer: answerInteraction, stop: stopChat, reconnect: reconnectChat,
+            authenticated: !!codex.account?.authenticated, connect: () => setSettingsOpen(true),
+            openQuiz: (session) => { setSelectedTopicId(session.topic_id); setQuizSession(session); setQuizAnswers({}); setQuizReviews(null); setQuizError(null); },
+          },
           assistantResizing,
           handleAssistantResize,
           chatSessions,
@@ -1450,74 +1379,9 @@ export default function App(): React.JSX.Element {
         copy={copy}
         setSettingsOpen={setSettingsOpen}
         currentConfig={currentConfig}
-        drafts={{
-          provider: providerDraft,
-          model: modelDraft,
-          modelPreset: modelPresetDraft,
-          geminiApiKey: geminiApiKeyDraft,
-          openaiApiKey: openaiApiKeyDraft,
-          openaiBaseUrl: openaiBaseUrlDraft,
-          showOpenAIEndpoint: showOpenAIEndpointDraft,
-          thinkingMode: thinkingModeDraft,
-          plannerMaxTokens: plannerMaxTokensDraft,
-          plannerThinkingBudget: plannerThinkingBudgetDraft,
-          orchestratorMaxTokens: orchestratorMaxTokensDraft,
-          quizMaxTokens: quizMaxTokensDraft,
-          assistantMaxTokens: assistantMaxTokensDraft,
-          assistantNickname: assistantNicknameDraft,
-          persona: personaDraft,
-          disableIdleAnimations: disableIdleAnimationsDraft,
-          memoryMode: memoryModeDraft,
-          memoryHistoryLimit: memoryHistoryLimitDraft,
-          memoryIncludeGraphContext: memoryIncludeGraphContextDraft,
-          memoryIncludeProgressContext: memoryIncludeProgressContextDraft,
-          memoryIncludeQuizContext: memoryIncludeQuizContextDraft,
-          memoryIncludeFrontierContext: memoryIncludeFrontierContextDraft,
-          memoryIncludeSelectedTopicContext: memoryIncludeSelectedTopicContextDraft,
-          enableClosureTests: enableClosureTestsDraft,
-          debugModeEnabled: debugModeEnabledDraft,
-          straightEdgeLines: straightEdgeLinesDraft,
-          themeMode: themeModeDraft,
-          quizQuestionCount: quizQuestionCountDraft,
-          quizPassCount: quizPassCountDraft,
-        }}
-        setDrafts={{
-          provider: setProviderDraft,
-          model: setModelDraft,
-          modelPreset: setModelPresetDraft,
-          geminiApiKey: setGeminiApiKeyDraft,
-          openaiApiKey: setOpenaiApiKeyDraft,
-          openaiBaseUrl: setOpenaiBaseUrlDraft,
-          showOpenAIEndpoint: setShowOpenAIEndpointDraft,
-          thinkingMode: setThinkingModeDraft,
-          plannerMaxTokens: setPlannerMaxTokensDraft,
-          plannerThinkingBudget: setPlannerThinkingBudgetDraft,
-          orchestratorMaxTokens: setOrchestratorMaxTokensDraft,
-          quizMaxTokens: setQuizMaxTokensDraft,
-          assistantMaxTokens: setAssistantMaxTokensDraft,
-          assistantNickname: setAssistantNicknameDraft,
-          persona: setPersonaDraft,
-          disableIdleAnimations: setDisableIdleAnimationsDraft,
-          memoryMode: setMemoryModeDraft,
-          memoryHistoryLimit: setMemoryHistoryLimitDraft,
-          memoryIncludeGraphContext: setMemoryIncludeGraphContextDraft,
-          memoryIncludeProgressContext: setMemoryIncludeProgressContextDraft,
-          memoryIncludeQuizContext: setMemoryIncludeQuizContextDraft,
-          memoryIncludeFrontierContext: setMemoryIncludeFrontierContextDraft,
-          memoryIncludeSelectedTopicContext: setMemoryIncludeSelectedTopicContextDraft,
-          enableClosureTests: setEnableClosureTestsDraft,
-          debugModeEnabled: setDebugModeEnabledDraft,
-          straightEdgeLines: setStraightEdgeLinesDraft,
-          themeMode: setThemeModeDraft,
-          quizQuestionCount: setQuizQuestionCountDraft,
-          quizPassCount: setQuizPassCountDraft,
-        }}
-        geminiKeyLockedByEnv={geminiKeyLockedByEnv}
-        openaiKeyLockedByEnv={openaiKeyLockedByEnv}
-        providerOptions={currentConfig?.provider_options ?? ["gemini", "openai"]}
-        openaiBaseUrlLockedByEnv={openaiBaseUrlLockedByEnv}
-        activeThinkingOption={activeThinkingOption}
-        activeThinkingValues={activeThinkingValues}
+        drafts={{ ...settingsState.drafts, themeMode: themeModeDraft }}
+        setDrafts={{ ...settingsState.setDrafts, themeMode: setThemeModeDraft }}
+        codex={codex}
         activeMemoryOption={activeMemoryOption}
         activeMemoryValues={activeMemoryValues}
         activeGraph={activeGraph}

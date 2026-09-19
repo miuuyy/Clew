@@ -5,14 +5,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.llm.catalog import provider_default_model, provider_model_options, supported_provider_ids
-from app.llm.contracts import OrchestratorAction
 
 
 TopicState = Literal["not_started", "learning", "shaky", "solid", "mastered", "needs_review"]
 EdgeRelation = Literal["requires", "supports", "bridges", "extends", "reviews"]
 GraphLanguage = Literal["en", "uk", "ru"]
-ThinkingMode = Literal["low", "default", "custom"]
+ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
+ChatAction = Literal["answer", "propose_ingest", "propose_expand"]
 MemoryMode = Literal["balanced", "max", "custom"]
 OperationType = Literal[
     "upsert_topic",
@@ -48,30 +47,6 @@ class QuizPolicy(BaseModel):
     pass_threshold: float = 0.75
 
 
-THINKING_MODE_TOKEN_PRESETS: dict[ThinkingMode, dict[str, int]] = {
-    "low": {
-        "planner_max_output_tokens": 90000,
-        "planner_thinking_budget": 2048,
-        "orchestrator_max_output_tokens": 8192,
-        "quiz_max_output_tokens": 3072,
-        "assistant_max_output_tokens": 700,
-    },
-    "default": {
-        "planner_max_output_tokens": 200000,
-        "planner_thinking_budget": 12288,
-        "orchestrator_max_output_tokens": 16384,
-        "quiz_max_output_tokens": 4096,
-        "assistant_max_output_tokens": 800,
-    },
-    "custom": {
-        "planner_max_output_tokens": 200000,
-        "planner_thinking_budget": 12288,
-        "orchestrator_max_output_tokens": 16384,
-        "quiz_max_output_tokens": 4096,
-        "assistant_max_output_tokens": 800,
-    },
-}
-
 MEMORY_MODE_PRESETS: dict[MemoryMode, dict[str, int | bool]] = {
     "balanced": {
         "memory_history_message_limit": 32,
@@ -99,14 +74,6 @@ MEMORY_MODE_PRESETS: dict[MemoryMode, dict[str, int | bool]] = {
     },
 }
 
-LEGACY_MAX_THINKING_PRESET: dict[str, int] = {
-    "planner_max_output_tokens": 360000,
-    "planner_thinking_budget": 32768,
-    "orchestrator_max_output_tokens": 24576,
-    "quiz_max_output_tokens": 6144,
-    "assistant_max_output_tokens": 1200,
-}
-
 LEGACY_COMPACT_MEMORY_PRESET: dict[str, int | bool] = {
     "memory_history_message_limit": 12,
     "memory_include_graph_context": False,
@@ -115,24 +82,6 @@ LEGACY_COMPACT_MEMORY_PRESET: dict[str, int | bool] = {
     "memory_include_frontier_context": True,
     "memory_include_selected_topic_context": True,
 }
-
-
-def thinking_mode_prompt_guidance(mode: ThinkingMode) -> str:
-    if mode == "low":
-        return (
-            "Thinking mode: Low. Be conservative with graph growth. "
-            "If the current graph already covers the request well enough, prefer leaving it unchanged. "
-            "If expansion is necessary, add only a small set of essential topics."
-        )
-    if mode == "custom":
-        return (
-            "Thinking mode: Custom. Use the manually assigned token budgets and thinking budget "
-            "from workspace configuration instead of a preset."
-        )
-    return (
-        "Thinking mode: Default. Expand with balanced scope. "
-        "Add enough topics to make the path usable and coherent without overbuilding the graph."
-    )
 
 
 class QuizAttempt(BaseModel):
@@ -283,52 +232,41 @@ class StudyGraph(BaseModel):
 class WorkspaceConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
-    def migrate_legacy_modes(cls, data: Any) -> Any:
+    def migrate_agent_settings(cls, data: Any) -> Any:
         if not isinstance(data, dict):
             return data
-        normalized = dict(data)
-        if normalized.get("thinking_mode") == "max":
-            normalized["thinking_mode"] = "custom"
-            for field_name, value in LEGACY_MAX_THINKING_PRESET.items():
-                normalized.setdefault(field_name, value)
-        if normalized.get("memory_mode") == "compact":
-            normalized["memory_mode"] = "custom"
-            for field_name, value in LEGACY_COMPACT_MEMORY_PRESET.items():
-                normalized.setdefault(field_name, value)
-        return normalized
+        data = dict(data)
+        # A one-time data migration, never a runtime provider/model fallback.
+        if data.get("ai_provider") in {"gemini", "openai"}:
+            data["default_model"] = None
+        if data.get("memory_mode") == "compact":
+            data["memory_mode"] = "custom"
+            for key, value in LEGACY_COMPACT_MEMORY_PRESET.items():
+                data.setdefault(key, value)
+        return data
 
-    ai_provider: str = "gemini"
-    default_model: str = provider_default_model("gemini")
-    model_options: list[str] = Field(default_factory=lambda: provider_model_options("gemini"))
-    provider_options: list[str] = Field(default_factory=supported_provider_ids)
+    agent_backend: Literal["codex"] = "codex"
+    default_model: str | None = None
+    reasoning_effort: ReasoningEffort | None = None
     ui_language: str = "en"
     canonical_graph_language: str = "en"
-    use_google_search_grounding: bool = True
+    web_search_enabled: bool = True
     disable_idle_animations: bool = False
-    thinking_mode: ThinkingMode = "default"
     memory_mode: MemoryMode = "balanced"
     assistant_nickname: str = ""
     persona_rules: str = ""
-    quiz_question_count: int = 12
-    pass_threshold: float = 0.75
+    quiz_question_count: int = Field(default=12, ge=6, le=12)
+    pass_threshold: float = Field(default=0.75, gt=0, le=1)
     enable_closure_tests: bool = True
     debug_mode_enabled: bool = False
-    memory_history_message_limit: int = int(MEMORY_MODE_PRESETS["balanced"]["memory_history_message_limit"])
-    memory_include_graph_context: bool = bool(MEMORY_MODE_PRESETS["balanced"]["memory_include_graph_context"])
-    memory_include_progress_context: bool = bool(MEMORY_MODE_PRESETS["balanced"]["memory_include_progress_context"])
-    memory_include_quiz_context: bool = bool(MEMORY_MODE_PRESETS["balanced"]["memory_include_quiz_context"])
-    memory_include_frontier_context: bool = bool(MEMORY_MODE_PRESETS["balanced"]["memory_include_frontier_context"])
-    memory_include_selected_topic_context: bool = bool(MEMORY_MODE_PRESETS["balanced"]["memory_include_selected_topic_context"])
+    memory_history_message_limit: int = Field(default=32, ge=4, le=120)
+    memory_include_graph_context: bool = True
+    memory_include_progress_context: bool = True
+    memory_include_quiz_context: bool = True
+    memory_include_frontier_context: bool = True
+    memory_include_selected_topic_context: bool = True
     allow_explore_without_closure: bool = True
     require_prerequisite_closure_for_completion: bool = True
-    planner_max_output_tokens: int = THINKING_MODE_TOKEN_PRESETS["default"]["planner_max_output_tokens"]
-    orchestrator_max_output_tokens: int = THINKING_MODE_TOKEN_PRESETS["default"]["orchestrator_max_output_tokens"]
-    quiz_max_output_tokens: int = THINKING_MODE_TOKEN_PRESETS["default"]["quiz_max_output_tokens"]
-    assistant_max_output_tokens: int = THINKING_MODE_TOKEN_PRESETS["default"]["assistant_max_output_tokens"]
-    gemini_api_key: str | None = None
-    openai_api_key: str | None = None
-    openai_base_url: str = "https://api.openai.com/v1"
-    planner_thinking_budget: int = THINKING_MODE_TOKEN_PRESETS["default"]["planner_thinking_budget"]
 
 
 class WorkspaceDocument(BaseModel):
@@ -358,45 +296,28 @@ class CreateGraphRequest(BaseModel):
 
 
 class UpdateWorkspaceConfigRequest(BaseModel):
-    ai_provider: str | None = None
+    model_config = {"extra": "forbid"}
     default_model: str | None = None
-    use_google_search_grounding: bool | None = None
+    reasoning_effort: ReasoningEffort | None = None
+    web_search_enabled: bool | None = None
     disable_idle_animations: bool | None = None
-    thinking_mode: ThinkingMode | None = None
     memory_mode: MemoryMode | None = None
     assistant_nickname: str | None = None
     persona_rules: str | None = None
-    quiz_question_count: int | None = None
-    pass_threshold: float | None = None
+    quiz_question_count: int | None = Field(default=None, ge=6, le=12)
+    pass_threshold: float | None = Field(default=None, gt=0, le=1)
     enable_closure_tests: bool | None = None
     debug_mode_enabled: bool | None = None
-    memory_history_message_limit: int | None = None
+    memory_history_message_limit: int | None = Field(default=None, ge=4, le=120)
     memory_include_graph_context: bool | None = None
     memory_include_progress_context: bool | None = None
     memory_include_quiz_context: bool | None = None
     memory_include_frontier_context: bool | None = None
     memory_include_selected_topic_context: bool | None = None
-    planner_max_output_tokens: int | None = None
-    orchestrator_max_output_tokens: int | None = None
-    quiz_max_output_tokens: int | None = None
-    assistant_max_output_tokens: int | None = None
-    gemini_api_key: str | None = None
-    openai_api_key: str | None = None
-    openai_base_url: str | None = None
-    planner_thinking_budget: int | None = None
 
 
-class StudyAssistantRequest(BaseModel):
-    prompt: str = Field(min_length=1, max_length=8000)
-    selected_topic_id: str | None = None
-    model: str | None = None
-    use_grounding: bool = True
 
 
-class StudyAssistantResponse(BaseModel):
-    message: str
-    model: str
-    fallback_used: bool = False
 
 
 ChatRole = Literal["user", "assistant"]
@@ -407,22 +328,45 @@ class InlineChatQuiz(BaseModel):
     choices: list[str]  # exactly 4
     correct_index: int  # 0-3
     answered_index: int | None = None
+    interaction_id: str | None = None
+    status: Literal["pending", "answered", "interrupted"] = "pending"
+
+
+class AgentQuestion(BaseModel):
+    interaction_id: str
+    question: str
+    choices: list[str] = Field(default_factory=list)
+    answer: str | None = None
+    status: Literal["pending", "answered", "interrupted"] = "pending"
+
+
+class AgentActivity(BaseModel):
+    id: str
+    tool: str
+    status: Literal["running", "completed", "failed"]
+    detail: str = ""
 
 
 class ChatMessage(BaseModel):
     id: str | None = None
     role: ChatRole
+    reply_id: str | None = None
+    message_phase: Literal["commentary", "final_answer"] | None = None
     content: str
     hidden: bool = False
     created_at: datetime = Field(default_factory=utc_now)
     model: str | None = None
     fallback_used: bool = False
-    action: OrchestratorAction | None = None
+    action: ChatAction | None = None
     planning_status: str | None = None
     planning_error: str | None = None
     proposal_applied: bool = False
     proposal: "ProposalGenerateResponse | None" = None
     inline_quiz: InlineChatQuiz | None = None
+    question: AgentQuestion | None = None
+    closure_quiz: TopicQuizSessionPublic | None = None
+    activity: AgentActivity | None = None
+    agent_status: Literal["streaming", "completed", "interrupted", "failed"] | None = None
 
 
 class GraphChatThread(BaseModel):
@@ -433,6 +377,10 @@ class GraphChatThread(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     messages: list[ChatMessage] = Field(default_factory=list)
+    codex_thread_id: str | None = None
+    run_id: str | None = None
+    active_turn_id: str | None = None
+    agent_status: str = "idle"
 
 
 class ChatSessionSummary(BaseModel):
@@ -446,24 +394,16 @@ class ChatSessionSummary(BaseModel):
 
 
 class GraphChatRequest(BaseModel):
-    prompt: str = Field(min_length=1, max_length=8000)
-    messages: list[ChatMessage] = Field(default_factory=list)
+    model_config = {"extra": "forbid", "str_strip_whitespace": True}
+    prompt: str = Field(min_length=1, max_length=200000)
     hidden_user_message: bool = False
+    client_message_id: str | None = None
     selected_topic_id: str | None = None
     session_id: str | None = None
     model: str | None = None
     use_grounding: bool = True
 
 
-class GraphChatResponse(BaseModel):
-    session_id: str
-    graph_id: str
-    message: str
-    model: str
-    fallback_used: bool = False
-    action: OrchestratorAction = "answer"
-    proposal: "ProposalGenerateResponse | None" = None
-    messages: list[ChatMessage] = Field(default_factory=list)
 
 
 class GraphAssessmentCard(BaseModel):
@@ -498,15 +438,6 @@ ProposalStatus = Literal["proposed", "reviewed", "rejected", "applied"]
 EntityKind = Literal["topic", "edge", "zone", "mastery"]
 
 
-class ProposalGenerateRequest(BaseModel):
-    mode: ProposalMode = "ingest_topics"
-    raw_text: str = Field(default="", max_length=120000)
-    target_goal: str = Field(default="", max_length=4000)
-    instructions: str = Field(default="", max_length=8000)
-    selected_topic_id: str | None = None
-    source_items: list[SourceTopicSeed] = Field(default_factory=list)
-    use_grounding: bool = True
-    model: str | None = None
 
 
 class ProposalTopic(BaseModel):
@@ -596,6 +527,8 @@ class PatchOperation(BaseModel):
 
 
 class GraphProposal(BaseModel):
+    proposal_id: str = ""
+    base_graph_version: int | None = None
     graph_id: str
     user_prompt: str
     summary: str
@@ -611,6 +544,7 @@ class GraphProposalEnvelope(BaseModel):
     workspace_id: str = "default"
     graph_id: str
     proposal_id: str = ""
+    base_graph_version: int | None = None
     mode: ProposalMode
     intent: ProposalIntent = Field(default_factory=ProposalIntent)
     source_bundle: ProposalSourceBundle = Field(default_factory=ProposalSourceBundle)

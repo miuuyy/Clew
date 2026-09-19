@@ -1,367 +1,152 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { API_BASE } from "../lib/api";
 import { activeChatSessionStorageKey, readStoredActiveChatSession } from "../lib/appStatePersistence";
-import { apiFetch, makeMessageId } from "../lib/appUiHelpers";
-import { fetchChatSessions, reconcileThreadMessages } from "../lib/chatRequests";
-import { recentMessagesForContext } from "../lib/graph";
+import { apiFetch, makeMessageId, readErrorMessage } from "../lib/appUiHelpers";
+import { fetchChatSessions } from "../lib/chatRequests";
+import { activeAgentStatus, consumeAgentEvents, reduceAgentEvent, stateFromThread, upsertChatMessage } from "../lib/agentEvents";
 import type { GraphChatState } from "../lib/appContracts";
-import type {
-  ChatMessage,
-  ChatSessionSummary,
-  GraphChatStreamEvent,
-  GraphChatThread,
-  GraphEnvelope,
-} from "../lib/types";
+import type { ChatMessage, ChatSessionSummary, GraphChatThread, GraphEnvelope } from "../lib/types";
 
-type GraphChatControllerParams = {
-  activeGraph: GraphEnvelope | null;
-  selectedTopicId: string | null;
-  selectedChatModel: string | null;
-  defaultModel: string | null;
-  memoryHistoryMessageLimit: number;
-  composerUseGrounding: boolean;
-  largeGraphModelHint: string;
-  loadChatError: string;
-  loadChatSessionsError: string;
+type Params = {
+  activeGraph: GraphEnvelope | null; selectedTopicId: string | null; selectedChatModel: string | null;
+  defaultModel: string | null; composerUseGrounding: boolean; loadChatError: string; loadChatSessionsError: string;
 };
+const empty = (): GraphChatState => ({ input: "", messages: [] });
 
-function chatStateKey(graphId: string, sessionId: string | null): string {
-  return `${graphId}:${sessionId ?? "general"}`;
-}
-
-function isChatMessage(value: unknown): value is ChatMessage {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<ChatMessage>;
-  return (
-    typeof candidate.id === "string" &&
-    (candidate.role === "user" || candidate.role === "assistant") &&
-    typeof candidate.content === "string" &&
-    typeof candidate.created_at === "string"
-  );
-}
-
-export function assistantMessageFromStreamEvent(
-  event: Extract<GraphChatStreamEvent, { type: "assistant_message" }>,
-): ChatMessage | null {
-  if (isChatMessage(event.message)) return event.message;
-  const lastMessage = event.messages && event.messages.length > 0 ? event.messages[event.messages.length - 1] : null;
-  return isChatMessage(lastMessage) ? lastMessage : null;
-}
-
-export function useGraphChatController({
-  activeGraph,
-  selectedTopicId,
-  selectedChatModel,
-  defaultModel,
-  memoryHistoryMessageLimit,
-  composerUseGrounding,
-  largeGraphModelHint,
-  loadChatError,
-  loadChatSessionsError,
-}: GraphChatControllerParams): {
-  activeSessionId: string | null;
-  setActiveSessionId: Dispatch<SetStateAction<string | null>>;
-  chatSessions: ChatSessionSummary[];
-  currentChatState: GraphChatState;
-  chatLoading: boolean;
-  chatThreadLoading: boolean;
-  chatError: string | null;
-  chatSessionsError: string | null;
-  updateCurrentChatState: (updater: (current: GraphChatState) => GraphChatState) => void;
-  clearChatStateForGraph: (graphId: string | null | undefined) => void;
-  loadSessions: () => Promise<void>;
-  sendChat: (overridePrompt?: string, options?: { hiddenUserMessage?: boolean; baseMessages?: ChatMessage[] }) => Promise<void>;
-} {
-  const [chatByGraph, setChatByGraph] = useState<Record<string, GraphChatState>>({});
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatThreadLoading, setChatThreadLoading] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
-  const [chatSessionsError, setChatSessionsError] = useState<string | null>(null);
-  const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const activeGraphId = activeGraph?.graph_id ?? null;
-
-  const currentChatState = useMemo<GraphChatState>(() => {
-    if (!activeGraphId) return { input: "", messages: [] };
-    return chatByGraph[chatStateKey(activeGraphId, activeSessionId)] ?? { input: "", messages: [] };
-  }, [activeGraphId, activeSessionId, chatByGraph]);
-
-  const updateCurrentChatState = useCallback(
-    (updater: (current: GraphChatState) => GraphChatState): void => {
-      if (!activeGraphId) return;
-      const stateKey = chatStateKey(activeGraphId, activeSessionId);
-      setChatByGraph((current) => {
-        const graphState = current[stateKey] ?? { input: "", messages: [] };
-        return {
-          ...current,
-          [stateKey]: updater(graphState),
-        };
-      });
-    },
-    [activeGraphId, activeSessionId],
-  );
-
-  const clearChatStateForGraph = useCallback((graphId: string | null | undefined): void => {
-    if (!graphId) return;
-    setChatByGraph((current) => {
-      const next = { ...current };
-      for (const key of Object.keys(next)) {
-        if (key.startsWith(`${graphId}:`)) delete next[key];
-      }
-      return next;
+export function useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel, defaultModel,
+  composerUseGrounding, loadChatError, loadChatSessionsError }: Params) {
+  const graphId = activeGraph?.graph_id ?? "";
+  const [selectedSessions, setSelectedSessions] = useState<Record<string, string | null>>({});
+  const activeSessionId = Object.prototype.hasOwnProperty.call(selectedSessions, graphId) ? selectedSessions[graphId] : readStoredActiveChatSession(graphId);
+  const setActiveSessionId: Dispatch<SetStateAction<string | null>> = useCallback((value) => {
+    setSelectedSessions((current) => {
+      const previous = Object.prototype.hasOwnProperty.call(current, graphId) ? current[graphId] : readStoredActiveChatSession(graphId);
+      const next = typeof value === "function" ? value(previous) : value;
+      try {
+        if (next) localStorage.setItem(activeChatSessionStorageKey(graphId), next);
+        else localStorage.removeItem(activeChatSessionStorageKey(graphId));
+      } catch { /* Storage is optional; server conversations remain authoritative. */ }
+      return { ...current, [graphId]: next };
     });
+  }, [graphId]);
+  const key = `${graphId}:${activeSessionId ?? "general"}`;
+  const [states, setStates] = useState<Record<string, GraphChatState>>({});
+  const statesRef = useRef(states);
+  const update = useCallback((target: string, updater: (state: GraphChatState) => GraphChatState) => {
+    const next = { ...statesRef.current, [target]: updater(statesRef.current[target] ?? empty()) };
+    statesRef.current = next;
+    setStates(next);
   }, []);
-
-  const loadSessions = useCallback(async (): Promise<void> => {
-    if (!activeGraphId) return;
-    setChatSessionsError(null);
+  const updateCurrentChatState = useCallback((updater: (state: GraphChatState) => GraphChatState) => update(key, updater), [key, update]);
+  const currentChatState = states[key] ?? empty();
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Record<string, ChatSessionSummary[]>>({});
+  const [sessionErrors, setSessionErrors] = useState<Record<string, string | null>>({});
+  const [revision, setRevision] = useState(0);
+  const streams = useRef(new Map<string, AbortController>());
+  const busy = useRef(new Set<string>());
+  const loadSessions = useCallback(async () => {
+    if (!graphId) return;
     try {
-      const sessions = await fetchChatSessions(
-        apiFetch,
-        `${API_BASE}/api/v1/graphs/${activeGraphId}/chat/sessions`,
-        loadChatSessionsError,
-      );
-      setChatSessions(sessions);
-    } catch (loadError) {
-      setChatSessionsError(loadError instanceof Error ? loadError.message : loadChatSessionsError);
-    }
-  }, [activeGraphId, loadChatSessionsError]);
+      const result = await fetchChatSessions(apiFetch, `${API_BASE}/api/v1/graphs/${graphId}/chat/sessions`, loadChatSessionsError);
+      setSessions((current) => ({ ...current, [graphId]: result }));
+      setSessionErrors((current) => ({ ...current, [graphId]: null }));
+    } catch (cause) { setSessionErrors((current) => ({ ...current, [graphId]: cause instanceof Error ? cause.message : loadChatSessionsError })); }
+  }, [graphId, loadChatSessionsError]);
+  useEffect(() => { void loadSessions(); }, [loadSessions]);
 
-  const formatPlanningError = useCallback(
-    (detail: string): string => {
-      const normalized = detail.trim();
-      if (!normalized) return normalized;
-      const isProposalFailure = normalized.toLowerCase().includes("proposal generation failed");
-      if (!isProposalFailure || normalized.includes(largeGraphModelHint)) return normalized;
-      return `${normalized}\n${largeGraphModelHint}`;
-    },
-    [largeGraphModelHint],
-  );
+  const readStream = useCallback(async (response: Response, target: string) => {
+    if (!response.ok) throw new Error(await readErrorMessage(response, loadChatError));
+    await consumeAgentEvents(response, (event) => update(target, (current) => reduceAgentEvent(current, event)));
+    if (activeAgentStatus(statesRef.current[target]?.status)) {
+      throw new Error("The chat connection closed. Reconnect to continue following Codex.");
+    }
+  }, [loadChatError, update]);
 
   useEffect(() => {
-    if (!activeGraphId) return;
+    if (!graphId) return;
+    const controller = new AbortController();
+    streams.current.set(key, controller);
+    setLoadingKey(key);
+    void (async () => {
+      try {
+        const query = activeSessionId ? `?session_id=${encodeURIComponent(activeSessionId)}` : "";
+        const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat${query}`, { signal: controller.signal });
+        if (!response.ok) throw new Error(await readErrorMessage(response, loadChatError));
+        const thread = await response.json() as GraphChatThread;
+        if (controller.signal.aborted) return;
+        update(key, (current) => stateFromThread(current, thread));
+        setLoadingKey((current) => current === key ? null : current);
+        if (activeAgentStatus(thread.agent_status)) {
+          const events = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/events?session_id=${encodeURIComponent(thread.session_id)}&after=${thread.last_event_id}`, { signal: controller.signal });
+          await readStream(events, key);
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : loadChatError }));
+      } finally {
+        if (!controller.signal.aborted) setLoadingKey((current) => current === key ? null : current);
+      }
+    })();
+    return () => { streams.current.get(key)?.abort(); streams.current.delete(key); controller.abort(); };
+  }, [graphId, activeSessionId, key, loadChatError, readStream, revision, update]);
+
+  const sendChat = useCallback(async (overridePrompt?: string, options?: { hiddenUserMessage?: boolean; baseMessages?: ChatMessage[] }) => {
+    const state = statesRef.current[key] ?? empty();
+    const prompt = (overridePrompt ?? state.input).trim();
+    if (!graphId || !prompt || busy.current.has(key) || activeAgentStatus(state.status)) return;
+    busy.current.add(key);
+    const user: ChatMessage = { id: makeMessageId(), role: "user", content: prompt, hidden: options?.hiddenUserMessage ?? false, created_at: new Date().toISOString() };
+    update(key, (current) => ({ ...current, input: "", runId: null, status: "starting", error: null, messages: [...current.messages, user] }));
+    streams.current.get(key)?.abort();
+    const controller = new AbortController();
+    streams.current.set(key, controller);
+    let rejected = false;
     try {
-      if (activeSessionId) {
-        localStorage.setItem(activeChatSessionStorageKey(activeGraphId), activeSessionId);
-      } else {
-        localStorage.removeItem(activeChatSessionStorageKey(activeGraphId));
-      }
-    } catch {
-      // Ignore localStorage write failures.
-    }
-  }, [activeGraphId, activeSessionId]);
+      const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/stream`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
+        body: JSON.stringify({ prompt, client_message_id: user.id, hidden_user_message: user.hidden,
+          selected_topic_id: activeSessionId ? sessions[graphId]?.find((session) => session.session_id === activeSessionId)?.topic_id ?? selectedTopicId : selectedTopicId,
+          session_id: state.sessionId ?? activeSessionId, model: selectedChatModel ?? defaultModel, use_grounding: composerUseGrounding }),
+      });
+      rejected = !response.ok;
+      await readStream(response, key);
+    } catch (cause) {
+      if (!controller.signal.aborted) update(key, (current) => ({ ...current,
+        status: rejected ? "failed" : current.status,
+        error: cause instanceof Error ? cause.message : loadChatError,
+        ...(rejected ? { input: prompt, messages: current.messages.filter((message) => message.id !== user.id) } : {}),
+      }));
+    } finally { busy.current.delete(key); void loadSessions(); }
+  }, [graphId, key, activeSessionId, selectedTopicId, selectedChatModel, defaultModel, composerUseGrounding, sessions, loadChatError, loadSessions, readStream, update]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadChatThread(graphId: string): Promise<void> {
-      setChatThreadLoading(true);
-      setChatError(null);
-      try {
-        const sessionParam = activeSessionId ? `?session_id=${activeSessionId}` : "";
-        const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat${sessionParam}`);
-        if (!response.ok) {
-          if (response.status === 404 && activeSessionId) {
-            setActiveSessionId(null);
-            return;
-          }
-          throw new Error(`chat thread failed with ${response.status}`);
-        }
-        const payload = (await response.json()) as GraphChatThread;
-        if (cancelled) return;
-        setChatByGraph((current) => {
-          const stateKey = chatStateKey(graphId, activeSessionId);
-          const existing = current[stateKey] ?? { input: "", messages: [] };
-          return {
-            ...current,
-            [stateKey]: {
-              input: existing.input,
-              messages: reconcileThreadMessages(payload.messages, existing.messages),
-            },
-          };
-        });
-      } catch (loadError) {
-        if (cancelled) return;
-        setChatError(loadError instanceof Error ? loadError.message : loadChatError);
-      } finally {
-        if (!cancelled) setChatThreadLoading(false);
-      }
-    }
-
-    if (!activeGraphId) return;
-    void loadChatThread(activeGraphId);
-    return () => {
-      cancelled = true;
-    };
-  }, [activeGraphId, activeSessionId, loadChatError]);
-
-  useEffect(() => {
-    setChatSessions([]);
-    setChatSessionsError(null);
-    if (!activeGraphId) {
-      setActiveSessionId(null);
-      return;
-    }
-    setActiveSessionId(readStoredActiveChatSession(activeGraphId));
-    void loadSessions();
-  }, [activeGraphId, loadSessions]);
-
-  const sendChat = useCallback(
-    async (overridePrompt?: string, options?: { hiddenUserMessage?: boolean; baseMessages?: ChatMessage[] }): Promise<void> => {
-      if (!activeGraphId) return;
-      const prompt = (overridePrompt ?? currentChatState.input).trim();
-      if (!prompt) return;
-      const hiddenUserMessage = options?.hiddenUserMessage ?? false;
-      const baseMessages = options?.baseMessages ?? currentChatState.messages;
-
-      const userMessage: ChatMessage = {
-        id: makeMessageId(),
-        role: "user",
-        content: prompt,
-        hidden: hiddenUserMessage,
-        created_at: new Date().toISOString(),
-      };
-      const nextMessages = [...baseMessages, userMessage];
-      updateCurrentChatState(() => ({ input: "", messages: nextMessages }));
-      setChatLoading(true);
-      setChatError(null);
-
-      try {
-        const response = await apiFetch(`${API_BASE}/api/v1/graphs/${activeGraphId}/chat/stream`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            messages: recentMessagesForContext(nextMessages, memoryHistoryMessageLimit).map((message) => ({
-              role: message.role,
-              content: message.content,
-              hidden: message.hidden ?? false,
-              created_at: message.created_at,
-            })),
-            hidden_user_message: hiddenUserMessage,
-            selected_topic_id: activeSessionId
-              ? chatSessions.find((session) => session.session_id === activeSessionId)?.topic_id ?? selectedTopicId
-              : selectedTopicId,
-            session_id: activeSessionId,
-            model: selectedChatModel ?? defaultModel,
-            use_grounding: composerUseGrounding,
-          }),
-        });
-        if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-          throw new Error(payload?.detail ?? `chat failed with ${response.status}`);
-        }
-        if (!response.body) throw new Error("chat stream unavailable");
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            const event = JSON.parse(trimmed) as GraphChatStreamEvent;
-            if (event.type === "assistant_message") {
-              const assistantMessage = assistantMessageFromStreamEvent(event);
-              if (!assistantMessage) {
-                throw new Error("chat stream assistant_message missing message");
-              }
-              updateCurrentChatState((current) => ({
-                ...current,
-                messages: [...current.messages, assistantMessage],
-              }));
-              if (assistantMessage.action === "answer") {
-                setChatLoading(false);
-              }
-              continue;
-            }
-            if (event.type === "planning_status") {
-              updateCurrentChatState((current) => ({
-                ...current,
-                messages: current.messages.map((message) =>
-                  message.id === event.message_id
-                    ? { ...message, planning_status: event.label, planning_error: null }
-                    : message,
-                ),
-              }));
-              continue;
-            }
-            if (event.type === "proposal_ready") {
-              setChatLoading(false);
-              updateCurrentChatState((current) => ({
-                ...current,
-                messages: current.messages.map((message) =>
-                  message.id === event.message_id
-                    ? { ...(event.message ?? message), planning_status: null, planning_error: null }
-                    : message,
-                ),
-              }));
-              continue;
-            }
-            if (event.type === "planning_error") {
-              setChatLoading(false);
-              updateCurrentChatState((current) => ({
-                ...current,
-                messages: current.messages.map((message) =>
-                  message.id === event.message_id
-                    ? { ...message, planning_status: null, planning_error: formatPlanningError(event.detail) }
-                    : message,
-                ),
-              }));
-              continue;
-            }
-            if (event.type === "error") {
-              throw new Error(event.detail);
-            }
-          }
-        }
-      } catch (chatLoadError) {
-        setChatError(chatLoadError instanceof Error ? chatLoadError.message : "chat failed");
-        updateCurrentChatState((current) => ({
-          ...current,
-          input: prompt,
-          messages: current.messages.filter((message) => message.id !== userMessage.id),
-        }));
-      } finally {
-        setChatLoading(false);
-        void loadSessions();
-      }
-    },
-    [
-      activeGraphId,
-      activeSessionId,
-      chatSessions,
-      composerUseGrounding,
-      currentChatState.input,
-      currentChatState.messages,
-      defaultModel,
-      formatPlanningError,
-      loadSessions,
-      memoryHistoryMessageLimit,
-      selectedChatModel,
-      selectedTopicId,
-      updateCurrentChatState,
-    ],
-  );
-
-  return {
-    activeSessionId,
-    setActiveSessionId,
-    chatSessions,
-    currentChatState,
-    chatLoading,
-    chatThreadLoading,
-    chatError,
-    chatSessionsError,
-    updateCurrentChatState,
-    clearChatStateForGraph,
-    loadSessions,
-    sendChat,
+  const answerInteraction = async (interactionId: string, answer?: string, choiceIndex?: number) => {
+    const sessionId = statesRef.current[key]?.sessionId;
+    if (!sessionId) throw new Error("Conversation is still loading.");
+    const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/answer`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, interaction_id: interactionId, answer, choice_index: choiceIndex }) });
+    if (!response.ok) throw new Error(await readErrorMessage(response, "Could not send your answer."));
+    const result = await response.json() as { message: ChatMessage };
+    update(key, (current) => ({ ...current, messages: upsertChatMessage(current.messages, result.message) }));
   };
+  const stopChat = async () => {
+    const sessionId = statesRef.current[key]?.sessionId;
+    if (!sessionId) return;
+    try {
+      const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/interrupt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
+      if (!response.ok) throw new Error(await readErrorMessage(response, "Could not stop Codex."));
+      const thread = await response.json() as GraphChatThread;
+      update(key, (current) => stateFromThread(current, thread));
+    } catch (cause) { update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : "Could not stop Codex." })); }
+  };
+  const clearChatStateForGraph = (target: string | null | undefined) => {
+    if (!target) return;
+    const next = Object.fromEntries(Object.entries(statesRef.current).filter(([entry]) => !entry.startsWith(`${target}:`)));
+    statesRef.current = next;
+    setStates(next);
+  };
+  return { activeSessionId, setActiveSessionId, chatSessions: sessions[graphId] ?? [], currentChatState,
+    chatLoading: activeAgentStatus(currentChatState.status), chatThreadLoading: loadingKey === key,
+    chatError: currentChatState.error ?? null, chatSessionsError: sessionErrors[graphId] ?? null,
+    updateCurrentChatState, clearChatStateForGraph, loadSessions, sendChat, answerInteraction, stopChat,
+    reconnectChat: () => setRevision((current) => current + 1) };
 }

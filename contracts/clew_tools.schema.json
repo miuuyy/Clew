@@ -1,0 +1,859 @@
+[
+  {
+    "type": "namespace",
+    "name": "clew",
+    "description": "The learning workspace: graph proposals and interactive study tools.",
+    "tools": [
+      {
+        "type": "function",
+        "name": "propose_ingest",
+        "description": "Submit graph operations that preserve the supplied source material. Clew validates and presents them for user review; this does not apply changes. Omitted descriptive metadata is preserved on existing topics. Read the current graph version first.",
+        "inputSchema": {
+          "$defs": {
+            "GraphOperationDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "op_id": {
+                  "minLength": 1,
+                  "title": "Op Id",
+                  "type": "string"
+                },
+                "op": {
+                  "enum": [
+                    "upsert_topic",
+                    "upsert_edge",
+                    "upsert_zone"
+                  ],
+                  "title": "Op",
+                  "type": "string"
+                },
+                "entity_kind": {
+                  "enum": [
+                    "topic",
+                    "edge",
+                    "zone"
+                  ],
+                  "title": "Entity Kind",
+                  "type": "string"
+                },
+                "rationale": {
+                  "default": "",
+                  "title": "Rationale",
+                  "type": "string"
+                },
+                "topic": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalTopicDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "edge": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalEdgeDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "zone": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalZoneDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "op_id",
+                "op",
+                "entity_kind"
+              ],
+              "title": "GraphOperationDraft",
+              "type": "object"
+            },
+            "ProposalEdgeDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "source_topic_id": {
+                  "title": "Source Topic Id",
+                  "type": "string"
+                },
+                "target_topic_id": {
+                  "title": "Target Topic Id",
+                  "type": "string"
+                },
+                "relation": {
+                  "default": "requires",
+                  "enum": [
+                    "requires",
+                    "supports",
+                    "bridges",
+                    "extends",
+                    "reviews"
+                  ],
+                  "title": "Relation",
+                  "type": "string"
+                },
+                "rationale": {
+                  "default": "",
+                  "title": "Rationale",
+                  "type": "string"
+                },
+                "weight": {
+                  "default": 1.0,
+                  "title": "Weight",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "source_topic_id",
+                "target_topic_id"
+              ],
+              "title": "ProposalEdgeDraft",
+              "type": "object"
+            },
+            "ProposalOpenQuestion": {
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "kind": {
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "message": {
+                  "title": "Message",
+                  "type": "string"
+                },
+                "impact": {
+                  "default": "medium",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "title": "Impact",
+                  "type": "string"
+                },
+                "suggested_resolution": {
+                  "default": "",
+                  "title": "Suggested Resolution",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "message"
+              ],
+              "title": "ProposalOpenQuestion",
+              "type": "object"
+            },
+            "ProposalResourceDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Id"
+                },
+                "label": {
+                  "title": "Label",
+                  "type": "string"
+                },
+                "url": {
+                  "title": "Url",
+                  "type": "string"
+                },
+                "kind": {
+                  "default": "reference",
+                  "title": "Kind",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "title": "ProposalResourceDraft",
+              "type": "object"
+            },
+            "ProposalTopicDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "slug": {
+                  "title": "Slug",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "title": "Description",
+                  "type": "string"
+                },
+                "difficulty": {
+                  "default": 0.0,
+                  "title": "Difficulty",
+                  "type": "number"
+                },
+                "estimated_minutes": {
+                  "default": 0,
+                  "title": "Estimated Minutes",
+                  "type": "integer"
+                },
+                "level": {
+                  "default": 0,
+                  "title": "Level",
+                  "type": "integer"
+                },
+                "state": {
+                  "default": "not_started",
+                  "title": "State",
+                  "type": "string"
+                },
+                "zones": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Zones",
+                  "type": "array"
+                },
+                "resources": {
+                  "items": {
+                    "$ref": "#/$defs/ProposalResourceDraft"
+                  },
+                  "title": "Resources",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "slug"
+              ],
+              "title": "ProposalTopicDraft",
+              "type": "object"
+            },
+            "ProposalZoneDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "kind": {
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "topic_ids": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Topic Ids",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind"
+              ],
+              "title": "ProposalZoneDraft",
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "properties": {
+            "base_graph_version": {
+              "minimum": 1,
+              "title": "Base Graph Version",
+              "type": "integer"
+            },
+            "summary": {
+              "description": "A concise description of the proposed graph change for user review.",
+              "minLength": 1,
+              "title": "Summary",
+              "type": "string"
+            },
+            "assistant_message": {
+              "default": "",
+              "description": "A message explaining the proposal. Format with standard single unescaped newlines. DO NOT output literal double-escaped '\\n' strings.",
+              "title": "Assistant Message",
+              "type": "string"
+            },
+            "assumptions": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Assumptions",
+              "type": "array"
+            },
+            "warnings": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Warnings",
+              "type": "array"
+            },
+            "open_questions": {
+              "items": {
+                "$ref": "#/$defs/ProposalOpenQuestion"
+              },
+              "title": "Open Questions",
+              "type": "array"
+            },
+            "operations": {
+              "items": {
+                "$ref": "#/$defs/GraphOperationDraft"
+              },
+              "title": "Operations",
+              "type": "array"
+            }
+          },
+          "required": [
+            "base_graph_version",
+            "summary"
+          ],
+          "title": "ProposalDraft",
+          "type": "object"
+        }
+      },
+      {
+        "type": "function",
+        "name": "propose_expand",
+        "description": "Submit graph operations that extend the learning path toward the user's goal. Clew validates and presents them for user review; this does not apply changes. Omitted descriptive metadata is preserved on existing topics. Read the current graph version first.",
+        "inputSchema": {
+          "$defs": {
+            "GraphOperationDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "op_id": {
+                  "minLength": 1,
+                  "title": "Op Id",
+                  "type": "string"
+                },
+                "op": {
+                  "enum": [
+                    "upsert_topic",
+                    "upsert_edge",
+                    "upsert_zone"
+                  ],
+                  "title": "Op",
+                  "type": "string"
+                },
+                "entity_kind": {
+                  "enum": [
+                    "topic",
+                    "edge",
+                    "zone"
+                  ],
+                  "title": "Entity Kind",
+                  "type": "string"
+                },
+                "rationale": {
+                  "default": "",
+                  "title": "Rationale",
+                  "type": "string"
+                },
+                "topic": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalTopicDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "edge": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalEdgeDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "zone": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ProposalZoneDraft"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "op_id",
+                "op",
+                "entity_kind"
+              ],
+              "title": "GraphOperationDraft",
+              "type": "object"
+            },
+            "ProposalEdgeDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "source_topic_id": {
+                  "title": "Source Topic Id",
+                  "type": "string"
+                },
+                "target_topic_id": {
+                  "title": "Target Topic Id",
+                  "type": "string"
+                },
+                "relation": {
+                  "default": "requires",
+                  "enum": [
+                    "requires",
+                    "supports",
+                    "bridges",
+                    "extends",
+                    "reviews"
+                  ],
+                  "title": "Relation",
+                  "type": "string"
+                },
+                "rationale": {
+                  "default": "",
+                  "title": "Rationale",
+                  "type": "string"
+                },
+                "weight": {
+                  "default": 1.0,
+                  "title": "Weight",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "source_topic_id",
+                "target_topic_id"
+              ],
+              "title": "ProposalEdgeDraft",
+              "type": "object"
+            },
+            "ProposalOpenQuestion": {
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "kind": {
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "message": {
+                  "title": "Message",
+                  "type": "string"
+                },
+                "impact": {
+                  "default": "medium",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "title": "Impact",
+                  "type": "string"
+                },
+                "suggested_resolution": {
+                  "default": "",
+                  "title": "Suggested Resolution",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "message"
+              ],
+              "title": "ProposalOpenQuestion",
+              "type": "object"
+            },
+            "ProposalResourceDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Id"
+                },
+                "label": {
+                  "title": "Label",
+                  "type": "string"
+                },
+                "url": {
+                  "title": "Url",
+                  "type": "string"
+                },
+                "kind": {
+                  "default": "reference",
+                  "title": "Kind",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "title": "ProposalResourceDraft",
+              "type": "object"
+            },
+            "ProposalTopicDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "slug": {
+                  "title": "Slug",
+                  "type": "string"
+                },
+                "description": {
+                  "default": "",
+                  "title": "Description",
+                  "type": "string"
+                },
+                "difficulty": {
+                  "default": 0.0,
+                  "title": "Difficulty",
+                  "type": "number"
+                },
+                "estimated_minutes": {
+                  "default": 0,
+                  "title": "Estimated Minutes",
+                  "type": "integer"
+                },
+                "level": {
+                  "default": 0,
+                  "title": "Level",
+                  "type": "integer"
+                },
+                "state": {
+                  "default": "not_started",
+                  "title": "State",
+                  "type": "string"
+                },
+                "zones": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Zones",
+                  "type": "array"
+                },
+                "resources": {
+                  "items": {
+                    "$ref": "#/$defs/ProposalResourceDraft"
+                  },
+                  "title": "Resources",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "slug"
+              ],
+              "title": "ProposalTopicDraft",
+              "type": "object"
+            },
+            "ProposalZoneDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                },
+                "kind": {
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "topic_ids": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Topic Ids",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind"
+              ],
+              "title": "ProposalZoneDraft",
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "properties": {
+            "base_graph_version": {
+              "minimum": 1,
+              "title": "Base Graph Version",
+              "type": "integer"
+            },
+            "summary": {
+              "description": "A concise description of the proposed graph change for user review.",
+              "minLength": 1,
+              "title": "Summary",
+              "type": "string"
+            },
+            "assistant_message": {
+              "default": "",
+              "description": "A message explaining the proposal. Format with standard single unescaped newlines. DO NOT output literal double-escaped '\\n' strings.",
+              "title": "Assistant Message",
+              "type": "string"
+            },
+            "assumptions": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Assumptions",
+              "type": "array"
+            },
+            "warnings": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Warnings",
+              "type": "array"
+            },
+            "open_questions": {
+              "items": {
+                "$ref": "#/$defs/ProposalOpenQuestion"
+              },
+              "title": "Open Questions",
+              "type": "array"
+            },
+            "operations": {
+              "items": {
+                "$ref": "#/$defs/GraphOperationDraft"
+              },
+              "title": "Operations",
+              "type": "array"
+            }
+          },
+          "required": [
+            "base_graph_version",
+            "summary"
+          ],
+          "title": "ProposalDraft",
+          "type": "object"
+        }
+      },
+      {
+        "type": "function",
+        "name": "ask_question",
+        "description": "Ask the user a focused question, optionally with choices. Waits for their answer; free-text replies are always allowed.",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "question": {
+              "maxLength": 4000,
+              "minLength": 1,
+              "title": "Question",
+              "type": "string"
+            },
+            "choices": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 6,
+              "title": "Choices",
+              "type": "array"
+            }
+          },
+          "required": [
+            "question"
+          ],
+          "title": "QuestionDraft",
+          "type": "object"
+        }
+      },
+      {
+        "type": "function",
+        "name": "present_quiz",
+        "description": "Present one multiple-choice learning checkpoint with exactly four distinct choices. Waits for the user's answer and returns the graded result. Does not award topic completion.",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "question": {
+              "minLength": 1,
+              "title": "Question",
+              "type": "string"
+            },
+            "choices": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Choices",
+              "type": "array"
+            },
+            "correct_index": {
+              "title": "Correct Index",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "question",
+            "choices",
+            "correct_index"
+          ],
+          "title": "InlineQuizDraft",
+          "type": "object"
+        }
+      },
+      {
+        "type": "function",
+        "name": "create_closure_quiz",
+        "description": "Register a complete closure quiz for a topic. Supply the requested number of questions with four distinct choices each. Clew checks prerequisites and grades the learner's answers itself.",
+        "inputSchema": {
+          "$defs": {
+            "QuizQuestionDraft": {
+              "additionalProperties": false,
+              "properties": {
+                "prompt": {
+                  "minLength": 1,
+                  "title": "Prompt",
+                  "type": "string"
+                },
+                "choices": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Choices",
+                  "type": "array"
+                },
+                "correct_choice_index": {
+                  "title": "Correct Choice Index",
+                  "type": "integer"
+                },
+                "explanation": {
+                  "default": "",
+                  "title": "Explanation",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "prompt",
+                "choices",
+                "correct_choice_index"
+              ],
+              "title": "QuizQuestionDraft",
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "properties": {
+            "questions": {
+              "items": {
+                "$ref": "#/$defs/QuizQuestionDraft"
+              },
+              "title": "Questions",
+              "type": "array"
+            },
+            "topic_id": {
+              "title": "Topic Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "topic_id"
+          ],
+          "title": "ClosureQuizDraft",
+          "type": "object"
+        }
+      },
+      {
+        "type": "function",
+        "name": "read_graph",
+        "description": "Read the current graph, its version, topics, edges, zones and progress. Call again after a conflict; do not guess ids or graph revisions.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "type": "function",
+        "name": "read_topic",
+        "description": "Read the full content, resources, artifacts and prerequisites of a topic in this conversation's graph.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "topic_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
+  }
+]

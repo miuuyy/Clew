@@ -45,6 +45,8 @@ class ProposalNormalizer:
             self._accumulate_preview(preview, operation, existing_topic_ids, existing_edge_ids, existing_zone_ids)
 
         normalized_proposal = GraphProposal(
+            proposal_id=envelope.proposal_id,
+            base_graph_version=envelope.base_graph_version,
             graph_id=envelope.graph_id,
             user_prompt=envelope.intent.user_prompt,
             summary=envelope.summary,

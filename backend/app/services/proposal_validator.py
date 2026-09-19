@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from urllib.parse import urlparse
 
-from app.models.domain import ApplyValidation, GraphProposalEnvelope, ResourceLink, StudyGraph
+from app.models.domain import ApplyValidation, GraphProposalEnvelope, StudyGraph
 
 
 ALLOWED_PROPOSAL_OPERATIONS = {
@@ -19,7 +19,7 @@ class ProposalValidator:
         warnings: list[str] = list(envelope.warnings)
 
         if envelope.graph_id != graph.graph_id:
-            errors.append("provider returned proposal for the wrong graph")
+            errors.append("proposal references for the wrong graph")
 
         existing_topic_ids = {topic.id for topic in graph.topics}
         proposed_topic_ids = {
@@ -45,7 +45,10 @@ class ProposalValidator:
                 if operation.topic is None:
                     errors.append(f"{operation.op_id}: upsert_topic missing topic payload")
                     continue
-                operation.topic.resources = self._sanitize_resources(operation.topic.resources)
+                if operation.topic.id not in existing_topic_ids and operation.topic.state != "not_started":
+                    errors.append(f"{operation.op_id}: new topics must start as not_started; completion is awarded by the study workflow")
+                if any(not self._is_safe_resource_url(resource.url) or not resource.label for resource in operation.topic.resources):
+                    errors.append(f"{operation.op_id}: resources require a label and a valid HTTP(S) URL")
                 unknown_topic_zone_ids = [zone_id for zone_id in operation.topic.zones if zone_id not in known_zone_ids]
                 if unknown_topic_zone_ids:
                     errors.append(
@@ -82,16 +85,6 @@ class ProposalValidator:
             errors.append("proposal would create disconnected graph islands; link new topics through meaningful prerequisites")
 
         return ApplyValidation(ok=not errors, errors=errors, warnings=self._dedupe_preserving_order(warnings))
-
-    def _sanitize_resources(self, resources: list[ResourceLink]) -> list[ResourceLink]:
-        sanitized: list[ResourceLink] = []
-        for resource in resources:
-            if not resource.label:
-                continue
-            if not self._is_safe_resource_url(resource.url):
-                continue
-            sanitized.append(resource)
-        return sanitized
 
     def _is_safe_resource_url(self, value: str) -> bool:
         normalized = (value or "").strip()

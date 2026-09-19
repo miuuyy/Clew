@@ -162,6 +162,11 @@ def list_snapshot_records(conn: sqlite3.Connection, limit: int = 20) -> list[Sna
 
 
 def purge_graph_runtime_state(conn: sqlite3.Connection, graph_id: str) -> None:
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "agent_sessions" in tables:
+        conn.execute("DELETE FROM agent_tool_results WHERE thread_id IN (SELECT thread_id FROM agent_sessions WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?))", (graph_id,))
+        conn.execute("DELETE FROM agent_events WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
+        conn.execute("DELETE FROM agent_sessions WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
     conn.execute("DELETE FROM chat_messages WHERE graph_id = ?", (graph_id,))
     conn.execute("DELETE FROM chat_sessions WHERE graph_id = ?", (graph_id,))
     conn.execute("DELETE FROM quiz_sessions WHERE graph_id = ?", (graph_id,))
@@ -169,49 +174,12 @@ def purge_graph_runtime_state(conn: sqlite3.Connection, graph_id: str) -> None:
 
 def snapshot_workspace_document(workspace: WorkspaceDocument) -> WorkspaceDocument:
     sanitized = WorkspaceDocument.model_validate(deepcopy(workspace.model_dump()))
-    sanitized.config.gemini_api_key = None
-    sanitized.config.openai_api_key = None
     return sanitized
 
 
 def workspace_document_from_snapshot_row(conn: sqlite3.Connection, row: sqlite3.Row) -> WorkspaceDocument:
     workspace = WorkspaceDocument.model_validate_json(row["payload_json"])
-    apply_workspace_secrets(conn, workspace)
     return workspace
-
-
-def apply_workspace_secrets(conn: sqlite3.Connection, workspace: WorkspaceDocument) -> None:
-    row = conn.execute(
-        """
-        SELECT gemini_api_key, openai_api_key
-        FROM workspace_secrets
-        WHERE workspace_id = ?
-        """,
-        (workspace.workspace_id,),
-    ).fetchone()
-    if row is None:
-        return
-    workspace.config.gemini_api_key = row["gemini_api_key"]
-    workspace.config.openai_api_key = row["openai_api_key"]
-
-
-def save_workspace_secrets(conn: sqlite3.Connection, workspace: WorkspaceDocument) -> None:
-    conn.execute(
-        """
-        INSERT INTO workspace_secrets (workspace_id, gemini_api_key, openai_api_key, updated_at)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(workspace_id) DO UPDATE SET
-            gemini_api_key = excluded.gemini_api_key,
-            openai_api_key = excluded.openai_api_key,
-            updated_at = excluded.updated_at
-        """,
-        (
-            workspace.workspace_id,
-            workspace.config.gemini_api_key,
-            workspace.config.openai_api_key,
-            datetime.now(timezone.utc).isoformat(),
-        ),
-    )
 
 
 def migrate_workspace_secrets(conn: sqlite3.Connection) -> None:

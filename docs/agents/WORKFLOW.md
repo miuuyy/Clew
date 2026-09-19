@@ -25,11 +25,13 @@ If a change makes the codebase easier to grow but weakens the product identity, 
 - prefer high-signal UI over generic chrome
 - avoid admin-panel drift
 
-### For agent and provider work
+### For agent and Codex runtime work
 
 - trust the selected model as the decision engine
 - improve role, context, schema, or validation
 - do not add keyword routers or semantic overrides
+- supply native tools; do not add a second model loop behind a tool
+- keep the existing MCP server separate from the internal agent runtime
 
 ### For docs work
 

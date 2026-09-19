@@ -1,41 +1,10 @@
 import { describe, expect, it } from "vitest";
-
-import { resolveSelectedChatModel } from "./useChatModelSelection";
-
-describe("resolveSelectedChatModel", () => {
-  it("keeps the current model when the user stays on the same graph", () => {
-    expect(
-      resolveSelectedChatModel({
-        current: "gemini-2.5-flash",
-        storedModel: "gemini-2.5-pro",
-        chatModelOptions: ["gemini-2.5-pro", "gemini-2.5-flash"],
-        defaultModel: "gemini-2.5-pro",
-        graphChanged: false,
-      }),
-    ).toBe("gemini-2.5-flash");
-  });
-
-  it("prefers the new graph's stored model after a graph switch", () => {
-    expect(
-      resolveSelectedChatModel({
-        current: "gemini-2.5-flash",
-        storedModel: "gemini-2.5-pro",
-        chatModelOptions: ["gemini-2.5-pro", "gemini-2.5-flash"],
-        defaultModel: "gemini-2.5-flash",
-        graphChanged: true,
-      }),
-    ).toBe("gemini-2.5-pro");
-  });
-
-  it("falls back to the graph default when the stored model is not allowed", () => {
-    expect(
-      resolveSelectedChatModel({
-        current: "gemini-2.5-flash",
-        storedModel: "gpt-5.4",
-        chatModelOptions: ["gemini-2.5-pro", "gemini-2.5-flash"],
-        defaultModel: "gemini-2.5-pro",
-        graphChanged: true,
-      }),
-    ).toBe("gemini-2.5-pro");
-  });
+import { resolveCodexModel } from "./useChatModelSelection";
+import type { CodexModel } from "../lib/types";
+const models: CodexModel[] = [{ id: "a", model: "native-default", isDefault: true, displayName: "A", description: "", defaultReasoningEffort: "medium", supportedReasoningEfforts: [] }];
+describe("Codex model selection", () => {
+  it("uses the advertised server default", () => expect(resolveCodexModel(null, null, models)).toBe("native-default"));
+  it("does not silently replace an unavailable explicit model", () => expect(resolveCodexModel("unavailable", null, models)).toBe("unavailable"));
+  it("keeps the workspace selection when no per-graph choice exists", () => expect(resolveCodexModel(null, "workspace-choice", models)).toBe("workspace-choice"));
+  it("does not invent a model before catalog discovery", () => expect(resolveCodexModel(null, null, [])).toBeNull());
 });

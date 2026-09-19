@@ -48,7 +48,7 @@ If a change weakens any of those, it is a regression even if it looks convenient
 
 - The repository and snapshot layer are first-class.
 - Proposal validation matters more than “the model probably meant well”.
-- If a provider or planner cannot satisfy a contract, reject explicitly.
+- If Codex or a tool call cannot satisfy a contract, reject explicitly.
 - Side effects should remain legible through routes, repository, contracts, and traces.
 
 ## Local commands

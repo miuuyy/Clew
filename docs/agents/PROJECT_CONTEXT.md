@@ -48,10 +48,10 @@ See:
 ### Backend
 
 - repository and snapshots
-- chat orchestrator
-- planner
-- quiz service
-- provider seam
+- native Codex app-server transport and persistent conversations
+- typed Clew tools for proposals, questions and quizzes
+- deterministic proposal validation and quiz grading
+- native ChatGPT OAuth and model discovery
 
 ### Data
 
