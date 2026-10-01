@@ -93,20 +93,6 @@
 
 :root[data-theme="light"] .lightDockButton.lightDockButtonActive { color: var(--ui-accent); }
 
-/* Active marker on the dock's outer edge. */
-.lightDock:not(.lightDockHorizontal) .lightDockButtonActive::after {
-  content: "";
-  position: absolute;
-  left: -8px;
-  top: 12px;
-  bottom: 12px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--ui-fg);
-}
-
-:root[data-theme="light"] .lightDock:not(.lightDockHorizontal) .lightDockButtonActive::after { background: var(--ui-accent); }
-
 .lightDock:not(.lightDockHorizontal) .lightDockButtonLink {
   margin-top: 9px;
 }
