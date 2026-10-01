@@ -1,7 +1,7 @@
 import json
 import unittest
 from app.models.domain import ChatMessage, CreateGraphRequest
-from codex_test_support import install_client
+from agent_test_support import install_client
 
 class ChatPersistenceTests(unittest.TestCase):
     def setUp(self):
@@ -24,7 +24,7 @@ class ChatPersistenceTests(unittest.TestCase):
         thread = self.client.get(self.url).json()
         self.assertEqual(thread["messages"][0]["id"], "test-user")
         self.assertEqual(thread["messages"][-1]["agent_status"], "completed")
-        self.assertTrue(thread["codex_thread_id"])
+        self.assertTrue(self.runtime.store.transcript(thread["session_id"]))
         replay = self.client.get(self.url+f"/events?session_id={thread['session_id']}&after={thread['last_event_id']}")
         self.assertEqual(replay.text, "")
 
@@ -54,16 +54,16 @@ class ChatPersistenceTests(unittest.TestCase):
         general = self.repository.chat_thread(self.graph_id).session_id
         self.assertEqual(self.client.delete(self.url+f"/sessions/{general}").status_code, 400)
 
-    def test_graph_recreation_does_not_inherit_old_codex_binding(self):
+    def test_graph_recreation_does_not_inherit_old_transcript(self):
         self.client.post(self.url+"/stream", json={"prompt": "old conversation"})
         sid = self.repository.chat_thread(self.graph_id).session_id
-        self.assertTrue(self.runtime.store.binding(sid)["thread_id"])
+        self.assertTrue(self.runtime.store.transcript(sid))
         self.repository.delete_graph(self.graph_id)
         self.repository.create_graph(CreateGraphRequest(title="Mathematics demo", subject="math"))
         self.assertEqual(self.repository.chat_thread(self.graph_id).messages, [])
-        self.assertIsNone(self.runtime.store.binding(sid)["thread_id"])
+        self.assertIsNone(self.runtime.store.transcript(sid))
 
-    def test_legacy_messages_are_preserved_when_connecting_codex(self):
+    def test_legacy_messages_are_preserved_and_imported_once(self):
         self.repository.append_chat_message(self.graph_id, ChatMessage(role="assistant", content="Prior lesson", model="legacy-model"))
         self.client.post(self.url+"/stream", json={"prompt": "Continue"})
         messages = self.client.get(self.url).json()["messages"]

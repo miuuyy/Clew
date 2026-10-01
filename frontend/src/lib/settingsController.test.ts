@@ -5,8 +5,8 @@ import type { WorkspaceConfig } from "./types";
 
 function makeConfig(): WorkspaceConfig {
   return {
-    agent_backend: "codex",
-    default_model: "codex-test",
+    agent_backend: "chatgpt",
+    default_model: "gpt-test",
     reasoning_effort: null,
     ui_language: "en",
     canonical_graph_language: "en",
@@ -31,9 +31,9 @@ function makeConfig(): WorkspaceConfig {
 }
 
 describe("settingsController", () => {
-  it("derives stable Codex settings and assessment threshold", () => {
+  it("derives stable model settings and assessment threshold", () => {
     const drafts = deriveSettingsDrafts(makeConfig());
-    expect(drafts.model).toBe("codex-test");
+    expect(drafts.model).toBe("gpt-test");
     expect(drafts.reasoningEffort).toBe("");
     expect(drafts.quizPassCount).toBe(9);
     expect(isSettingsDirty({ config: makeConfig(), drafts, straightEdgeLinesEnabled: false })).toBe(false);

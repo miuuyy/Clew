@@ -5,13 +5,13 @@ import json
 from typing import TYPE_CHECKING
 
 from app.agent.context import graph_context
-from app.agent.contracts import TOOL_MODELS, ClosureQuizDraft, InlineQuizDraft, ProposalDraft, QuestionDraft
+from app.agent.contracts import CLOSURE_QUIZ_TOOLS, TOOL_MODELS, ClosureQuizDraft, InlineQuizDraft, ProposalDraft, QuestionDraft
 from app.models.domain import AgentActivity, AgentQuestion, ChatMessage, InlineChatQuiz, QuizQuestion, TopicQuizSessionPublic
 from app.services.proposal_service import ProposalService
 from app.services.quiz_service import QuizService
 
 if TYPE_CHECKING:
-    from app.agent.runtime import AgentRun, CodexRuntime
+    from app.agent.runtime import AgentRun, AgentRuntime
 
 
 LABELS = {
@@ -29,21 +29,24 @@ def public_quiz(session) -> TopicQuizSessionPublic:
     return TopicQuizSessionPublic.model_validate(session.model_dump(mode="json"))
 
 
-async def execute_tool(runtime: CodexRuntime, run: AgentRun, params: dict) -> dict:
-    tool = params["tool"]
-    call_id = params["callId"]
-    arguments = params.get("arguments")
-    canonical = json.dumps({"tool": tool, "namespace": params.get("namespace"), "arguments": arguments}, sort_keys=True, ensure_ascii=False)
-    cached = runtime.store.tool_result(call_id, params["threadId"], canonical)
+async def execute_tool(runtime: AgentRuntime, run: AgentRun, tool: str, call_id: str, raw_arguments: str) -> str:
+    """Run one Clew tool call and return its function_call_output text. Results are
+    idempotent per call id, so a replayed call never repeats a side effect."""
+    canonical = json.dumps({"tool": tool, "arguments": raw_arguments}, sort_keys=True, ensure_ascii=False)
+    cached = runtime.store.tool_result(call_id, run.thread_key, canonical)
     if cached is not None:
-        return cached
+        return cached["output"]
     message = ChatMessage(id=f"tool-{call_id}", role="assistant", content="", model=run.model,
                           activity=AgentActivity(id=call_id, tool=tool, status="running", detail=LABELS.get(tool, tool)))
     try:
-        if params.get("namespace") != "clew" or tool not in LABELS:
+        if tool not in LABELS:
             raise ValueError("Unknown Clew tool.")
-        if run.quiz_topic_id and tool not in {"read_graph", "read_topic", "create_closure_quiz"}:
+        if run.quiz_topic_id and tool not in CLOSURE_QUIZ_TOOLS:
             raise ValueError("This turn can only prepare the requested completion test.")
+        try:
+            arguments = json.loads(raw_arguments or "{}")
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Tool arguments are not valid JSON: {exc}") from exc
         if not isinstance(arguments, dict):
             raise ValueError("Tool arguments must be a JSON object.")
         parsed = TOOL_MODELS[tool].model_validate(arguments) if tool in TOOL_MODELS else None
@@ -109,7 +112,7 @@ async def execute_tool(runtime: CodexRuntime, run: AgentRun, params: dict) -> di
             raise ValueError("Unknown Clew tool.")
         message.activity.status = "completed"
         runtime.publish_message(run, message)
-        response = {"success": True, "contentItems": [{"type": "inputText", "text": json.dumps(result, ensure_ascii=False)}]}
+        output = json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         message.activity.status = "failed"
         message.activity.detail = str(exc)
@@ -117,6 +120,6 @@ async def execute_tool(runtime: CodexRuntime, run: AgentRun, params: dict) -> di
             if widget and widget.status == "pending":
                 widget.status = "interrupted"
         runtime.publish_message(run, message)
-        response = {"success": False, "contentItems": [{"type": "inputText", "text": json.dumps({"error": str(exc)}, ensure_ascii=False)}]}
-    runtime.store.save_tool_result(call_id, params["threadId"], canonical, response)
-    return response
+        output = json.dumps({"error": str(exc)}, ensure_ascii=False)
+    runtime.store.save_tool_result(call_id, run.thread_key, canonical, {"output": output})
+    return output

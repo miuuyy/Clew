@@ -1,4 +1,4 @@
-import { useCodexAccount } from "./hooks/useCodexAccount";
+import { useChatGPTAccount } from "./hooks/useChatGPTAccount";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { AppDialogs } from "./components/AppDialogs";
@@ -438,12 +438,12 @@ export default function App(): React.JSX.Element {
     initialThemeMode,
   });
   const { disableIdleAnimations: disableIdleAnimationsDraft } = settingsState.drafts;
-  const codex = useCodexAccount();
+  const chatgpt = useChatGPTAccount();
 
   const { chatModelOptions, selectedChatModel, setSelectedChatModel } = useChatModelSelection(
     currentConfig,
     activeGraph?.graph_id ?? null,
-    codex.account?.models ?? [],
+    chatgpt.account?.models ?? [],
   );
   const {
     activeSessionId,
@@ -1338,7 +1338,7 @@ export default function App(): React.JSX.Element {
         assistant={{
           agentControls: {
             answer: answerInteraction, stop: stopChat, reconnect: reconnectChat,
-            authenticated: !!codex.account?.authenticated, connect: () => setSettingsOpen(true),
+            authenticated: !!chatgpt.account?.authenticated && !!chatgpt.account?.sharing, connect: () => setSettingsOpen(true),
             openQuiz: (session) => { setSelectedTopicId(session.topic_id); setQuizSession(session); setQuizAnswers({}); setQuizReviews(null); setQuizError(null); },
           },
           assistantResizing,
@@ -1381,7 +1381,7 @@ export default function App(): React.JSX.Element {
         currentConfig={currentConfig}
         drafts={{ ...settingsState.drafts, themeMode: themeModeDraft }}
         setDrafts={{ ...settingsState.setDrafts, themeMode: setThemeModeDraft }}
-        codex={codex}
+        chatgpt={chatgpt}
         activeMemoryOption={activeMemoryOption}
         activeMemoryValues={activeMemoryValues}
         activeGraph={activeGraph}

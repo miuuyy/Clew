@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock
-from app.agent.transport import CodexError
-from codex_test_support import install_client
+from app.agent.chatgpt_auth import ChatGPTError
+from agent_test_support import install_client
 
 class QuizRouteTests(unittest.TestCase):
     def setUp(self):
@@ -24,10 +24,10 @@ class QuizRouteTests(unittest.TestCase):
         self.assertEqual(self.client.post(self.url+"/submit", json={"session_id": session["session_id"], "answers": answers}).status_code, 404)
 
     def test_native_failure_returns_explicit_502(self):
-        self.runtime.generate_closure_quiz = AsyncMock(side_effect=CodexError("Codex connection closed"))
+        self.runtime.generate_closure_quiz = AsyncMock(side_effect=ChatGPTError("usage", "ChatGPT plan limit reached"))
         response = self.client.post(self.url+"/start", json={})
         self.assertEqual(response.status_code, 502)
-        self.assertEqual(response.json()["detail"], "Codex connection closed")
+        self.assertEqual(response.json()["detail"], "ChatGPT plan limit reached")
 
     def test_open_prerequisites_block_test(self):
         response = self.client.post("/api/v1/graphs/mathematics-demo/topics/embeddings/quiz/start", json={})

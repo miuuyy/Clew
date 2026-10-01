@@ -172,8 +172,6 @@ export type AgentStatus = "idle" | "starting" | "running" | "waiting" | "complet
 
 export type GraphChatThread = {
   run_id: string | null;
-  codex_thread_id: string | null;
-  active_turn_id: string | null;
   agent_status: AgentStatus;
   agent_error: string | null;
   last_event_id: number;
@@ -361,34 +359,29 @@ export type ProposalGenerateResponse = {
 };
 
 export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
-export type CodexModel = {
+export type ChatGPTModel = {
   id: string;
   model: string;
   displayName: string;
   description: string;
   isDefault: boolean;
-  defaultReasoningEffort: ReasoningEffort;
-  supportedReasoningEfforts: Array<{ reasoningEffort: ReasoningEffort; description: string }>;
 };
-export type CodexLogin = {
-  type: "chatgpt" | "chatgptDeviceCode";
+export type ChatGPTLogin = {
   loginId: string;
-  authUrl?: string;
-  verificationUrl?: string;
-  userCode?: string;
+  authUrl: string;
 };
-export type CodexAccount = {
+export type ChatGPTAccount = {
   connected: boolean;
   authenticated: boolean;
-  account: { type: string; email?: string; planType?: string } | null;
-  version: string;
-  login: CodexLogin | null;
+  sharing: boolean;
+  account: { email?: string | null; name?: string | null } | null;
+  login: ChatGPTLogin | null;
   error: string | null;
-  models: CodexModel[];
+  models: ChatGPTModel[];
 };
 
 export type WorkspaceConfig = {
-  agent_backend: "codex";
+  agent_backend: "chatgpt";
   default_model: string | null;
   reasoning_effort: ReasoningEffort | null;
   ui_language: string;

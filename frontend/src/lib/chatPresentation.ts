@@ -25,7 +25,7 @@ export function groupChatReplies(messages: ChatMessage[]): ChatReply[] {
 export function presentChatReply(reply: ChatReply, active: boolean, waiting: boolean) {
   const completeText = (message: ChatMessage) => !!message.content && message.agent_status !== "streaming";
   const texts = reply.messages.filter((message) => completeText(message) && message.message_phase !== "commentary");
-  // Typed Codex commentary updates one status, never a transcript of internal steps.
+  // Typed model commentary updates one status, never a transcript of internal steps.
   // An unknown phase is normal text; do not classify its meaning using keywords.
   const commentary = reply.messages.filter((message) => completeText(message) && message.message_phase === "commentary").at(-1);
   const progress = active && !waiting;

@@ -59,7 +59,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     if (!response.ok) throw new Error(await readErrorMessage(response, loadChatError));
     await consumeAgentEvents(response, (event) => update(target, (current) => reduceAgentEvent(current, event)));
     if (activeAgentStatus(statesRef.current[target]?.status)) {
-      throw new Error("The chat connection closed. Reconnect to continue following Codex.");
+      throw new Error("The chat connection closed. Reconnect to keep following the reply.");
     }
   }, [loadChatError, update]);
 
@@ -133,10 +133,10 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     if (!sessionId) return;
     try {
       const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/interrupt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
-      if (!response.ok) throw new Error(await readErrorMessage(response, "Could not stop Codex."));
+      if (!response.ok) throw new Error(await readErrorMessage(response, "Could not stop the reply."));
       const thread = await response.json() as GraphChatThread;
       update(key, (current) => stateFromThread(current, thread));
-    } catch (cause) { update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : "Could not stop Codex." })); }
+    } catch (cause) { update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : "Could not stop the reply." })); }
   };
   const clearChatStateForGraph = (target: string | null | undefined) => {
     if (!target) return;

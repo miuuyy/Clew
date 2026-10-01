@@ -1,1 +1,1 @@
-"""Codex runtime and application-owned tools for Clew."""
+"""Clew agent runtime on Sign in with ChatGPT, and its application-owned tools."""

@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import get_agent_runtime, get_repository
-from app.agent.transport import CodexError
+from app.agent.chatgpt_auth import ChatGPTError
 from app.models.domain import GraphChatRequest
 from app.services.repository import ChatSessionDeletionError, ChatSessionNotFoundError, GraphRepository
 
@@ -85,7 +85,7 @@ async def delete_chat_session(graph_id: str, session_id: str, runtime=Depends(ge
         runtime.store.delete_session(session_id)
     except ChatSessionDeletionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except CodexError as exc:
+    except ChatGPTError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return {"ok": True}
 
@@ -97,7 +97,7 @@ async def stream_chat(graph_id: str, body: GraphChatRequest, runtime=Depends(get
         session_id, run_id = await runtime.start_chat(graph_id, body)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except CodexError as exc:
+    except ChatGPTError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return event_stream(runtime, session_id, run_id)
 
@@ -123,6 +123,6 @@ async def interrupt_chat(graph_id: str, body: SessionRequest, runtime=Depends(ge
     resolve_thread(runtime, graph_id, body.session_id)
     try:
         await runtime.interrupt(graph_id, body.session_id)
-    except CodexError as exc:
+    except ChatGPTError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return resolve_thread(runtime, graph_id, body.session_id)

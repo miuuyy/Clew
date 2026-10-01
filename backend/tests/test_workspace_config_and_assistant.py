@@ -3,7 +3,7 @@ import unittest
 from pydantic import ValidationError
 from app.models.domain import UpdateWorkspaceConfigRequest, WorkspaceConfig
 from app.agent.context import turn_context
-from codex_test_support import install_client
+from agent_test_support import install_client
 
 class WorkspaceConfigTests(unittest.TestCase):
     def setUp(self):
@@ -11,7 +11,7 @@ class WorkspaceConfigTests(unittest.TestCase):
 
     def test_legacy_provider_preferences_migrate_without_selecting_another_model(self):
         config = WorkspaceConfig.model_validate({"ai_provider": "gemini", "default_model": "gemini-2.5-pro", "gemini_api_key": "private", "persona_rules": "Concise"})
-        self.assertEqual(config.agent_backend, "codex")
+        self.assertEqual(config.agent_backend, "chatgpt")
         self.assertIsNone(config.default_model)
         self.assertEqual(config.persona_rules, "Concise")
         self.assertNotIn("private", config.model_dump_json())
@@ -19,7 +19,7 @@ class WorkspaceConfigTests(unittest.TestCase):
             UpdateWorkspaceConfigRequest(ai_provider="openai")
 
     def test_config_round_trip_native_model_effort_and_persona(self):
-        response = self.client.post("/api/v1/workspace/config", json={"default_model": "test-codex", "reasoning_effort": "high", "persona_rules": "Use examples", "assistant_nickname": "Tutor"})
+        response = self.client.post("/api/v1/workspace/config", json={"default_model": "test-model", "reasoning_effort": "high", "persona_rules": "Use examples", "assistant_nickname": "Tutor"})
         self.assertEqual(response.status_code, 200, response.text)
         config = response.json()["workspace"]["config"]
         self.assertEqual(config["reasoning_effort"], "high")
@@ -37,13 +37,32 @@ class WorkspaceConfigTests(unittest.TestCase):
         self.assertNotIn("recent_quiz_attempts", context)
         self.assertEqual(context["graph_version"], graph.version)
 
-    def test_account_catalog_and_login_cancellation_use_native_rpc(self):
-        response = self.client.get("/api/v1/codex/account")
+    def test_codex_selection_migrates_to_the_plan_default(self):
+        config = WorkspaceConfig.model_validate({"agent_backend": "codex", "default_model": "gpt-5-codex", "reasoning_effort": "ultra"})
+        self.assertEqual(config.agent_backend, "chatgpt")
+        self.assertIsNone(config.default_model)
+        self.assertIsNone(config.reasoning_effort)
+
+    def test_account_catalog_and_login_cancellation(self):
+        response = self.client.get("/api/v1/chatgpt/account")
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["authenticated"])
-        self.assertEqual(response.json()["models"][0]["model"], "test-codex")
-        login = self.client.post("/api/v1/codex/login", json={})
+        account = response.json()
+        self.assertTrue(account["authenticated"])
+        self.assertTrue(account["sharing"])
+        self.assertEqual(account["account"]["email"], "learner@example.com")
+        self.assertEqual([m["model"] for m in account["models"]], ["test-model", "second-model"])
+        self.assertEqual([m["isDefault"] for m in account["models"]], [True, False])
+        login = self.client.post("/api/v1/chatgpt/login", json={})
         self.assertEqual(login.status_code, 200)
-        self.assertEqual(login.json()["loginId"], "test-login")
-        self.assertEqual(self.client.post("/api/v1/codex/login/cancel", json={}).status_code, 200)
-        self.assertIsNone(self.runtime.login)
+        self.assertIn("code_challenge_method=S256", login.json()["authUrl"])
+        self.assertEqual(self.client.get("/api/v1/chatgpt/account").json()["login"]["loginId"], login.json()["loginId"])
+        self.assertEqual(self.client.post("/api/v1/chatgpt/login/cancel", json={}).status_code, 200)
+        self.assertIsNone(self.runtime.auth.pending)
+
+    def test_callback_rejects_foreign_host_and_unknown_state(self):
+        self.client.post("/api/v1/chatgpt/login", json={})
+        foreign = self.client.get("/auth/callback?state=x&code=y", headers={"host": "evil.example"})
+        self.assertEqual(foreign.status_code, 404)
+        wrong = self.client.get("/auth/callback?state=x&code=y", headers={"host": "127.0.0.1:8787"})
+        self.assertEqual(wrong.status_code, 400)
+        self.assertIn("not the one Clew started", wrong.text)

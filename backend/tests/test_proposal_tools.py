@@ -4,7 +4,7 @@ from app.agent.contracts import ProposalDraft, tool_specs
 from app.models.domain import ChatMessage, CreateGraphRequest, UpdateWorkspaceConfigRequest
 from app.services.proposal_service import ProposalService
 from app.services.repository import ProposalConflictError, RepositoryConflictError
-from codex_test_support import install_client
+from agent_test_support import install_client
 
 class ProposalToolTests(unittest.TestCase):
     def setUp(self):
@@ -113,7 +113,8 @@ class ProposalToolTests(unittest.TestCase):
 
     def test_tools_are_native_functions_and_answer_is_not_a_tool(self):
         specs = tool_specs()
-        self.assertEqual(specs[0]["type"], "namespace")
-        names = {tool["name"] for tool in specs[0]["tools"]}
+        self.assertEqual({tool["type"] for tool in specs}, {"function"})
+        self.assertTrue(all("parameters" in tool for tool in specs))
+        names = {tool["name"] for tool in specs}
         self.assertEqual(names, {"read_graph", "read_topic", "propose_ingest", "propose_expand", "ask_question", "present_quiz", "create_closure_quiz"})
         self.assertNotIn("answer", names)

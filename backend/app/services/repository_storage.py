@@ -164,9 +164,13 @@ def list_snapshot_records(conn: sqlite3.Connection, limit: int = 20) -> list[Sna
 def purge_graph_runtime_state(conn: sqlite3.Connection, graph_id: str) -> None:
     tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     if "agent_sessions" in tables:
+        # Tool results are keyed by conversation; rows from the Codex era used its native thread ids.
+        conn.execute("DELETE FROM agent_tool_results WHERE thread_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
         conn.execute("DELETE FROM agent_tool_results WHERE thread_id IN (SELECT thread_id FROM agent_sessions WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?))", (graph_id,))
         conn.execute("DELETE FROM agent_events WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
         conn.execute("DELETE FROM agent_sessions WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
+    if "agent_transcripts" in tables:
+        conn.execute("DELETE FROM agent_transcripts WHERE session_id IN (SELECT session_id FROM chat_sessions WHERE graph_id=?)", (graph_id,))
     conn.execute("DELETE FROM chat_messages WHERE graph_id = ?", (graph_id,))
     conn.execute("DELETE FROM chat_sessions WHERE graph_id = ?", (graph_id,))
     conn.execute("DELETE FROM quiz_sessions WHERE graph_id = ?", (graph_id,))

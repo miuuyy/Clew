@@ -25,7 +25,7 @@ If a change makes the codebase easier to grow but weakens the product identity, 
 - prefer high-signal UI over generic chrome
 - avoid admin-panel drift
 
-### For agent and Codex runtime work
+### For agent runtime work
 
 - trust the selected model as the decision engine
 - improve role, context, schema, or validation

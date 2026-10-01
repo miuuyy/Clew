@@ -10,8 +10,9 @@ from fastapi.responses import JSONResponse
 from app.services.repository import RepositoryConflictError
 
 from app.api.routes import router
+from app.api.chatgpt_routes import callback_router
 from app.api.deps import get_repository
-from app.agent.runtime import CodexRuntime
+from app.agent.runtime import AgentRuntime
 from app.core.config import Settings, get_settings
 from app.services.debug_log_service import get_debug_log_service
 
@@ -20,7 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        runtime = CodexRuntime(settings, get_repository(settings))
+        runtime = AgentRuntime(settings, get_repository(settings))
         app.state.agent_runtime = runtime
         try:
             yield
@@ -71,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(router)
+    app.include_router(callback_router)
     app.mount("/contracts", StaticFiles(directory=settings.root_dir / "contracts"), name="contracts")
     return app
 

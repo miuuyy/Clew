@@ -1,22 +1,21 @@
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from app.core.config import Settings
 from app.main import create_app
-from app.services.repository import GraphRepository
+from fake_chatgpt import FakeChatGPT, fake_runtime
 
 
-def install_client(test, scenario="answer"):
+def install_client(test, scenario="answer", signed=True):
     temp = tempfile.TemporaryDirectory(prefix="clew-api-test-")
     test.addCleanup(temp.cleanup)
     root = Path(temp.name)
-    env = patch.dict(os.environ, {"CLEW_CODEX_TEST_SCENARIO": scenario})
-    env.start()
-    test.addCleanup(env.stop)
-    settings = Settings(db_path=root/"state.sqlite3", codex_home=root/"codex", codex_workspace=root/"work",
-        codex_binary=str((Path(__file__).parent/"fixtures"/"fake_codex.py").resolve()), codex_rpc_timeout_seconds=30)
+    settings = Settings(db_path=root/"state.sqlite3")
+    peer = FakeChatGPT(scenario)
+    factory = patch("app.main.AgentRuntime", side_effect=lambda settings, repository: fake_runtime(settings, repository, peer, signed))
+    factory.start()
+    test.addCleanup(factory.stop)
     app = create_app(settings)
     client = TestClient(app)
     client.__enter__()

@@ -7,7 +7,7 @@ from app.services.repository import GraphRepository
 
 
 class AgentStore:
-    """Durable Codex bindings and replayable UI events, separate from graph snapshots."""
+    """Durable agent transcripts and replayable UI events, separate from graph snapshots."""
 
     def __init__(self, repository: GraphRepository):
         self.repository = repository
@@ -23,6 +23,9 @@ class AgentStore:
                     run_id TEXT NOT NULL, payload_json TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_agent_events_session ON agent_events(session_id, id);
+                CREATE TABLE IF NOT EXISTS agent_transcripts (
+                    session_id TEXT PRIMARY KEY, items_json TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS agent_tool_results (
                     call_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL,
                     arguments_json TEXT NOT NULL, result_json TEXT NOT NULL
@@ -32,7 +35,7 @@ class AgentStore:
     def recover_interrupted(self) -> None:
         with self.repository._connect() as conn:
             interrupted = conn.execute("SELECT session_id FROM agent_sessions WHERE status IN ('starting', 'running', 'waiting')").fetchall()
-            conn.execute("UPDATE agent_sessions SET status='interrupted', turn_id=NULL, error='The backend restarted. Continue this conversation to resume Codex.' WHERE status IN ('starting', 'running', 'waiting')")
+            conn.execute("UPDATE agent_sessions SET status='interrupted', turn_id=NULL, error='The backend restarted. Continue this conversation to resume.' WHERE status IN ('starting', 'running', 'waiting')")
             for session in interrupted:
                 rows = conn.execute("SELECT message_id, payload_json FROM chat_messages WHERE session_id=?", (session["session_id"],)).fetchall()
                 for row in rows:
@@ -50,6 +53,8 @@ class AgentStore:
         with self.repository._connect() as conn:
             conn.execute("DELETE FROM agent_events WHERE session_id=?", (session_id,))
             conn.execute("DELETE FROM agent_sessions WHERE session_id=?", (session_id,))
+            conn.execute("DELETE FROM agent_transcripts WHERE session_id=?", (session_id,))
+            conn.execute("DELETE FROM agent_tool_results WHERE thread_id=?", (session_id,))
 
     def binding(self, session_id: str) -> dict:
         with self.repository._connect() as conn:
@@ -67,13 +72,21 @@ class AgentStore:
                 run_id=excluded.run_id, status='starting', turn_id=NULL, error=NULL,
                 client_message_id=excluded.client_message_id""", (session_id, run_id, client_message_id))
 
-    def bind_thread(self, session_id: str, thread_id: str) -> None:
+    def transcript(self, session_id: str) -> list[dict] | None:
+        """Responses API input items for this conversation; None before its first stored turn."""
         with self.repository._connect() as conn:
-            conn.execute("UPDATE agent_sessions SET thread_id=? WHERE session_id=?", (thread_id, session_id))
+            row = conn.execute("SELECT items_json FROM agent_transcripts WHERE session_id=?", (session_id,)).fetchone()
+        return json.loads(row["items_json"]) if row else None
 
-    def state(self, session_id: str, run_id: str, status: str, *, turn_id: str | None = None, error: str | None = None) -> None:
+    def save_transcript(self, session_id: str, items: list[dict]) -> None:
         with self.repository._connect() as conn:
-            conn.execute("UPDATE agent_sessions SET status=?, turn_id=?, error=? WHERE session_id=? AND run_id=?", (status, turn_id, error, session_id, run_id))
+            conn.execute("""INSERT INTO agent_transcripts (session_id, items_json) VALUES (?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET items_json=excluded.items_json""",
+                (session_id, json.dumps(items, ensure_ascii=False)))
+
+    def state(self, session_id: str, run_id: str, status: str, *, error: str | None = None) -> None:
+        with self.repository._connect() as conn:
+            conn.execute("UPDATE agent_sessions SET status=?, error=? WHERE session_id=? AND run_id=?", (status, error, session_id, run_id))
 
     def emit(self, session_id: str, run_id: str, event: dict) -> dict:
         with self.repository._connect() as conn:
@@ -94,9 +107,7 @@ class AgentStore:
     def thread_payload(self, graph_id: str, session_id: str | None = None) -> dict:
         thread = self.repository.chat_thread(graph_id, session_id)
         binding = self.binding(thread.session_id)
-        return {**thread.model_dump(mode="json"), "codex_thread_id": binding["thread_id"],
-                "run_id": binding.get("run_id"),
-                "active_turn_id": binding.get("turn_id"), "agent_status": binding["status"],
+        return {**thread.model_dump(mode="json"), "run_id": binding.get("run_id"), "agent_status": binding["status"],
                 "agent_error": binding.get("error"), "last_event_id": self.last_event_id(thread.session_id)}
 
     def put_message(self, graph_id: str, session_id: str, message: ChatMessage) -> None:

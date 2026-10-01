@@ -27,7 +27,7 @@ from app.models.domain import Artifact, CreateGraphRequest, GraphProposalEnvelop
 from app.services.debug_log_service import DebugClientLogRequest, get_debug_log_service
 from app.services.proposal_normalizer import ProposalNormalizer
 from app.services.repository import GraphRepository, ProposalConflictError
-from app.agent.transport import CodexError
+from app.agent.chatgpt_auth import ChatGPTError
 from app.agent.tools import public_quiz
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ def healthz(settings: Settings = Depends(get_settings)) -> dict:
     return {
         "ok": True,
         "app": settings.app_name,
-        "agent_backend": "codex",
+        "agent_backend": "chatgpt",
     }
 
 
@@ -52,7 +52,7 @@ def protocol(settings: Settings = Depends(get_settings)) -> dict:
         "topic_states": ["not_started", "learning", "shaky", "solid", "mastered", "needs_review"],
         "edge_relations": ["requires", "supports", "bridges", "extends", "reviews"],
         "proposal_contract": "/contracts/graph_patch.schema.json",
-        "agent_backend": "codex",
+        "agent_backend": "chatgpt",
         "native_tools_contract": "/contracts/clew_tools.schema.json",
         "guarantees": [
             "topic-first graph",
@@ -337,7 +337,7 @@ async def start_topic_quiz(
         raise HTTPException(status_code=404, detail="Graph or topic not found") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except CodexError as exc:
+    except ChatGPTError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -482,7 +482,7 @@ async def rollback_graph(snapshot_id: int, repository: GraphRepository = Depends
 
 
 from app.api.chat_routes import router as chat_router
-from app.api.codex_routes import router as codex_router
+from app.api.chatgpt_routes import router as chatgpt_router
 
 router.include_router(chat_router)
-router.include_router(codex_router)
+router.include_router(chatgpt_router)

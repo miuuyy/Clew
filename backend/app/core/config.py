@@ -10,10 +10,6 @@ class Settings(BaseSettings):
     root_dir: Path = Path(__file__).resolve().parents[3]
     db_path: Path = Path(__file__).resolve().parents[2] / "data" / "knowledge_graph.sqlite3"
     frontend_origin: str = "http://127.0.0.1:5178"
-    codex_binary: str = "codex"
-    codex_home: Path = Path(__file__).resolve().parents[2] / "data" / "codex"
-    codex_workspace: Path = Path(__file__).resolve().parents[2] / "data" / "agent-workspace"
-    codex_rpc_timeout_seconds: float = 30
     local_user_name: str = "Local User"
     local_user_email: str = "local@example.com"
 

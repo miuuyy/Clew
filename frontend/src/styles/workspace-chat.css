@@ -2236,9 +2236,8 @@ select.input {
   line-height: 1.2;
 }
 
-.codexAccountRow, .codexChatConnect { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.codexChatConnect { padding: 8px 2px; font-size: 12px; flex-wrap: wrap; }
-.codexDeviceCode { font-family: monospace; font-size: 1.25em; letter-spacing: .08em; user-select: all; }
+.chatgptAccountRow, .chatgptChatConnect { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chatgptChatConnect { padding: 8px 2px; font-size: 12px; flex-wrap: wrap; }
 .agentQuestionForm { display: grid; gap: 8px; margin-top: 10px; }
 .agentQuestionForm .btn { justify-self: end; }
 .assistantMarkdown { white-space: normal; overflow-wrap: anywhere; line-height: 1.65; }

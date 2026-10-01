@@ -237,6 +237,11 @@ class WorkspaceConfig(BaseModel):
             return data
         data = dict(data)
         # A one-time data migration, never a runtime provider/model fallback.
+        if data.get("agent_backend") == "codex":
+            # Codex catalog ids and efforts do not carry over to the ChatGPT plan catalog.
+            data["agent_backend"] = "chatgpt"
+            data["default_model"] = None
+            data["reasoning_effort"] = None
         if data.get("ai_provider") in {"gemini", "openai"}:
             data["default_model"] = None
         if data.get("memory_mode") == "compact":
@@ -245,7 +250,7 @@ class WorkspaceConfig(BaseModel):
                 data.setdefault(key, value)
         return data
 
-    agent_backend: Literal["codex"] = "codex"
+    agent_backend: Literal["chatgpt"] = "chatgpt"
     default_model: str | None = None
     reasoning_effort: ReasoningEffort | None = None
     ui_language: str = "en"
@@ -377,9 +382,7 @@ class GraphChatThread(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     messages: list[ChatMessage] = Field(default_factory=list)
-    codex_thread_id: str | None = None
     run_id: str | None = None
-    active_turn_id: str | None = None
     agent_status: str = "idle"
 
 

@@ -138,7 +138,11 @@ TOOL_MODELS = {
 }
 
 
-def tool_specs() -> list[dict[str, Any]]:
+CLOSURE_QUIZ_TOOLS = frozenset({"read_graph", "read_topic", "create_closure_quiz"})
+
+
+def tool_specs(only: frozenset[str] | None = None) -> list[dict[str, Any]]:
+    """Clew tools as Responses API function tools."""
     descriptions = {
         "propose_ingest": "Submit graph operations that preserve the supplied source material. Clew validates and presents them for user review; this does not apply changes. Omitted descriptive metadata is preserved on existing topics. Read the current graph version first.",
         "propose_expand": "Submit graph operations that extend the learning path toward the user's goal. Clew validates and presents them for user review; this does not apply changes. Omitted descriptive metadata is preserved on existing topics. Read the current graph version first.",
@@ -147,11 +151,11 @@ def tool_specs() -> list[dict[str, Any]]:
         "create_closure_quiz": "Register a complete closure quiz for a topic. Supply the requested number of questions with four distinct choices each. Clew checks prerequisites and grades the learner's answers itself.",
     }
     functions = [
-        {"type": "function", "name": name, "description": descriptions[name], "inputSchema": model.model_json_schema()}
+        {"type": "function", "name": name, "description": descriptions[name], "parameters": model.model_json_schema(), "strict": False}
         for name, model in TOOL_MODELS.items()
     ]
     functions.extend([
-        {"type": "function", "name": "read_graph", "description": "Read the current graph, its version, topics, edges, zones and progress. Call again after a conflict; do not guess ids or graph revisions.", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
-        {"type": "function", "name": "read_topic", "description": "Read the full content, resources, artifacts and prerequisites of a topic in this conversation's graph.", "inputSchema": {"type": "object", "properties": {"topic_id": {"type": "string"}}, "required": ["topic_id"], "additionalProperties": False}},
+        {"type": "function", "name": "read_graph", "description": "Read the current graph, its version, topics, edges, zones and progress. Call again after a conflict; do not guess ids or graph revisions.", "parameters": {"type": "object", "properties": {}, "additionalProperties": False}, "strict": False},
+        {"type": "function", "name": "read_topic", "description": "Read the full content, resources, artifacts and prerequisites of a topic in this conversation's graph.", "parameters": {"type": "object", "properties": {"topic_id": {"type": "string"}}, "required": ["topic_id"], "additionalProperties": False}, "strict": False},
     ])
-    return [{"type": "namespace", "name": "clew", "description": "The learning workspace: graph proposals and interactive study tools.", "tools": functions}]
+    return [tool for tool in functions if only is None or tool["name"] in only]

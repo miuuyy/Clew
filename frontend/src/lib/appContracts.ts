@@ -35,7 +35,7 @@ export const MEMORY_MODE_OPTIONS: Array<{
     id: "custom",
     label: "Custom",
     title: "Manual context mix",
-    description: "Choose fresh graph context and how much existing chat history to import. Codex retains ongoing conversations.",
+    description: "Choose fresh graph context and how much existing chat history to import. Clew keeps ongoing conversations.",
   },
 ];
 

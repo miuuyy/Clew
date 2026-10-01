@@ -46,7 +46,7 @@ export function AssistantComposer({
   return (
     <div className="assistantComposerWrap">
       {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{chatError}<button className="btn btn-sm" type="button" onClick={agentControls.reconnect}>Reconnect chat</button></div> : null}
-      {!agentControls.authenticated ? <div className="codexChatConnect"><span>Connect Codex to start learning.</span><button className="btn btn-sm" type="button" onClick={agentControls.connect}>Sign in with ChatGPT</button></div> : null}
+      {!agentControls.authenticated ? <div className="chatgptChatConnect"><span>Sign in with ChatGPT to start learning.</span><button className="btn btn-sm" type="button" onClick={agentControls.connect}>Sign in with ChatGPT</button></div> : null}
       {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{chatSessionsError}</div> : null}
       {applyError ? <div className="inlineNotice inlineNoticeError">{applyError}</div> : null}
       <div className="assistantTemplates">
@@ -113,8 +113,8 @@ export function AssistantComposer({
           className="assistantSendButton assistantSendButtonIcon"
           disabled={chatThreadLoading || (!chatLoading && (!currentChatState.input.trim() || !agentControls.authenticated))}
           onClick={() => chatLoading ? void agentControls.stop() : sendChat()}
-          aria-label={chatLoading ? "Stop Codex" : "Send message"}
-          title={chatLoading ? "Stop Codex" : "Send message"}
+          aria-label={chatLoading ? "Stop reply" : "Send message"}
+          title={chatLoading ? "Stop reply" : "Send message"}
           type="button"
         >
           {chatLoading ? (

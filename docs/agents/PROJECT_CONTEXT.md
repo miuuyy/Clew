@@ -48,10 +48,10 @@ See:
 ### Backend
 
 - repository and snapshots
-- native Codex app-server transport and persistent conversations
+- Responses API agent loop on Sign in with ChatGPT, with persistent transcripts
 - typed Clew tools for proposals, questions and quizzes
 - deterministic proposal validation and quiz grading
-- native ChatGPT OAuth and model discovery
+- ChatGPT OAuth (PKCE, OS credential store) and plan model discovery
 
 ### Data
 

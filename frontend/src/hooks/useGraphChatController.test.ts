@@ -17,7 +17,7 @@ describe("native chat events", () => {
     expect(reduceAgentEvent(first, { type: "message", message, event_id: 19 })).toBe(first);
   });
   it("restores authoritative answered cards after reload", () => {
-    const thread: GraphChatThread = { session_id: "s", graph_id: "g", run_id: "run", codex_thread_id: "native", active_turn_id: null, created_at: "2026-09-06", updated_at: "2026-09-06", messages: [{ ...message, question: { interaction_id: "q", question: "Which?", choices: [], answer: "This", status: "answered" } }], agent_status: "completed", agent_error: null, last_event_id: 22 };
+    const thread: GraphChatThread = { session_id: "s", graph_id: "g", run_id: "run", created_at: "2026-09-06", updated_at: "2026-09-06", messages: [{ ...message, question: { interaction_id: "q", question: "Which?", choices: [], answer: "This", status: "answered" } }], agent_status: "completed", agent_error: null, last_event_id: 22 };
     const state = stateFromThread(empty, thread);
     expect(state.messages[0].question?.answer).toBe("This");
     expect(state.status).toBe("completed");

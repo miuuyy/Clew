@@ -128,7 +128,7 @@ export const APP_COPY = {
     closeSettings: "Close settings",
     aiBehavior: "AI behavior",
     memory: "Agent memory",
-    memoryLead: "Choose fresh graph context and the initial import of an existing conversation. Codex retains ongoing history.",
+    memoryLead: "Choose fresh graph context and the initial import of an existing conversation. Clew keeps ongoing history.",
     memoryHistoryLimit: "Recent history messages",
     memoryGraphContext: "Include graph context",
     memoryProgressContext: "Include learner progress",

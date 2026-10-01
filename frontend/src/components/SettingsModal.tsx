@@ -1,8 +1,8 @@
 import React from "react";
 
 import { Card } from "./Card";
-import { CodexAccountPanel } from "./CodexAccountPanel";
-import type { CodexAccountController } from "../hooks/useCodexAccount";
+import { ChatGPTAccountPanel } from "./ChatGPTAccountPanel";
+import type { ChatGPTAccountController } from "../hooks/useChatGPTAccount";
 import { MEMORY_MODE_OPTIONS, type MemoryMode, type SettingsDraftSetters, type SettingsDrafts } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphEnvelope, SnapshotRecord, WorkspaceConfig, WorkspaceEnvelope } from "../lib/types";
@@ -22,7 +22,7 @@ type SettingsModalProps = {
   currentConfig: WorkspaceConfig | null;
   drafts: SettingsDrafts;
   setDrafts: SettingsDraftSetters;
-  codex: CodexAccountController;
+  chatgpt: ChatGPTAccountController;
   activeMemoryOption: ModeOption<MemoryMode>;
   activeMemoryValues: string;
   activeGraph: GraphEnvelope | null;
@@ -45,7 +45,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     currentConfig,
     drafts,
     setDrafts,
-    codex,
+    chatgpt,
     activeMemoryOption,
     activeMemoryValues,
     activeGraph,
@@ -145,7 +145,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
             <div className="settingsConfigSurface">
               <div className="settingsConfigGrid">
                 <div className="settingsPrimaryColumn">
-                  <CodexAccountPanel codex={codex} drafts={drafts} setDrafts={setDrafts} />
+                  <ChatGPTAccountPanel chatgpt={chatgpt} drafts={drafts} setDrafts={setDrafts} />
                   <section className="settingsPanel settingsPanelWide">
                     <div className="settingsPanelHeader"><div>
                       <div className="settingsPanelEyebrow">Preferences</div>
@@ -229,7 +229,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
                     </div>
                     <div className="settingsPanelBody">
                       <div className="settingsLead">
-                        Codex keeps each conversation. These settings control the fresh graph context and the initial import of an existing chat.
+                        Clew keeps each conversation. These settings control the fresh graph context and the initial import of an existing chat.
                       </div>
                       <div className="thinkingModeSwitch settingsPresetSwitch">
                         {MEMORY_MODE_OPTIONS.map((option) => (

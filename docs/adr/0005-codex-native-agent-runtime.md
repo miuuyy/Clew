@@ -1,6 +1,6 @@
 # ADR 0005: Codex owns the agent loop; Clew supplies native tools
 
-- Status: accepted
+- Status: superseded by [ADR 0006](0006-sign-in-with-chatgpt-agent-runtime.md)
 - Date: 2026-09-06
 
 ## Context

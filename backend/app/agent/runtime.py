@@ -3,16 +3,24 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
-from typing import Any
 from uuid import uuid4
 
+from app.agent.chatgpt_api import ChatGPTClient
+from app.agent.chatgpt_auth import CALLBACK_PATH, ChatGPTAuth, ChatGPTError
 from app.agent.context import BASE_INSTRUCTIONS, developer_instructions, turn_context
-from app.agent.contracts import tool_specs
+from app.agent.contracts import CLOSURE_QUIZ_TOOLS, tool_specs
 from app.agent.store import AgentStore
-from app.agent.transport import CodexError, CodexTransport
 from app.core.config import Settings
 from app.models.domain import ChatMessage, GraphChatRequest, TopicQuizSession
 from app.services.repository import GraphRepository
+
+ACTIVE = {"starting", "running", "waiting"}
+# Bounds one learner turn; each step is one Responses call plus its tool results.
+MAX_STEPS = 24
+
+
+def agent_error(message: str) -> ChatGPTError:
+    return ChatGPTError("agent_error", message)
 
 
 @dataclass
@@ -23,8 +31,6 @@ class AgentRun:
     request: GraphChatRequest
     model: str
     done: asyncio.Future
-    thread_id: str | None = None
-    turn_id: str | None = None
     status: str = "starting"
     error: str | None = None
     task: asyncio.Task | None = None
@@ -36,85 +42,73 @@ class AgentRun:
     quiz_session: TopicQuizSession | None = None
     cancel_requested: bool = False
 
+    @property
+    def thread_key(self) -> str:
+        # Tool results are idempotent per conversation (or per one-off quiz run).
+        return self.session_id or self.id
 
-class CodexRuntime:
-    def __init__(self, settings: Settings, repository: GraphRepository, transport: CodexTransport | None = None):
+
+class AgentRuntime:
+    """Clew's agent loop on the Responses API, billed to the learner's ChatGPT plan."""
+
+    def __init__(self, settings: Settings, repository: GraphRepository, auth: ChatGPTAuth | None = None,
+                 client: ChatGPTClient | None = None):
         self.settings = settings
         self.repository = repository
         self.store = AgentStore(repository)
         self.store.recover_interrupted()
-        self.transport = transport or CodexTransport(settings)
-        self.transport.on_notification = self._notification
-        self.transport.on_request = self._server_request
-        self.transport.on_disconnect = self._disconnected
+        self.auth = auth or ChatGPTAuth(redirect_uri=f"http://127.0.0.1:{settings.api_port}{CALLBACK_PATH}",
+                                        registration_path=settings.db_path.parent / "chatgpt-registration.json")
+        self.client = client or ChatGPTClient(self.auth)
         self.runs: dict[str, AgentRun] = {}
         self.wake = asyncio.Event()
-        self.login: dict | None = None
-        self.login_error: str | None = None
 
-    async def connect(self) -> None:
-        await self.transport.start()
+    # Account
+
+    def _active(self) -> bool:
+        return any(run.status in ACTIVE for run in self.runs.values())
 
     async def models(self) -> list[dict]:
-        await self.connect()
-        models = []
-        cursor = None
-        while True:
-            response = await self.transport.request("model/list", {"limit": 100, **({"cursor": cursor} if cursor else {})})
-            models.extend(model for model in response.get("data", []) if not model.get("hidden"))
-            cursor = response.get("nextCursor")
-            if not cursor:
-                return models
+        # The plan catalog is ordered by OpenAI; its first listed model is the plan default.
+        return [{"id": m["slug"], "model": m["slug"], "displayName": m["display_name"],
+                 "description": m.get("description") or "", "isDefault": index == 0}
+                for index, m in enumerate(await self.client.list_models())]
 
     async def account(self) -> dict:
-        try:
-            await self.connect()
-            response = await self.transport.request("account/read", {"refreshToken": False})
-            account = response.get("account")
-            return {"connected": True, "authenticated": bool(account and account.get("type") == "chatgpt"), "account": account,
-                    "version": self.transport.version, "login": self.login, "error": self.login_error,
-                    "models": await self.models() if account else []}
-        except CodexError as exc:
-            return {"connected": False, "authenticated": False, "account": None, "models": [],
-                    "login": None, "error": str(exc), "version": self.transport.version}
-
-    async def start_login(self, device_code: bool = False) -> dict:
-        if any(run.status in {"starting", "running", "waiting"} for run in self.runs.values()):
-            raise CodexError("Stop active conversations before changing the Codex account.")
-        await self.connect()
-        if self.login:
-            return self.login
-        result = await self.transport.request("account/login/start", {"type": "chatgptDeviceCode" if device_code else "chatgpt"})
-        self.login_error = None
-        self.login = result
+        status = self.auth.status()
+        login = self.auth.pending
+        result = {"connected": True, **status, "models": [],
+                  "login": {"loginId": login.login_id, "authUrl": login.auth_url} if login else None}
+        if status["authenticated"] and status["sharing"]:
+            try:
+                result["models"] = await self.models()
+            except ChatGPTError as exc:
+                result["error"] = str(exc)
         return result
 
-    async def cancel_login(self) -> None:
-        if self.login:
-            await self.transport.request("account/login/cancel", {"loginId": self.login["loginId"]})
-            self.login = None
+    async def start_login(self) -> dict:
+        if self._active():
+            raise agent_error("Stop active conversations before changing the ChatGPT account.")
+        login = await self.auth.start_login()
+        return {"loginId": login.login_id, "authUrl": login.auth_url}
 
-    async def logout(self) -> None:
-        if any(run.status in {"starting", "running", "waiting"} for run in self.runs.values()):
-            raise CodexError("Stop active conversations before signing out.")
-        await self.connect()
-        await self.transport.request("account/logout", {})
-        self.login = None
+    async def logout(self) -> str | None:
+        if self._active():
+            raise agent_error("Stop active conversations before signing out.")
+        return await self.auth.logout()
 
     async def _select_model(self, requested: str | None) -> str:
-        account = await self.account()
-        if not account["authenticated"]:
-            raise CodexError(account.get("error") or "Sign in to Codex with ChatGPT to start a conversation.")
-        models = account["models"]
+        models = await self.models()
         selected = requested or self.repository.current().workspace.config.default_model
-        model = next((item for item in models if item["model"] == selected or item["id"] == selected), None) if selected else next((item for item in models if item.get("isDefault")), None)
-        if model is None:
-            raise CodexError(f"The selected Codex model is unavailable: {selected or 'server default'}. Choose an available model.")
-        effort = self.repository.current().workspace.config.reasoning_effort
-        supported = {item["reasoningEffort"] for item in model.get("supportedReasoningEfforts", [])}
-        if effort is not None and effort not in supported:
-            raise CodexError(f"{model['displayName']} does not support reasoning effort {effort}.")
-        return model["model"]
+        if selected is None:
+            if not models:
+                raise agent_error("Your ChatGPT plan lists no models for apps.")
+            return models[0]["model"]
+        if not any(model["model"] == selected for model in models):
+            raise agent_error(f"The selected model is not available on this ChatGPT plan: {selected}. Choose another model.")
+        return selected
+
+    # Turns
 
     async def start_chat(self, graph_id: str, request: GraphChatRequest) -> tuple[str, str]:
         graph = self.repository.graph(graph_id)
@@ -132,10 +126,9 @@ class CodexRuntime:
         with self.repository._connect() as conn:
             if conn.execute("SELECT 1 FROM chat_messages WHERE message_id=?", (client_id,)).fetchone():
                 raise ValueError("This client message id has already been used.")
-        model = request.model or ""
         run = AgentRun(id=uuid4().hex, graph_id=graph_id, session_id=thread.session_id,
                        request=request.model_copy(update={"selected_topic_id": selected_topic, "session_id": thread.session_id}),
-                       model=model, done=asyncio.get_running_loop().create_future(), thread_id=binding.get("thread_id"))
+                       model=request.model or "", done=asyncio.get_running_loop().create_future())
         self.store.begin(thread.session_id, run.id, client_id)
         self.store.put_message(graph_id, thread.session_id, ChatMessage(id=client_id, role="user", content=request.prompt, hidden=request.hidden_user_message))
         self.runs[run.id] = run
@@ -158,13 +151,14 @@ class CodexRuntime:
         try:
             await asyncio.shield(run.done)
             if run.error:
-                raise CodexError(run.error)
+                raise agent_error(run.error)
             if run.quiz_session is None:
-                raise CodexError("Codex finished without creating the requested quiz.")
+                raise agent_error("The model finished without creating the requested quiz.")
             return run.quiz_session
         finally:
             if not run.done.done():
                 await self.interrupt_run(run)
+            self.runs.pop(run.id, None)
 
     def emit(self, run: AgentRun, event: dict) -> None:
         if run.session_id:
@@ -172,7 +166,7 @@ class CodexRuntime:
             self.wake.set()
 
     def publish_message(self, run: AgentRun, message: ChatMessage) -> None:
-        # Native items retain their own ids; the UI nests them in one Clew reply.
+        # Output items keep their own ids; the UI nests them in one Clew reply.
         message.reply_id = run.id
         if run.session_id:
             self.store.put_message(run.graph_id, run.session_id, message)
@@ -182,8 +176,8 @@ class CodexRuntime:
         run.status = status
         run.error = error
         if run.session_id:
-            self.store.state(run.session_id, run.id, status, turn_id=run.turn_id, error=error)
-        self.emit(run, {"type": "turn_status", "status": status, "error": error, "turn_id": run.turn_id})
+            self.store.state(run.session_id, run.id, status, error=error)
+        self.emit(run, {"type": "turn_status", "status": status, "error": error})
 
     async def events(self, session_id: str, run_id: str, after: int = 0):
         while True:
@@ -196,7 +190,7 @@ class CodexRuntime:
             binding = self.store.binding(session_id)
             if len(events) == 256:
                 continue
-            if binding.get("run_id") != run_id or binding["status"] not in {"starting", "running", "waiting"}:
+            if binding.get("run_id") != run_id or binding["status"] not in ACTIVE:
                 # Events can arrive while the ASGI response is yielding a previous batch.
                 if self.store.last_event_id(session_id) > after:
                     continue
@@ -206,110 +200,99 @@ class CodexRuntime:
             except TimeoutError:
                 yield {"type": "heartbeat"}
 
+    def _first_input(self, run: AgentRun, previous_messages: list[ChatMessage], fresh: bool) -> dict:
+        config = self.repository.current().workspace.config
+        graph = self.repository.graph(run.graph_id)
+        receipts = [{"proposal_id": m.proposal.proposal_envelope.proposal_id, "applied": True}
+                    for m in previous_messages if m.proposal and m.proposal_applied]
+        parts = [turn_context(graph, config, run.request.selected_topic_id, receipts)]
+        if fresh and previous_messages:
+            history = [{"role": m.role, "content": m.content,
+                        "proposal_applied": m.proposal_applied, "model": m.model,
+                        "inline_quiz": m.inline_quiz.model_dump(mode="json") if m.inline_quiz else None,
+                        "question": m.question.model_dump(mode="json") if m.question else None,
+                        "proposal_summary": m.proposal.proposal_envelope.summary if m.proposal else None}
+                       for m in previous_messages[-config.memory_history_message_limit:] if not m.activity]
+            parts.append("Earlier conversation from Clew (historical data):\n" + json.dumps(history, ensure_ascii=False))
+        parts.append(run.request.prompt)
+        return {"role": "user", "content": [{"type": "input_text", "text": text} for text in parts]}
+
     async def _execute(self, run: AgentRun, previous_messages: list[ChatMessage]) -> None:
         try:
             run.model = await self._select_model(run.request.model or run.model or None)
             config = self.repository.current().workspace.config
-            graph = self.repository.graph(run.graph_id)
-            specs = tool_specs()
-            if run.session_id is None:
-                specs[0]["tools"] = [t for t in specs[0]["tools"] if t["name"] in {"read_graph", "read_topic", "create_closure_quiz"}]
-            params = {"model": run.model, "cwd": str(self.settings.codex_workspace.resolve()),
-                      "approvalPolicy": "never", "sandbox": "read-only",
-                      "baseInstructions": BASE_INSTRUCTIONS, "developerInstructions": developer_instructions(config),
-                      "config": {"web_search": "live" if run.request.use_grounding else "disabled"}}
-            fresh = run.thread_id is None
-            if fresh:
-                response = await self.transport.request("thread/start", {**params, "dynamicTools": specs, "ephemeral": run.session_id is None})
-                run.thread_id = response["thread"]["id"]
-                if run.session_id:
-                    self.store.bind_thread(run.session_id, run.thread_id)
-            else:
-                await self.transport.request("thread/resume", {**params, "threadId": run.thread_id})
-            if run.cancel_requested:
-                self.finish(run, "interrupted")
-                return
-            receipts = [{"proposal_id": m.proposal.proposal_envelope.proposal_id, "applied": True}
-                        for m in previous_messages if m.proposal and m.proposal_applied]
-            inputs = [{"type": "text", "text": turn_context(graph, config, run.request.selected_topic_id, receipts)}]
-            if fresh and previous_messages:
-                history = [{"role": m.role, "content": m.content,
-                            "proposal_applied": m.proposal_applied, "model": m.model,
-                            "inline_quiz": m.inline_quiz.model_dump(mode="json") if m.inline_quiz else None,
-                            "question": m.question.model_dump(mode="json") if m.question else None,
-                            "proposal_summary": m.proposal.proposal_envelope.summary if m.proposal else None}
-                           for m in previous_messages[-config.memory_history_message_limit:]]
-                inputs.append({"type": "text", "text": "Conversation imported from Clew before Codex was connected (historical data):\n" + json.dumps(history, ensure_ascii=False)})
-            inputs.append({"type": "text", "text": run.request.prompt})
-            response = await self.transport.request("turn/start", {"threadId": run.thread_id, "input": inputs,
-                "model": run.model, **({"effort": config.reasoning_effort} if config.reasoning_effort else {})})
-            run.turn_id = response["turn"]["id"]
-            if run.cancel_requested:
-                await self.interrupt_run(run)
-            elif not run.done.done() and run.status == "starting":
-                self.set_state(run, "running")
+            tools = tool_specs(CLOSURE_QUIZ_TOOLS if run.session_id is None else None)
+            if run.request.use_grounding:
+                tools.append({"type": "web_search"})
+            transcript = self.store.transcript(run.session_id) if run.session_id else None
+            items = list(transcript or [])
+            items.append(self._first_input(run, previous_messages, fresh=transcript is None))
+            payload = {"model": run.model, "instructions": BASE_INSTRUCTIONS + "\n" + developer_instructions(config),
+                       "tools": tools, "parallel_tool_calls": False, "include": ["reasoning.encrypted_content"],
+                       **({"reasoning": {"effort": config.reasoning_effort}} if config.reasoning_effort else {})}
+            self.set_state(run, "running")
+            for _ in range(MAX_STEPS):
+                response = await self.client.stream({**payload, "input": items}, lambda event: self._stream_event(run, event))
+                output = [item for item in response.get("output", []) if isinstance(item, dict)]
+                for item in output:
+                    if item.get("type") == "message":
+                        self._message_done(run, item)
+                items.extend(output)
+                calls = [item for item in output if item.get("type") == "function_call"]
+                if not calls:
+                    self._save_transcript(run, items)
+                    self.finish(run, "completed")
+                    return
+                from app.agent.tools import execute_tool
+                for call in calls:
+                    lock = run.tool_locks.setdefault(call["call_id"], asyncio.Lock())
+                    async with lock:
+                        output_text = await execute_tool(self, run, call["name"], call["call_id"], call.get("arguments") or "")
+                    items.append({"type": "function_call_output", "call_id": call["call_id"], "output": output_text})
+                self._save_transcript(run, items)
+                if run.cancel_requested:
+                    self.finish(run, "interrupted")
+                    return
+            raise agent_error(f"The model did not finish within {MAX_STEPS} steps. Continue the conversation to resume.")
         except asyncio.CancelledError:
             self.finish(run, "interrupted")
         except Exception as exc:
-            if run.thread_id and run.turn_id:
-                try:
-                    await self.transport.request("turn/interrupt", {"threadId": run.thread_id, "turnId": run.turn_id})
-                except CodexError:
-                    pass
             self.finish(run, "failed", str(exc))
 
-    def _run_for_thread(self, thread_id: str) -> AgentRun | None:
-        return next((run for run in self.runs.values() if run.thread_id == thread_id and not run.done.done()), None)
+    def _save_transcript(self, run: AgentRun, items: list[dict]) -> None:
+        if run.session_id:
+            self.store.save_transcript(run.session_id, items)
 
-    async def _notification(self, method: str, params: dict) -> None:
-        if method == "account/login/completed":
-            self.login_error = params.get("error") if not params.get("success") else None
-            self.login = None
-            return
-        run = self._run_for_thread(params.get("threadId", ""))
-        if run is None:
-            return
-        if method == "turn/started":
-            run.turn_id = params["turn"]["id"]
-            self.set_state(run, "running")
-        elif method == "turn/completed":
-            turn = params["turn"]
-            error = turn.get("error")
-            self.finish(run, turn["status"], error.get("message") if isinstance(error, dict) else error)
-        elif method == "item/agentMessage/delta":
-            item_id = params["itemId"]
-            message = run.messages.get(item_id) or ChatMessage(id=f"codex-{item_id}", role="assistant", content="", model=run.model, agent_status="streaming")
-            message.content += params["delta"]
+    def _assistant_message(self, run: AgentRun, item_id: str) -> ChatMessage:
+        message = run.messages.get(item_id)
+        if message is None:
+            message = ChatMessage(id=f"agent-{run.id}-{item_id}", role="assistant", content="", model=run.model, agent_status="streaming")
             run.messages[item_id] = message
+        return message
+
+    async def _stream_event(self, run: AgentRun, event: dict) -> None:
+        kind = event.get("type")
+        if kind == "response.output_text.delta" and isinstance(event.get("delta"), str):
+            message = self._assistant_message(run, str(event.get("item_id")))
+            message.content += event["delta"]
             self.publish_message(run, message)
-        elif method in {"item/started", "item/completed"}:
-            item = params.get("item") or {}
-            if item.get("type") == "agentMessage":
-                message = run.messages.get(item["id"]) or ChatMessage(id=f"codex-{item['id']}", role="assistant", content="", model=run.model)
+        elif kind == "response.output_item.added":
+            item = event.get("item") or {}
+            if item.get("type") == "message":
+                message = self._assistant_message(run, str(item.get("id")))
                 if item.get("phase") in {"commentary", "final_answer"}:
                     message.message_phase = item["phase"]
-                if method == "item/completed":
-                    message.content = item.get("text", message.content)
-                message.agent_status = "completed" if method == "item/completed" else "streaming"
-                run.messages[item["id"]] = message
                 self.publish_message(run, message)
-        elif method == "error" and not params.get("willRetry", False):
-            error = params.get("error") or {}
-            self.finish(run, "failed", str(error.get("message", "Codex turn failed.")))
 
-    async def _server_request(self, method: str, params: dict) -> dict:
-        if method != "item/tool/call":
-            # Native shell/file/permission requests are not application approvals.
-            if method in {"item/commandExecution/requestApproval", "item/fileChange/requestApproval"}:
-                return {"decision": "decline"}
-            raise CodexError(f"Unsupported Codex request: {method}")
-        run = self._run_for_thread(params["threadId"])
-        if run is None or run.cancel_requested:
-            return {"success": False, "contentItems": [{"type": "inputText", "text": "The Clew turn is no longer active."}]}
-        from app.agent.tools import execute_tool
-        lock = run.tool_locks.setdefault(params["callId"], asyncio.Lock())
-        async with lock:
-            return await execute_tool(self, run, params)
+    def _message_done(self, run: AgentRun, item: dict) -> None:
+        message = self._assistant_message(run, str(item.get("id")))
+        text = "".join(part.get("text", "") for part in item.get("content", [])
+                       if isinstance(part, dict) and part.get("type") == "output_text")
+        message.content = text or message.content
+        if item.get("phase") in {"commentary", "final_answer"}:
+            message.message_phase = item["phase"]
+        message.agent_status = "completed"
+        self.publish_message(run, message)
 
     async def answer(self, graph_id: str, session_id: str, interaction_id: str, *, answer: str | None, choice_index: int | None) -> dict:
         thread = self.repository.chat_thread(graph_id, session_id)
@@ -357,13 +340,10 @@ class CodexRuntime:
         run.cancel_requested = True
         for future in run.interactions.values():
             if not future.done():
-                future.set_exception(CodexError("The user stopped this turn."))
-        if run.thread_id and run.turn_id:
-            await self.transport.request("turn/interrupt", {"threadId": run.thread_id, "turnId": run.turn_id})
-        elif run.task and run.task is not asyncio.current_task():
-            # Let an in-flight thread/start or turn/start acknowledgement arrive.
-            # Cancelling the RPC reader here could leave a native turn running unseen.
-            await asyncio.shield(run.task)
+                future.set_exception(agent_error("The user stopped this turn."))
+        if run.task and run.task is not asyncio.current_task() and not run.task.done():
+            run.task.cancel()
+            await asyncio.gather(run.task, return_exceptions=True)
         self.finish(run, "interrupted")
 
     def finish(self, run: AgentRun, status: str, error: str | None = None) -> None:
@@ -372,7 +352,7 @@ class CodexRuntime:
         status = status if status in {"completed", "interrupted", "failed"} else "failed"
         for future in run.interactions.values():
             if not future.done():
-                future.set_exception(CodexError(error or "The turn ended."))
+                future.set_exception(agent_error(error or "The turn ended."))
         if run.session_id:
             thread = self.repository.chat_thread(run.graph_id, run.session_id)
             for message in thread.messages:
@@ -394,17 +374,8 @@ class CodexRuntime:
         self.emit(run, {"type": "turn_completed", "status": status, "error": error})
         run.done.set_result(None)
 
-    async def _disconnected(self, reason: str) -> None:
-        self.login = None
-        for run in list(self.runs.values()):
-            if not run.done.done():
-                self.finish(run, "failed", reason)
-
     async def close(self) -> None:
         for run in list(self.runs.values()):
             if not run.done.done():
-                try:
-                    await self.interrupt_run(run)
-                except CodexError:
-                    self.finish(run, "interrupted")
-        await self.transport.close()
+                await self.interrupt_run(run)
+        await self.auth.close()
