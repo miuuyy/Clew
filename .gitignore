@@ -52,3 +52,6 @@ logs/
 
 backend/data/codex/
 backend/data/agent-workspace/
+
+# Hosted clew.my client source (private, synced from the VPS)
+/public/
