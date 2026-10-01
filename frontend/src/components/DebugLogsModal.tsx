@@ -1,5 +1,7 @@
 import React from "react";
 
+import { Modal } from "./ui/Modal";
+
 import type { AppCopy } from "../lib/appCopy";
 import type { DebugLogEntry, DebugLogSnapshot } from "../lib/types";
 
@@ -92,37 +94,20 @@ export function DebugLogsModal({
   const entries = flattenLogs(copy, logs);
 
   return (
-    <div
-      className="quizOverlay settingsOverlay"
-      style={{ zIndex: 110 }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <Modal
+      id="debug-logs-dialog"
+      title={copy.settingsPanel.logsTitle}
+      description={copy.settingsPanel.logsSubtitle}
+      meta={logs ? <span className="uiHelp uiMono">{copy.settingsPanel.logsFile}: {logs.file_path}</span> : null}
+      closeLabel={copy.settingsPanel.logsClose}
+      onClose={onClose}
+      size="lg"
+      closeOnBackdrop
     >
-      <div className="settingsModal debugLogsModal">
-        <div className="settingsContent">
-          <div className="settingsContentHeader">
-            <div>
-              <h2>{copy.settingsPanel.logsTitle}</h2>
-              <div className="mutedSmall">{copy.settingsPanel.logsSubtitle}</div>
-              {logs ? (
-                <div className="mutedSmall">
-                  {copy.settingsPanel.logsFile}: {logs.file_path}
-                </div>
-              ) : null}
-            </div>
-            <button className="modalCloseButton" onClick={onClose} type="button" aria-label={copy.settingsPanel.logsClose}>
-              <span style={{ transform: "translateY(-1px)", display: "block" }}>✕</span>
-            </button>
-          </div>
-          <div className="debugLogsList">
-            {loading && !logs ? <div className="debugLogPlaceholder">{copy.settingsPanel.refreshing}</div> : null}
-            {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
-            {!loading && !error && entries.length === 0 ? <div className="debugLogPlaceholder">{copy.settingsPanel.logsEmpty}</div> : null}
-            {entries.length > 0 ? <ul className="debugLogsFlatList">{entries.map((entry) => renderEntry(copy, entry))}</ul> : null}
-          </div>
-        </div>
-      </div>
-    </div>
+      {loading && !logs ? <div className="debugLogPlaceholder">{copy.settingsPanel.refreshing}</div> : null}
+      {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
+      {!loading && !error && entries.length === 0 ? <div className="debugLogPlaceholder">{copy.settingsPanel.logsEmpty}</div> : null}
+      {entries.length > 0 ? <ul className="debugLogsFlatList">{entries.map((entry) => renderEntry(copy, entry))}</ul> : null}
+    </Modal>
   );
 }

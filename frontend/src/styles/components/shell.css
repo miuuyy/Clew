@@ -1,0 +1,803 @@
+/* Workspace chrome: dock, floating windows, workspace explorer, chat header,
+   session tabs and the top status/control strips. */
+
+/* Dock */
+
+.lightDock {
+  position: absolute;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 56px;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--ui-shadow-window);
+}
+
+.lightDockHorizontal {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  flex-direction: row;
+  width: auto;
+  max-width: calc(100% - 24px);
+  padding: 6px;
+  transform: translateX(-50%);
+}
+
+.lightDockGrip {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 34px;
+  margin-bottom: 6px;
+  color: var(--ui-fg);
+  cursor: grab;
+  position: relative;
+}
+
+:root[data-theme="light"] .lightDockGrip { color: var(--ui-accent); }
+
+.lightDockGrip::before {
+  content: "";
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: url("/clew-mark.png") center / contain no-repeat;
+  mask: url("/clew-mark.png") center / contain no-repeat;
+}
+
+.lightDockGrip::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: var(--ui-line);
+}
+
+.lightDockButton,
+.lightDockButtonLink {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ui-fg-3);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lightDockButton:hover,
+.lightDockButtonLink:hover {
+  background: var(--ui-fill-1);
+  color: var(--ui-fg);
+}
+
+.lightDockButton.lightDockButtonActive {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+:root[data-theme="light"] .lightDockButton.lightDockButtonActive { color: var(--ui-accent); }
+
+/* Active marker on the dock's outer edge. */
+.lightDock:not(.lightDockHorizontal) .lightDockButtonActive::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ui-fg);
+}
+
+:root[data-theme="light"] .lightDock:not(.lightDockHorizontal) .lightDockButtonActive::after { background: var(--ui-accent); }
+
+.lightDock:not(.lightDockHorizontal) .lightDockButtonLink {
+  margin-top: 9px;
+}
+
+.lightDock:not(.lightDockHorizontal) .lightDockButtonLink::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: var(--ui-line);
+}
+
+.lightDockButton svg,
+.lightDockButtonLink svg {
+  width: 21px;
+  height: 21px;
+}
+
+/* Floating windows */
+
+.lightFloatingWindow {
+  position: absolute;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--ui-radius-window);
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--ui-shadow-window);
+  color: var(--ui-fg);
+}
+
+.lightWorkspaceWindow {
+  width: min(372px, calc(100% - 140px));
+  height: min(560px, calc(100% - 120px));
+}
+
+.lightChatWindow {
+  height: min(780px, calc(100% - 110px));
+}
+
+.lightFloatingWindowHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  cursor: grab;
+}
+
+.lightFloatingWindowHeader:active { cursor: grabbing; }
+
+.lightFloatingWindowTitle {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  color: var(--ui-fg);
+}
+
+.lightFloatingWindowSubtle {
+  margin-top: 2px;
+  font-size: var(--ui-text-xs);
+  color: var(--ui-fg-3);
+}
+
+.lightWorkspaceWindowHeaderActions {
+  display: flex;
+  gap: 6px;
+}
+
+.lightWindowActionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-pill);
+  background: none;
+  color: var(--ui-fg-2);
+  font: 600 12px/1 var(--sans);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+
+.lightWindowActionButton:hover {
+  border-color: var(--ui-line-strong);
+  background: var(--ui-fill-1);
+  color: var(--ui-fg);
+}
+
+/* Workspace explorer: rows and a guide line, no nested cards. */
+
+.lightWorkspaceWindowBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+}
+
+.lightWorkspaceFolder {
+  display: flex;
+  flex-direction: column;
+}
+
+.lightWorkspaceFolderRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: var(--ui-radius-control);
+  transition: background 0.12s ease;
+}
+
+.lightWorkspaceFolderRow:hover { background: var(--ui-fill-1); }
+
+.lightWorkspaceFolderMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lightWorkspaceFolderCaret {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  color: var(--ui-fg-3);
+  transition: transform 0.18s var(--ui-ease);
+}
+
+.lightWorkspaceFolderOpen .lightWorkspaceFolderCaret { transform: rotate(90deg); }
+
+.lightWorkspaceFolderIcon {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ui-fg-3);
+}
+
+.lightWorkspaceFolderActive .lightWorkspaceFolderIcon { color: var(--ui-fg-2); }
+:root[data-theme="light"] .lightWorkspaceFolderActive .lightWorkspaceFolderIcon { color: var(--ui-accent); }
+
+.lightWorkspaceFolderMeta {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.lightWorkspaceFolderTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.lightWorkspaceFolderTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-text-md);
+  font-weight: 650;
+  color: var(--ui-fg);
+}
+
+.lightWorkspaceFolderCount {
+  font: 500 var(--ui-text-xs)/1 var(--mono);
+  color: var(--ui-fg-3);
+}
+
+.lightWorkspaceFolderSubtle {
+  font-size: var(--ui-text-xs);
+  color: var(--ui-fg-3);
+}
+
+.lightWorkspaceFolderInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 8px;
+  background: var(--ui-fill-1);
+  color: var(--ui-fg);
+  font: 600 var(--ui-text-md)/1 var(--sans);
+  outline: none;
+}
+
+.lightWorkspaceFolderActions {
+  display: flex;
+  gap: 2px;
+  padding-right: 6px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.lightWorkspaceFolderRow:hover .lightWorkspaceFolderActions,
+.lightWorkspaceFolderRow:focus-within .lightWorkspaceFolderActions { opacity: 1; }
+
+.lightWorkspaceFolderAction {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-fg-3);
+  font: 600 var(--ui-text-xs)/1 var(--sans);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lightWorkspaceFolderAction:hover,
+.lightWorkspaceFolderActionActive {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+.lightWorkspaceFolderActionDanger:hover {
+  background: var(--ui-bad-fill);
+  color: var(--ui-bad);
+}
+
+.lightWorkspaceTopicList {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0 8px 22px;
+}
+
+.lightWorkspaceTopicList::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 10px;
+  left: 14px;
+  width: 1px;
+  background: var(--ui-line);
+}
+
+.lightWorkspaceTopicItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-fg-2);
+  font: 500 13px/1.35 var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lightWorkspaceTopicItem:hover {
+  background: var(--ui-fill-1);
+  color: var(--ui-fg);
+}
+
+.lightWorkspaceTopicItemActive,
+.lightWorkspaceTopicItemActive:hover {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+.lightWorkspaceTopicLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightWorkspaceTopicBullet {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ui-fg-3);
+}
+
+.lightWorkspaceTopicBulletGood { background: var(--ui-good); }
+.lightWorkspaceTopicBulletWarn { background: var(--ui-warn); }
+
+/* Roots: an open ring marks where a path can start. */
+.lightWorkspaceTopicBulletRoot {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ui-fg-3);
+  width: 8px;
+  height: 8px;
+  margin: 0 -1px;
+}
+
+.lightWorkspaceTopicBulletRoot.lightWorkspaceTopicBulletGood { box-shadow: inset 0 0 0 1.5px var(--ui-good); }
+.lightWorkspaceTopicBulletRoot.lightWorkspaceTopicBulletWarn { box-shadow: inset 0 0 0 1.5px var(--ui-warn); }
+
+.lightWorkspaceTopicEmpty {
+  padding: 6px 10px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-fg-3);
+}
+
+/* Chat header: title, model menu, session tabs */
+
+.assistantDockTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.assistantInlineModelTrigger {
+  position: relative;
+  display: inline-flex;
+}
+
+.assistantModelMenuButton {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ui-fg-3);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.assistantModelMenuButton:hover,
+.assistantModelMenuButtonOpen {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+.assistantModelMenuCaret { transition: transform 0.15s var(--ui-ease); }
+.assistantModelMenuButtonOpen .assistantModelMenuCaret { transform: rotate(180deg); }
+
+.assistantModelMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -6px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--ui-shadow-window);
+}
+
+.assistantModelMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ui-fg-2);
+  font: 550 var(--ui-text-sm)/1.2 var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.assistantModelMenuItem:hover { background: var(--ui-fill-2); color: var(--ui-fg); }
+.assistantModelMenuItemActive { color: var(--ui-fg); }
+
+.sessionListWrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.sessionList {
+  display: flex;
+  gap: 4px;
+  padding: 0 18px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%);
+}
+
+.sessionList::-webkit-scrollbar { display: none; }
+
+.sessionItem,
+.sessionItemGroup {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: none;
+  color: var(--ui-fg-3);
+  font: 600 12px/1 var(--sans);
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.sessionItem {
+  gap: 6px;
+  padding: 0 11px;
+  cursor: pointer;
+}
+
+.sessionItem:hover,
+.sessionItemGroup:hover {
+  background: var(--ui-fill-1);
+  color: var(--ui-fg-2);
+}
+
+.sessionItem.sessionItemActive,
+.sessionItemGroup.sessionItemGroupActive {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+.sessionItemInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 4px 0 11px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sessionItemLabel {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionItemBadge {
+  font: 500 10.5px/1 var(--mono);
+  color: var(--ui-fg-3);
+}
+
+.sessionDeleteBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ui-fg-3);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.sessionItemGroup:hover .sessionDeleteBtn,
+.sessionItemGroupActive .sessionDeleteBtn,
+.sessionDeleteBtn:focus-visible { opacity: 1; }
+
+.sessionDeleteBtn:hover {
+  background: var(--ui-bad-fill);
+  color: var(--ui-bad);
+}
+
+.sessionItem.sessionItemNew {
+  box-shadow: inset 0 0 0 1px var(--ui-line-strong);
+  color: var(--ui-fg-2);
+}
+
+.sessionShadow {
+  flex: 0 0 auto;
+  height: 1px;
+  margin: 0 18px;
+  background: var(--ui-line);
+}
+
+/* Top status strip */
+
+.floatingStatsContainer {
+  align-items: center;
+}
+
+.statStrip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 0 0 1px var(--ui-line), 0 6px 18px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+}
+
+.statSeg {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ui-fg-3);
+}
+
+.statSeg + .statSeg::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: var(--ui-line);
+}
+
+.statSeg strong {
+  font: 600 12px/1 var(--mono);
+  color: var(--ui-fg);
+}
+
+.statSegLabel { color: var(--ui-fg-3); }
+
+.statSegLang {
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--ui-fg-2);
+}
+
+.statSegGood strong { color: var(--ui-good); }
+.statSegWarn strong { color: var(--ui-warn); }
+.statSegQuiet { color: var(--ui-fg-3); font-weight: 500; }
+
+/* Assessment cards put the label first; their value is text, not a number. */
+.statSeg > .statSegLabel:first-child + strong {
+  font-family: var(--sans);
+  font-weight: 600;
+}
+
+.statNotice {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bad-fill);
+  color: var(--ui-bad);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statHint {
+  flex: 0 0 auto;
+  font-size: var(--ui-text-xs);
+  color: var(--ui-fg-3);
+  white-space: nowrap;
+}
+
+/* Top-right control strip */
+
+.controlStrip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 0 0 1px var(--ui-line), 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.floatingStatusButton {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: none;
+  color: var(--ui-fg-2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.floatingStatusButton:hover {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg);
+}
+
+.floatingStatusButton.floatingStatusButtonActive {
+  background: var(--ui-fill-3);
+  color: var(--ui-fg);
+}
+
+.floatingStatusButton.floatingStatusButtonText {
+  width: auto;
+  padding: 0 12px;
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 600 12px/1 var(--sans);
+}
+
+.floatingStatusButton:disabled { opacity: 0.5; cursor: default; }
+
+/* Narrow layouts: graph switcher above the status strip. */
+
+@media (max-width: 1180px) {
+  .mobileGraphStrip {
+    position: absolute;
+    top: calc(24px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobileGraphScroller {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+
+  .mobileGraphScroller::-webkit-scrollbar { display: none; }
+
+  .mobileGraphChip,
+  .mobileGraphCreate {
+    flex: 0 0 auto;
+    height: 32px;
+    padding: 0 13px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: none;
+    color: var(--ui-fg-3);
+    font: 600 12.5px/1 var(--sans);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .mobileGraphChipActive {
+    background: var(--ui-surface);
+    color: var(--ui-fg);
+    box-shadow: 0 0 0 1px var(--ui-line);
+  }
+
+  .mobileGraphCreate {
+    background: var(--ui-primary);
+    color: var(--ui-on-primary);
+  }
+}

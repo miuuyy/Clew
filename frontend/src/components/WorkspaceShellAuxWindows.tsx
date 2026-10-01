@@ -1,6 +1,6 @@
 import type { AgentControls } from "./assistant/AgentInteraction";
 import React from "react";
-import { CaretDown, CaretRight, Check, DownloadSimple, FolderOpen, FolderSimple, PencilSimple } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, Check, DownloadSimple, FolderOpen, FolderSimple, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
 
 import type { GraphChatState } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
@@ -8,6 +8,7 @@ import { computeRootTopicIds, formatTopicState, getTopicStateTone } from "../lib
 import { AssistantComposer } from "./assistant/AssistantComposer";
 import { AssistantSessionList } from "./assistant/AssistantSessionList";
 import { AssistantThread } from "./assistant/AssistantThread";
+import { Modal } from "./ui/Modal";
 import type { ChatSessionSummary, GraphEnvelope } from "../lib/types";
 import type { TopicAnchorPoint } from "./GraphCanvas";
 
@@ -165,7 +166,7 @@ export function LightWorkspaceWindow({
             title={copy.emptyState.createGraph}
             type="button"
           >
-            <span className="lightWindowCreateWorkspaceGlyph">+</span>
+            <Plus size={13} weight="bold" aria-hidden="true" />
             <span>{copy.shell.newWorkspace}</span>
           </button>
         </div>
@@ -194,10 +195,10 @@ export function LightWorkspaceWindow({
                   type="button"
                 >
                   <span className="lightWorkspaceFolderCaret">
-                    {isExpanded ? <CaretDown size={14} weight="bold" /> : <CaretRight size={14} weight="bold" />}
+                    <CaretRight size={12} weight="bold" />
                   </span>
                   <span className="lightWorkspaceFolderIcon">
-                    {isExpanded ? <FolderOpen size={18} weight="duotone" /> : <FolderSimple size={18} weight="duotone" />}
+                    {isExpanded ? <FolderOpen size={17} /> : <FolderSimple size={17} />}
                   </span>
                   {renamingGraphId === graph.graph_id ? (
                     <input
@@ -237,7 +238,7 @@ export function LightWorkspaceWindow({
                     title={copy.sidebar.exportGraph(graph.title)}
                     type="button"
                   >
-                    <DownloadSimple size={14} weight="bold" />
+                    <DownloadSimple size={14} />
                   </button>
                   <button
                     className={`lightWorkspaceFolderAction ${renamingGraphId === graph.graph_id ? "lightWorkspaceFolderActionActive" : ""}`}
@@ -254,7 +255,7 @@ export function LightWorkspaceWindow({
                     disabled={renameGraphSaving && renamingGraphId === graph.graph_id}
                     type="button"
                   >
-                    {renamingGraphId === graph.graph_id ? copy.settingsPanel.save : <PencilSimple size={14} weight="bold" />}
+                    {renamingGraphId === graph.graph_id ? copy.settingsPanel.save : <PencilSimple size={14} />}
                   </button>
                   <button
                     className="lightWorkspaceFolderAction lightWorkspaceFolderActionDanger"
@@ -262,9 +263,7 @@ export function LightWorkspaceWindow({
                     title={copy.sidebar.deleteGraph(graph.title)}
                     type="button"
                   >
-                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M5 2V1h6v1h3v1H2V2h3zm1 3v7h1V5H6zm3 0v7h1V5H9zM3 4h10l-.8 10H3.8L3 4z" fill="currentColor" />
-                    </svg>
+                    <Trash size={14} />
                   </button>
                 </div>
               </div>
@@ -308,7 +307,6 @@ export function LightWorkspaceWindow({
 
 export function TopicAssetModal({
   topicAssetDialog,
-  themeMode,
   topicAssetModalRef,
   closeTopicAssetModal,
   copy,
@@ -324,7 +322,6 @@ export function TopicAssetModal({
   submitTopicAssetDialog,
 }: {
   topicAssetDialog: { kind: "resource" | "artifact"; topicId: string; topicTitle: string };
-  themeMode: "light" | "dark";
   topicAssetModalRef: React.RefObject<HTMLDivElement | null>;
   closeTopicAssetModal: () => void;
   copy: AppCopy;
@@ -340,93 +337,75 @@ export function TopicAssetModal({
   submitTopicAssetDialog: () => Promise<void>;
 }): React.JSX.Element {
   return (
-    <div className={`quizOverlay topicAssetOverlay ${themeMode === "light" ? "topicAssetOverlayLight" : "topicAssetOverlayDark"}`}>
-      <div
-        ref={topicAssetModalRef}
-        className="quizModal topicAssetModal"
-        style={{ maxWidth: 520 }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="topic-asset-dialog-title"
-        aria-describedby="topic-asset-dialog-description"
-        tabIndex={-1}
-      >
-        <div className="quizModalHeader">
-          <div className="topicAssetHeaderCopy">
-            <div id="topic-asset-dialog-title" className="cardTitle">
-              {topicAssetDialog.kind === "resource" ? copy.dialogs.addResourceTitle : copy.dialogs.addArtifactTitle}
-            </div>
-            <div id="topic-asset-dialog-description" className="mutedSmall">
-              {topicAssetDialog.kind === "resource" ? copy.dialogs.addResourceBody : copy.dialogs.addArtifactBody}
-            </div>
-            <div className="mutedSmall topicAssetTopicTitle">{topicAssetDialog.topicTitle}</div>
-          </div>
-          <button className="modalCloseButton" onClick={closeTopicAssetModal} type="button">
-            ×
-          </button>
-        </div>
-        <div className="quizModalBody stack topicAssetModalBody">
-          {topicAssetDialog.kind === "resource" ? (
-            <label className="field topicAssetField">
-              <span className="fieldLabel topicAssetFieldLabel">{copy.dialogs.resourceUrl}</span>
-              <textarea
-                ref={(node) => {
-                  topicAssetPrimaryInputRef.current = node;
-                }}
-                className="textarea textareaCompact textareaPersona topicAssetResourceInput"
-                value={topicResourceUrlDraft}
-                onChange={(event) => setTopicResourceUrlDraft(event.target.value)}
-                placeholder={copy.dialogs.resourceUrlPlaceholder}
-              />
-            </label>
-          ) : (
-            <>
-              <label className="field topicAssetField">
-                <span className="fieldLabel topicAssetFieldLabel">{copy.dialogs.artifactTitle}</span>
-                <input
-                  ref={(node) => {
-                    topicAssetPrimaryInputRef.current = node;
-                  }}
-                  className="input topicAssetTextInput"
-                  value={topicArtifactTitleDraft}
-                  onChange={(event) => setTopicArtifactTitleDraft(event.target.value)}
-                  placeholder={copy.dialogs.artifactTitlePlaceholder}
-                />
-              </label>
-              <label className="field topicAssetField">
-                <span className="fieldLabel topicAssetFieldLabel">{copy.dialogs.artifactBodyLabel}</span>
-                <textarea
-                  className="textarea textareaCompact textareaPersona topicAssetTextInput"
-                  value={topicArtifactBodyDraft}
-                  onChange={(event) => setTopicArtifactBodyDraft(event.target.value)}
-                  placeholder={copy.dialogs.artifactBodyPlaceholder}
-                />
-              </label>
-            </>
-          )}
-          {topicAssetError ? <div className="inlineNotice inlineNoticeError">{topicAssetError}</div> : null}
-          <div className="quizActions quizActionsRight">
-            <button
-              className="assistantSendButton quizSubmitButton topicAssetSaveButton"
-              disabled={
-                topicAssetSaving ||
-                (topicAssetDialog.kind === "resource"
-                  ? !topicResourceUrlDraft.trim()
-                  : !topicArtifactTitleDraft.trim() || !topicArtifactBodyDraft.trim())
-              }
-              onClick={() => void submitTopicAssetDialog()}
-              type="button"
-            >
-              {topicAssetSaving
-                ? copy.dialogs.creating
-                : topicAssetDialog.kind === "resource"
-                  ? copy.dialogs.saveResource
-                  : copy.dialogs.saveArtifact}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal
+      id="topic-asset-dialog"
+      modalRef={topicAssetModalRef}
+      title={topicAssetDialog.kind === "resource" ? copy.dialogs.addResourceTitle : copy.dialogs.addArtifactTitle}
+      description={topicAssetDialog.kind === "resource" ? copy.dialogs.addResourceBody : copy.dialogs.addArtifactBody}
+      meta={<span className="uiTag">{topicAssetDialog.topicTitle}</span>}
+      closeLabel={copy.dialogs.cancel}
+      onClose={closeTopicAssetModal}
+      footer={<>
+        <button className="uiButton uiButtonQuiet" onClick={closeTopicAssetModal} type="button">{copy.dialogs.cancel}</button>
+        <button
+          className="uiButton uiButtonPrimary"
+          disabled={
+            topicAssetSaving ||
+            (topicAssetDialog.kind === "resource"
+              ? !topicResourceUrlDraft.trim()
+              : !topicArtifactTitleDraft.trim() || !topicArtifactBodyDraft.trim())
+          }
+          onClick={() => void submitTopicAssetDialog()}
+          type="button"
+        >
+          {topicAssetSaving
+            ? copy.dialogs.creating
+            : topicAssetDialog.kind === "resource"
+              ? copy.dialogs.saveResource
+              : copy.dialogs.saveArtifact}
+        </button>
+      </>}
+    >
+      {topicAssetDialog.kind === "resource" ? (
+        <label className="uiField">
+          <span className="uiLabel">{copy.dialogs.resourceUrl}</span>
+          <textarea
+            ref={(node) => {
+              topicAssetPrimaryInputRef.current = node;
+            }}
+            className="uiTextarea"
+            value={topicResourceUrlDraft}
+            onChange={(event) => setTopicResourceUrlDraft(event.target.value)}
+            placeholder={copy.dialogs.resourceUrlPlaceholder}
+          />
+        </label>
+      ) : (
+        <>
+          <label className="uiField">
+            <span className="uiLabel">{copy.dialogs.artifactTitle}</span>
+            <input
+              ref={(node) => {
+                topicAssetPrimaryInputRef.current = node;
+              }}
+              className="uiInput"
+              value={topicArtifactTitleDraft}
+              onChange={(event) => setTopicArtifactTitleDraft(event.target.value)}
+              placeholder={copy.dialogs.artifactTitlePlaceholder}
+            />
+          </label>
+          <label className="uiField">
+            <span className="uiLabel">{copy.dialogs.artifactBodyLabel}</span>
+            <textarea
+              className="uiTextarea"
+              value={topicArtifactBodyDraft}
+              onChange={(event) => setTopicArtifactBodyDraft(event.target.value)}
+              placeholder={copy.dialogs.artifactBodyPlaceholder}
+            />
+          </label>
+        </>
+      )}
+      {topicAssetError ? <div className="inlineNotice inlineNoticeError">{topicAssetError}</div> : null}
+    </Modal>
   );
 }
 

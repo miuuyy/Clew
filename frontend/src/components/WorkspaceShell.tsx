@@ -1,6 +1,6 @@
 import type { AgentControls } from "./assistant/AgentInteraction";
 import React from "react";
-import { BookBookmark, BugBeetle, CaretDown, CaretLeft, CaretRight, ChatCircleDots, Check, CrosshairSimple, DownloadSimple, GearSix, List, PencilSimple, SquaresFour } from "@phosphor-icons/react";
+import { BookBookmark, BugBeetle, CaretDown, CaretLeft, CaretRight, ChatCircleDots, Check, CrosshairSimple, DownloadSimple, GearSix, List, PencilSimple, Plus, SquaresFour, X } from "@phosphor-icons/react";
 
 import { APP_NAME, ASSISTANT_MIN_WIDTH, type AuthSessionPayload, type GraphChatState, type ThemeMode, type WorkspaceSurfacePayload } from "../lib/appContracts";
 import { API_BASE } from "../lib/api";
@@ -19,7 +19,7 @@ import {
 } from "../lib/floatingDesktopLayout";
 import { renderDisplayText, safeExternalUrl, userInitials, type ManualLayoutPositions, type PopoverPosition, type apiFetch } from "../lib/appUiHelpers";
 import type { AppCopy } from "../lib/appCopy";
-import { formatMinutes, formatTopicState } from "../lib/graph";
+import { formatMinutes, formatTopicState, getTopicStateTone } from "../lib/graph";
 import { useModalAccessibility } from "../lib/useModalAccessibility";
 import { GraphCanvas } from "./GraphCanvas";
 import type { TopicAnchorPoint } from "./GraphCanvas";
@@ -438,13 +438,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
   const lightChatPanelOpen = experimentalLightDesktop && assistantOpen;
   const overlayLeftInset = experimentalLightDesktop ? 104 : overlayLeftOffset;
   const overlayRightInset = experimentalLightDesktop ? 24 : overlayRightOffset;
-  const getDockIconWeight = React.useCallback(
-    (isActive: boolean) => {
-      if (themeMode === "dark") return "regular";
-      return isActive ? "regular" : "duotone";
-    },
-    [themeMode],
-  );
+  const getDockIconWeight = React.useCallback((isActive: boolean) => (isActive ? "fill" : "regular"), []);
 
   const graphCanvasBackgroundFill = themeMode === "light" ? "#f7f7f4" : "#000000";
   const [topicAssetDialog, setTopicAssetDialog] = React.useState<{
@@ -1352,23 +1346,24 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                         type="button"
                         aria-label={copy.topic.closeTopic}
                       >
-                        ×
+                        <X size={13} weight="bold" aria-hidden="true" />
                       </button>
                     </div>
                     <div className="topicPopoverTitle">{selectedTopic.title}</div>
                     <div className="topicPopoverMeta">
-                      <span className="badge badge-blue">{formatTopicState(selectedTopic.state)}</span>
-                      <span className="badge badge-gray">{formatMinutes(selectedTopic.estimated_minutes, copy)}</span>
-                      {selectedZoneLabel ? <span className="badge badge-gray">{selectedZoneLabel}</span> : null}
+                      <span className={`topicPopoverState topicPopoverState-${getTopicStateTone(selectedTopic.state)}`}>{formatTopicState(selectedTopic.state)}</span>
+                      <span className="topicPopoverMetaItem">{formatMinutes(selectedTopic.estimated_minutes, copy)}</span>
+                      {selectedZoneLabel ? <span className="topicPopoverMetaItem">{selectedZoneLabel}</span> : null}
                     </div>
                     <div className="topicPopoverSection">
-                      <div className="topicPopoverLabel">{copy.topic.description}</div>
                       <div className="topicPopoverCopy">{renderDisplayText(selectedTopic.description || copy.topic.noDescription)}</div>
                     </div>
                     <div className="topicPopoverSection">
                       <div className="topicPopoverLabel">{copy.topic.foundationPath}</div>
-                      <div className="topicPopoverCopy topicPopoverPath">
-                        {pathTitles.length > 0 ? pathTitles.join(" → ") : selectedTopic.title}
+                      <div className="topicPopoverPath">
+                        {(pathTitles.length > 0 ? pathTitles : [selectedTopic.title]).map((title, index, all) => (
+                          <span key={`${title}-${index}`} className={index === all.length - 1 ? "topicPopoverPathCurrent" : undefined}>{title}</span>
+                        ))}
                       </div>
                     </div>
                     <div className="topicPopoverSection">
@@ -1381,7 +1376,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                           title={copy.topic.addResource}
                           onClick={() => openTopicAssetDialog("resource")}
                         >
-                          +
+                          <Plus size={12} weight="bold" aria-hidden="true" />
                         </button>
                       </div>
                       {selectedResourceLinks.length > 0 ? (
@@ -1397,7 +1392,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                             ))}
                         </div>
                       ) : (
-                        <div className="mutedSmall">{copy.topic.noResources}</div>
+                        <div className="topicPopoverEmpty">{copy.topic.noResources}</div>
                       )}
                     </div>
                     <div className="topicPopoverSection">
@@ -1410,7 +1405,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                           title={copy.topic.addArtifact}
                           onClick={() => openTopicAssetDialog("artifact")}
                         >
-                          +
+                          <Plus size={12} weight="bold" aria-hidden="true" />
                         </button>
                       </div>
                       {selectedArtifacts.length > 0 ? (
@@ -1426,59 +1421,50 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                           ))}
                         </div>
                       ) : (
-                        <div className="mutedSmall">{copy.topic.noArtifacts}</div>
+                        <div className="topicPopoverEmpty">{copy.topic.noArtifacts}</div>
                       )}
                     </div>
                     {selectedClosureStatus ? (
-                      <div className="topicPopoverSection">
+                      <div className="topicPopoverSection topicPopoverClosure">
                         <div className="topicPopoverLabel">{copy.topic.closure}</div>
                         {selectedClosureStatus.latest_attempt ? (
-                          <div className="row" style={{ gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
-                            <span className="badge badge-gray">{copy.closure.latestQuiz(selectedClosureStatus.latest_attempt.score * 100)}</span>
-                            <span className={`badge ${selectedClosureStatus.latest_attempt.passed ? "badge-green" : "badge-red"}`}>
+                          <div className="topicPopoverMeta">
+                            <span className="topicPopoverMetaItem">{copy.closure.latestQuiz(selectedClosureStatus.latest_attempt.score * 100)}</span>
+                            <span className={`topicPopoverState topicPopoverState-${selectedClosureStatus.latest_attempt.passed ? "good" : "bad"}`}>
                               {selectedClosureStatus.latest_attempt.passed ? copy.closure.passed : copy.closure.failed}
                             </span>
                             {!selectedClosureStatus.latest_attempt.passed && selectedClosureStatus.latest_attempt.fail_count > 0 ? (
-                              <span className="badge badge-yellow">{copy.closure.failedCount(selectedClosureStatus.latest_attempt.fail_count)}</span>
+                              <span className="topicPopoverMetaItem">{copy.closure.failedCount(selectedClosureStatus.latest_attempt.fail_count)}</span>
                             ) : null}
                           </div>
                         ) : null}
                         {!closureTestsEnabled ? null : selectedClosureStatus.blocked_prerequisite_ids.length === 0 ? (
-                          <div className="mutedSmall">{copy.topic.allClosed}</div>
+                          <div className="topicPopoverCopy">{copy.topic.allClosed}</div>
                         ) : (
-                          <div className="mutedSmall">{copy.topic.blockedCount(selectedClosureStatus.blocked_prerequisite_ids.length)}</div>
-                        )}
-                        {closureTestsEnabled && selectedClosureStatus.blocked_prerequisite_ids.length > 0 ? (
                           <div className="topicPopoverCopy">
                             {copy.closure.blockedBy}{" "}
                             {selectedClosureStatus.blocked_prerequisite_ids
                               .map((topicId) => topicTitlesById.get(topicId) ?? topicId)
                               .join(" · ")}
                           </div>
-                        ) : null}
-                        <div className="row topicClosureActions" style={{ justifyContent: "flex-end", gap: "8px" }}>
-                          {quizError ? <span className="badge badge-red">{quizError}</span> : null}
-                          {quizSuccess ? (
-                            <span className={`badge ${quizSuccess === copy.closure.markAsFinished ? "badge-yellow" : "badge-green"}`}>
-                              {quizSuccess}
-                            </span>
-                          ) : null}
-                          {closureTestsEnabled && !selectedClosureStatus.can_award_completion ? (
-                            <div className="topicClosureBlockedHint">{copy.closure.closePrerequisitesFirst}</div>
-                          ) : null}
-                          {!(selectedTopicClosed && !closureTestsEnabled) ? (
-                            <button
-                              className={`assistantSendButton ${closureTestsEnabled ? "startQuizButton" : "markFinishedButton"}`}
-                              disabled={quizLoading || (closureTestsEnabled && !selectedClosureStatus.can_award_completion)}
-                              onClick={() => void (closureTestsEnabled ? startQuiz() : markTopicFinished())}
-                              type="button"
-                            >
-                              {quizLoading
-                                ? (closureTestsEnabled ? copy.closure.generatingQuiz : copy.closure.markingAsFinished)
+                        )}
+                        {quizError ? <div className="topicPopoverNotice topicPopoverNoticeBad">{quizError}</div> : null}
+                        {quizSuccess ? <div className="topicPopoverNotice">{quizSuccess}</div> : null}
+                        {!(selectedTopicClosed && !closureTestsEnabled) ? (
+                          <button
+                            className="topicPopoverPrimary"
+                            disabled={quizLoading || (closureTestsEnabled && !selectedClosureStatus.can_award_completion)}
+                            onClick={() => void (closureTestsEnabled ? startQuiz() : markTopicFinished())}
+                            type="button"
+                            title={closureTestsEnabled && !selectedClosureStatus.can_award_completion ? copy.closure.closePrerequisitesFirst : undefined}
+                          >
+                            {quizLoading
+                              ? (closureTestsEnabled ? copy.closure.generatingQuiz : copy.closure.markingAsFinished)
+                              : closureTestsEnabled && !selectedClosureStatus.can_award_completion
+                                ? copy.closure.closePrerequisitesFirst
                                 : (closureTestsEnabled ? copy.closure.startClosureQuiz : copy.closure.markAsFinished)}
-                            </button>
-                          ) : null}
-                        </div>
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -1588,7 +1574,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                   title={copy.shell.workspace}
                   type="button"
                 >
-                  <SquaresFour size={28} weight={getDockIconWeight(lightWorkspacePanelOpen)} />
+                  <SquaresFour size={21} weight={getDockIconWeight(lightWorkspacePanelOpen)} />
                 </button>
                 <button
                   className={`lightDockButton ${lightChatPanelOpen ? "lightDockButtonActive" : ""}`}
@@ -1596,17 +1582,17 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                   title={copy.shell.chat}
                   type="button"
                 >
-                  <ChatCircleDots size={28} weight={getDockIconWeight(lightChatPanelOpen)} />
+                  <ChatCircleDots size={21} weight={getDockIconWeight(lightChatPanelOpen)} />
                 </button>
                 <button className={`lightDockButton ${isSettingsOpen ? "lightDockButtonActive" : ""}`} onClick={openConfigurationSettings} title={copy.shell.configuration} type="button">
-                  <GearSix size={28} weight={getDockIconWeight(isSettingsOpen)} />
+                  <GearSix size={21} weight={getDockIconWeight(isSettingsOpen)} />
                 </button>
                 <a className="lightDockButton lightDockButtonLink" href="https://clew.my/how-to-use" rel="noreferrer" target="_blank" title={copy.sidebar.documentation}>
-                  <BookBookmark size={28} weight={getDockIconWeight(false)} />
+                  <BookBookmark size={21} weight={getDockIconWeight(false)} />
                 </a>
                 {debugModeEnabled ? (
                   <button className={`lightDockButton ${isLogsOpen ? "lightDockButtonActive" : ""}`} onClick={openDebugLogs} title={copy.sidebar.logs} type="button">
-                    <BugBeetle size={28} weight={getDockIconWeight(isLogsOpen)} />
+                    <BugBeetle size={21} weight={getDockIconWeight(isLogsOpen)} />
                   </button>
                 ) : null}
               </div>
@@ -1634,7 +1620,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                 setAssistantWidth(0);
               }}
             >
-              <SquaresFour size={28} weight={getDockIconWeight(workspaceActive)} />
+              <SquaresFour size={21} weight={getDockIconWeight(workspaceActive)} />
             </button>
             {activeGraph ? (
               <button
@@ -1656,7 +1642,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                   });
                 }}
               >
-                <ChatCircleDots size={28} weight={getDockIconWeight(assistantOpen)} />
+                <ChatCircleDots size={21} weight={getDockIconWeight(assistantOpen)} />
               </button>
             ) : null}
             <button
@@ -1666,7 +1652,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
               title={copy.shell.configuration}
               onClick={openConfigurationSettings}
             >
-              <GearSix size={28} weight={getDockIconWeight(isSettingsOpen)} />
+              <GearSix size={21} weight={getDockIconWeight(isSettingsOpen)} />
             </button>
           </div>
             );
@@ -1676,7 +1662,6 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
       {topicAssetDialog ? (
         <TopicAssetModal
           topicAssetDialog={topicAssetDialog}
-          themeMode={themeMode}
           topicAssetModalRef={topicAssetModalRef}
           closeTopicAssetModal={closeTopicAssetModal}
           copy={copy}

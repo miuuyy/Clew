@@ -1,5 +1,8 @@
 import React from "react";
 
+import { Modal } from "../ui/Modal";
+import { SwitchRow } from "../ui/SwitchRow";
+
 import type { AppCopy } from "../../lib/appCopy";
 import type { GraphEnvelope, GraphExportFormat, ObsidianExportOptions } from "../../lib/types";
 
@@ -47,116 +50,46 @@ export function ExportGraphDialog({
 }): React.JSX.Element | null {
   if (!target) return null;
 
+  const obsidian = formatDraft === "mapmind_obsidian_export";
   return (
-    <div className="quizOverlay">
-      <div
-        ref={modalRef}
-        className="quizModal exportGraphModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-graph-dialog-title"
-        aria-describedby="export-graph-dialog-description"
-        tabIndex={-1}
-      >
-        <div className="quizModalHeader">
-          <div>
-            <div id="export-graph-dialog-title" className="cardTitle">{copy.dialogs.exportGraphTitle}</div>
-            <div id="export-graph-dialog-description" className="mutedSmall">{copy.dialogs.exportGraphBody}</div>
-          </div>
-          <button className="modalCloseButton" onClick={closeModal} type="button" aria-label={copy.dialogs.cancel}>×</button>
-        </div>
-        <div className="quizModalBody stack">
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.graphTitle}</span>
-            <input
-              ref={titleInputRef}
-              className="input"
-              value={titleDraft}
-              onChange={(event) => setTitleDraft(event.target.value)}
-              placeholder={copy.dialogs.exportTitlePlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.exportFormat}</span>
-            <select
-              className="input"
-              value={formatDraft}
-              onChange={(event) => setFormatDraft(event.target.value as GraphExportFormat)}
-            >
-              <option value="mapmind_graph_export">{copy.dialogs.exportFormatClew}</option>
-              <option value="mapmind_obsidian_export">{copy.dialogs.exportFormatObsidian}</option>
-            </select>
-          </label>
-          <label className="settingsToggleRow exportSettingsToggleRow">
-            <input
-              type="checkbox"
-              checked={includeProgressDraft}
-              onChange={(event) => setIncludeProgressDraft(event.target.checked)}
-            />
-            <div className="settingsToggleCopy">
-              <strong>{copy.dialogs.includeOwnProgress}</strong>
-            </div>
-          </label>
-          {formatDraft === "mapmind_obsidian_export" ? (
-            <div className="obsidianSettingsGrid exportSettingsGrid">
-              <label className="settingsToggleRow exportSettingsToggleRow">
-                <input
-                  type="checkbox"
-                  checked={obsidianOptionsDraft.use_folders_as_zones}
-                  onChange={(event) => patchObsidianExportOptions(setObsidianOptionsDraft, { use_folders_as_zones: event.target.checked })}
-                />
-                <div className="settingsToggleCopy">
-                  <strong>{copy.dialogs.obsidianUseFoldersAsZones}</strong>
-                  <span>{copy.dialogs.obsidianUseFoldersAsZonesHelp}</span>
-                </div>
-              </label>
-              <label className="settingsToggleRow exportSettingsToggleRow">
-                <input
-                  type="checkbox"
-                  checked={obsidianOptionsDraft.include_descriptions}
-                  onChange={(event) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_descriptions: event.target.checked })}
-                />
-                <div className="settingsToggleCopy">
-                  <strong>{copy.dialogs.obsidianIncludeDescriptions}</strong>
-                </div>
-              </label>
-              <label className="settingsToggleRow exportSettingsToggleRow">
-                <input
-                  type="checkbox"
-                  checked={obsidianOptionsDraft.include_resources}
-                  onChange={(event) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_resources: event.target.checked })}
-                />
-                <div className="settingsToggleCopy">
-                  <strong>{copy.dialogs.obsidianIncludeResources}</strong>
-                </div>
-              </label>
-              <label className="settingsToggleRow exportSettingsToggleRow">
-                <input
-                  type="checkbox"
-                  checked={obsidianOptionsDraft.include_artifacts}
-                  onChange={(event) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_artifacts: event.target.checked })}
-                />
-                <div className="settingsToggleCopy">
-                  <strong>{copy.dialogs.obsidianIncludeArtifacts}</strong>
-                </div>
-              </label>
-            </div>
-          ) : null}
-          {formatDraft === "mapmind_obsidian_export" ? <div className="mutedSmall exportGraphHint">{copy.dialogs.obsidianExportHint}</div> : null}
-          {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
-          <div className="quizActions quizActionsRight">
-            <button className="btn btnGhost" onClick={closeModal} type="button">{copy.dialogs.cancel}</button>
-            <button
-              className="assistantSendButton quizSubmitButton"
-              disabled={loading || !titleDraft.trim()}
-              onClick={() => void exportGraph(target)}
-              type="button"
-            >
-              {loading ? copy.dialogs.exportingGraph : copy.dialogs.exportGraph}
-            </button>
-          </div>
-        </div>
+    <Modal
+      id="export-graph-dialog"
+      modalRef={modalRef}
+      title={copy.dialogs.exportGraphTitle}
+      description={copy.dialogs.exportGraphBody}
+      closeLabel={copy.dialogs.cancel}
+      onClose={closeModal}
+      footer={<>
+        <button className="uiButton uiButtonQuiet" onClick={closeModal} type="button">{copy.dialogs.cancel}</button>
+        <button className="uiButton uiButtonPrimary" disabled={loading || !titleDraft.trim()} onClick={() => void exportGraph(target)} type="button">
+          {loading ? copy.dialogs.exportingGraph : copy.dialogs.exportGraph}
+        </button>
+      </>}
+    >
+      <div className="uiFieldPair">
+        <label className="uiField">
+          <span className="uiLabel">{copy.dialogs.graphTitle}</span>
+          <input ref={titleInputRef} className="uiInput" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} placeholder={copy.dialogs.exportTitlePlaceholder} />
+        </label>
+        <label className="uiField">
+          <span className="uiLabel">{copy.dialogs.exportFormat}</span>
+          <select className="uiSelect" value={formatDraft} onChange={(event) => setFormatDraft(event.target.value as GraphExportFormat)}>
+            <option value="mapmind_graph_export">{copy.dialogs.exportFormatClew}</option>
+            <option value="mapmind_obsidian_export">{copy.dialogs.exportFormatObsidian}</option>
+          </select>
+        </label>
       </div>
-    </div>
+      <div className="uiRows">
+        <SwitchRow title={copy.dialogs.includeOwnProgress} checked={includeProgressDraft} onChange={setIncludeProgressDraft} />
+        {obsidian ? <>
+          <SwitchRow title={copy.dialogs.obsidianUseFoldersAsZones} help={copy.dialogs.obsidianUseFoldersAsZonesHelp} checked={obsidianOptionsDraft.use_folders_as_zones} onChange={(checked) => patchObsidianExportOptions(setObsidianOptionsDraft, { use_folders_as_zones: checked })} />
+          <SwitchRow title={copy.dialogs.obsidianIncludeDescriptions} checked={obsidianOptionsDraft.include_descriptions} onChange={(checked) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_descriptions: checked })} />
+          <SwitchRow title={copy.dialogs.obsidianIncludeResources} checked={obsidianOptionsDraft.include_resources} onChange={(checked) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_resources: checked })} />
+          <SwitchRow title={copy.dialogs.obsidianIncludeArtifacts} checked={obsidianOptionsDraft.include_artifacts} onChange={(checked) => patchObsidianExportOptions(setObsidianOptionsDraft, { include_artifacts: checked })} />
+        </> : null}
+      </div>
+      {obsidian ? <p className="uiHelp">{copy.dialogs.obsidianExportHint}</p> : null}
+      {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
+    </Modal>
   );
 }

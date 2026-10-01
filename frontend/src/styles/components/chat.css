@@ -1,0 +1,646 @@
+/* Assistant conversation: thread, replies, tool blocks and composer.
+   One surface per window. Assistant text sits on the window; only user turns
+   are bubbles. Tool output is a single hairline block with divided rows. */
+
+.assistantThread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 14px 18px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+}
+
+.assistantHello {
+  margin: auto;
+  max-width: 260px;
+  text-align: center;
+  display: grid;
+  gap: 6px;
+  padding: 24px 0;
+}
+
+.assistantHelloLoading {
+  place-items: center;
+}
+
+.assistantHelloTitle {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ui-fg);
+}
+
+.assistantHelloCopy {
+  font-size: var(--ui-text-md);
+  line-height: 1.5;
+  color: var(--ui-fg-3);
+}
+
+.chatMessage {
+  display: flex;
+  min-width: 0;
+}
+
+.chatMessage-user {
+  justify-content: flex-end;
+}
+
+.chatBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+  color: var(--ui-fg);
+  font-size: var(--ui-text-md);
+  line-height: 1.6;
+}
+
+.chatMessage-user .chatBubble {
+  width: auto;
+  max-width: 82%;
+  padding: 9px 14px;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--ui-fill-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chatCopy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.chatCopy > :first-child { margin-top: 0; }
+.chatCopy > :last-child { margin-bottom: 0; }
+.chatCopy p { margin: 0 0 0.7em; }
+.chatCopy ul, .chatCopy ol { margin: 0 0 0.7em; padding-left: 1.25em; }
+.chatCopy li + li { margin-top: 0.25em; }
+.chatCopy strong { font-weight: 650; }
+.chatCopy a { color: inherit; text-decoration-color: var(--ui-line-strong); text-underline-offset: 3px; }
+.chatCopy code { font-family: var(--mono); font-size: 0.88em; padding: 1px 5px; border-radius: 6px; background: var(--ui-fill-2); }
+.chatCopy pre { margin: 0 0 0.7em; padding: 10px 12px; border-radius: var(--ui-radius-control); background: var(--ui-fill-1); overflow-x: auto; }
+.chatCopy pre code { padding: 0; background: none; }
+.chatCopy h1, .chatCopy h2, .chatCopy h3 { margin: 1em 0 0.4em; font-size: var(--ui-text-lg); font-weight: 650; letter-spacing: -0.01em; }
+.chatCopy blockquote { margin: 0 0 0.7em; padding-left: 12px; border-left: 2px solid var(--ui-line-strong); color: var(--ui-fg-2); }
+.chatCopy table { border-collapse: collapse; font-size: var(--ui-text-sm); }
+.chatCopy th, .chatCopy td { padding: 5px 8px; border-bottom: 1px solid var(--ui-line); text-align: left; }
+
+/* Typing indicator before the first item of a reply arrives. */
+.chatBubbleLoading {
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 0;
+}
+
+.chatTypingDot,
+.proposalInlinePendingDots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ui-fg-3);
+  animation: uiDotPulse 1.2s var(--ui-ease) infinite;
+}
+
+.chatTypingDot:nth-child(2),
+.proposalInlinePendingDots span:nth-child(2) { animation-delay: 0.15s; }
+.chatTypingDot:nth-child(3),
+.proposalInlinePendingDots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes uiDotPulse {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* Tool blocks */
+
+.proposalInlineCard,
+.inlineQuizCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-block);
+  background: var(--ui-fill-1);
+  overflow: hidden;
+}
+
+/* Progress is a status line, not a card. */
+.proposalInlinePending {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+}
+
+.proposalInlinePendingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proposalInlinePendingLabel {
+  font-size: var(--ui-text-sm);
+  font-weight: 550;
+  background: linear-gradient(90deg, var(--ui-fg-3) 0%, var(--ui-fg) 50%, var(--ui-fg-3) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: uiShimmer 2.4s linear infinite;
+}
+
+.proposalInlinePendingDots {
+  display: flex;
+  gap: 4px;
+}
+
+@keyframes uiShimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.chatStopped {
+  font-size: var(--ui-text-xs);
+  color: var(--ui-fg-3);
+}
+
+.proposalInlineHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px 10px;
+}
+
+.proposalInlineHead:only-child { padding-bottom: 13px; }
+
+.proposalInlineTitle {
+  font-size: var(--ui-text-md);
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: var(--ui-fg);
+}
+
+.proposalInlineNote {
+  margin-top: 4px;
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+  color: var(--ui-fg-2);
+}
+
+.proposalAddButton {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 500 18px/1 var(--sans);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s var(--ui-ease);
+}
+
+.proposalAddButton:hover:not(:disabled) { background: var(--ui-primary-hover); transform: scale(1.06); }
+.proposalAddButton:disabled { cursor: default; opacity: 0.4; }
+
+.proposalAddButtonApplied,
+.proposalAddButtonApplied:disabled {
+  opacity: 1;
+  background: var(--ui-good-fill);
+  color: var(--ui-good);
+}
+
+.proposalAppliedMark { display: inline-grid; place-items: center; }
+
+.proposalOpenButton {
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 600 var(--ui-text-xs)/1 var(--sans);
+  cursor: pointer;
+}
+
+.proposalOpenButton:hover { background: var(--ui-primary-hover); }
+
+/* Counts read as one quiet meta line. */
+.proposalStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0 14px 12px;
+}
+
+.proposalStat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-fg-3);
+}
+
+.proposalStat strong {
+  font-family: var(--mono);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  color: var(--ui-fg);
+}
+
+.proposalMiniList {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ui-line);
+  max-height: 232px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+}
+
+.proposalMiniItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-line);
+  background: none;
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-sm)/1.4 var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.proposalMiniItem:last-child { border-bottom: 0; }
+.proposalMiniItem:hover { background: var(--ui-fill-1); }
+
+.proposalMiniItem > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proposalMiniAction {
+  flex: 0 0 auto;
+  color: var(--ui-fg-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 550;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.proposalMiniItem:hover .proposalMiniAction,
+.proposalMiniItem:focus-visible .proposalMiniAction { opacity: 1; }
+
+.proposalReviewDetails {
+  border-top: 1px solid var(--ui-line);
+}
+
+.proposalReviewDetails > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--ui-text-sm);
+  font-weight: 550;
+  color: var(--ui-fg-2);
+}
+
+.proposalReviewDetails > summary::-webkit-details-marker { display: none; }
+
+.proposalReviewDetails > summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-left: 1px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s var(--ui-ease);
+}
+
+.proposalReviewDetails[open] > summary::before { transform: rotate(45deg); }
+.proposalReviewDetails > summary:hover { color: var(--ui-fg); }
+
+.proposalReviewItem {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--ui-line);
+  font-size: var(--ui-text-sm);
+  line-height: 1.55;
+  color: var(--ui-fg-2);
+}
+
+.proposalReviewItem strong { color: var(--ui-fg); font-weight: 600; }
+.proposalReviewItem p { margin: 0; }
+.proposalReviewItem a { color: var(--ui-fg-2); text-underline-offset: 3px; }
+
+.proposalReviewMeta {
+  font-size: var(--ui-text-xs);
+  color: var(--ui-fg-3);
+}
+
+/* Validation notes are divided rows inside the block. */
+.proposalNotices {
+  display: flex;
+  flex-direction: column;
+}
+
+.proposalNotice {
+  display: flex;
+  gap: 9px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--ui-line);
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+}
+
+.proposalNotice::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.proposalNoticeWarn { color: var(--ui-warn); }
+.proposalNoticeError { color: var(--ui-bad); }
+
+/* Questions and checkpoints */
+
+.inlineQuizCard {
+  gap: 10px;
+  padding: 14px;
+}
+
+.inlineQuizQuestion {
+  font-size: var(--ui-text-md);
+  font-weight: 650;
+  line-height: 1.45;
+  color: var(--ui-fg);
+}
+
+.inlineQuizChoices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  counter-reset: choice;
+}
+
+.inlineQuizChoice {
+  counter-increment: choice;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control);
+  background: none;
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-sm)/1.4 var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.inlineQuizChoice::before {
+  content: counter(choice, upper-alpha);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--ui-fill-2);
+  color: var(--ui-fg-3);
+  font: 600 var(--ui-text-xs)/1 var(--mono);
+}
+
+.inlineQuizChoice:hover:not(:disabled) {
+  border-color: var(--ui-line-strong);
+  background: var(--ui-fill-1);
+}
+
+.inlineQuizChoice:disabled { cursor: default; }
+
+.inlineQuizChoice.inlineQuizCorrect {
+  border-color: transparent;
+  background: var(--ui-good-fill);
+  color: var(--ui-good);
+}
+
+.inlineQuizChoice.inlineQuizCorrect::before { background: var(--ui-good); color: var(--ui-on-primary); }
+
+.inlineQuizChoice.inlineQuizWrong {
+  border-color: transparent;
+  background: var(--ui-bad-fill);
+  color: var(--ui-bad);
+}
+
+.inlineQuizChoice.inlineQuizWrong::before { background: var(--ui-bad); color: #fff; }
+.inlineQuizChoice.inlineQuizDimmed { opacity: 0.45; }
+
+.inlineQuizNote {
+  font-size: var(--ui-text-xs);
+  line-height: 1.5;
+  color: var(--ui-fg-3);
+}
+
+.inlineQuizNoteError { color: var(--ui-bad); }
+
+/* Free-text answer: one field with an inline send action. */
+.agentQuestionForm {
+  position: relative;
+  display: flex;
+}
+
+.agentQuestionInput {
+  width: 100%;
+  min-height: 40px;
+  max-height: 140px;
+  padding: 10px 76px 10px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control);
+  background: none;
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-sm)/1.45 var(--sans);
+  field-sizing: content;
+  resize: none;
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.agentQuestionInput::placeholder { color: var(--ui-fg-3); }
+.agentQuestionInput:focus { border-color: var(--ui-line-strong); }
+
+.agentQuestionSend {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 600 var(--ui-text-xs)/1 var(--sans);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.agentQuestionSend:disabled {
+  background: var(--ui-fill-2);
+  color: var(--ui-fg-3);
+  cursor: default;
+}
+
+/* Composer */
+
+.assistantComposerWrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 14px;
+}
+
+.composerInlineAction {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 600 var(--ui-text-xs)/1 var(--sans);
+  cursor: pointer;
+}
+
+.chatgptChatConnect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 4px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-fg-2);
+}
+
+.assistantTemplates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.assistantTemplate {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-pill);
+  background: none;
+  color: var(--ui-fg-2);
+  font: 550 var(--ui-text-xs)/1 var(--sans);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.assistantTemplate:hover {
+  border-color: var(--ui-line-strong);
+  color: var(--ui-fg);
+}
+
+.assistantTemplate svg { width: 12px; height: 12px; margin-right: 5px; }
+
+.assistantTemplate.webGroundingToggle.active {
+  border-color: transparent;
+  background: var(--ui-fill-3);
+  color: var(--ui-fg);
+}
+
+.assistantComposer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--ui-line);
+  border-radius: 16px;
+  background: var(--ui-fill-1);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.assistantComposer:focus-within {
+  border-color: var(--ui-line-strong);
+  background: var(--ui-fill-2);
+}
+
+.assistantInput {
+  flex: 1 1 auto;
+  min-height: 44px;
+  max-height: 180px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-md)/1.5 var(--sans);
+  field-sizing: content;
+  resize: none;
+  outline: none;
+}
+
+.assistantInput::placeholder { color: var(--ui-fg-3); }
+
+.composerSendButton {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s var(--ui-ease);
+}
+
+.composerSendButton:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+  transform: scale(1.05);
+}
+
+.composerSendButton:disabled {
+  background: var(--ui-fill-3);
+  color: var(--ui-fg-3);
+  cursor: default;
+}

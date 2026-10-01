@@ -76,12 +76,16 @@ export function AssistantThread({
                   ? <div className="inlineNotice inlineNoticeError">{message.activity.detail}</div> : null}
                 {message.question || message.inline_quiz ? <AgentInteraction question={message.question} quiz={message.inline_quiz} controls={agentControls} /> : null}
                 {message.closure_quiz ? <div className="proposalInlineCard">
-                  <div className="proposalInlineTitle">Completion test ready</div>
-                  <div className="mutedSmall">{message.closure_quiz.question_count} questions</div>
-                  <button className="btn btn-sm" type="button" onClick={() => agentControls.openQuiz(message.closure_quiz!)}>Open test</button>
+                  <div className="proposalInlineHead">
+                    <div>
+                      <div className="proposalInlineTitle">Completion test ready</div>
+                      <div className="proposalInlineNote">{message.closure_quiz.question_count} questions</div>
+                    </div>
+                    <button className="proposalOpenButton" type="button" onClick={() => agentControls.openQuiz(message.closure_quiz!)}>Open test</button>
+                  </div>
                 </div> : null}
                 {message.planning_status ? (
-                  <div className="proposalInlineCard proposalInlinePending">
+                  <div className="proposalInlinePending">
                     <div className="proposalInlinePendingRow">
                       <div className="proposalInlinePendingLabel">{message.planning_status}</div>
                       <div className="proposalInlinePendingDots" aria-hidden="true">
@@ -101,7 +105,7 @@ export function AssistantThread({
                       <div>
                         <div className="proposalInlineTitle">{proposal.display.summary}</div>
                         {proposal.proposal_envelope.assistant_message ? (
-                          <div className="mutedSmall">{proposal.proposal_envelope.assistant_message}</div>
+                          <div className="proposalInlineNote">{proposal.proposal_envelope.assistant_message}</div>
                         ) : null}
                       </div>
                       <button
@@ -124,9 +128,9 @@ export function AssistantThread({
                       </button>
                     </div>
                     {proposalCounts.length > 0 ? (
-                      <div className="previewStatGrid">
+                      <div className="proposalStats">
                         {proposalCounts.map((item) => (
-                          <div key={item.label} className="previewStatCard">
+                          <div key={item.label} className="proposalStat">
                             <strong>{item.value}</strong>
                             <span>{item.label}</span>
                           </div>
@@ -149,7 +153,7 @@ export function AssistantThread({
                             }}
                           >
                             <span>{item.target}</span>
-                            <span className="badge badge-gray">{item.label}</span>
+                            <span className="proposalMiniAction">{item.label}</span>
                           </button>
                         ))}
                       </div>
@@ -158,25 +162,25 @@ export function AssistantThread({
                       <summary>Review changes</summary>
                       {proposal.proposal_envelope.operations.map((operation) => <div key={operation.op_id} className="proposalReviewItem">
                         {operation.topic ? <><strong>{operation.topic.title}</strong><AssistantMarkdown content={operation.topic.description} />
-                          {operation.topic.estimated_minutes > 0 ? <div className="mutedSmall">Estimated study time: {operation.topic.estimated_minutes} minutes</div> : null}
+                          {operation.topic.estimated_minutes > 0 ? <div className="proposalReviewMeta">Estimated study time: {operation.topic.estimated_minutes} minutes</div> : null}
                           {operation.topic.resources.map((resource, index) => <a key={`${resource.url}-${index}`} href={resource.url} target="_blank" rel="noopener noreferrer">{resource.label}</a>)}
                         </> : operation.zone ? <strong>{operation.zone.title}</strong> : operation.edge ? <div>{operation.edge.source_topic_id} → {operation.edge.target_topic_id}</div> : null}
-                        {operation.rationale ? <div className="mutedSmall">{operation.rationale}</div> : null}
+                        {operation.rationale ? <div className="proposalReviewMeta">{operation.rationale}</div> : null}
                       </div>)}
                     </details>
                     {proposal.apply_plan.validation.errors.length > 0 ? (
-                      <div className="stackCompact">
+                      <div className="proposalNotices">
                         {proposal.apply_plan.validation.errors.map((entry) => (
-                          <div key={entry} className="inlineNotice inlineNoticeError">
+                          <div key={entry} className="proposalNotice proposalNoticeError">
                             {entry}
                           </div>
                         ))}
                       </div>
                     ) : null}
                     {proposal.apply_plan.validation.warnings.length > 0 ? (
-                      <div className="stackCompact">
+                      <div className="proposalNotices">
                         {proposal.apply_plan.validation.warnings.map((entry) => (
-                          <div key={entry} className="inlineNotice inlineNoticeWarn">
+                          <div key={entry} className="proposalNotice proposalNoticeWarn">
                             {entry}
                           </div>
                         ))}
@@ -186,13 +190,13 @@ export function AssistantThread({
                 ) : null}
               </React.Fragment>;
             })}
-            {view.progress ? <div className="proposalInlineCard proposalInlinePending" role="status">
+            {view.progress ? <div className="proposalInlinePending" role="status">
               <div className="proposalInlinePendingRow">
                 <div className="proposalInlinePendingLabel">{view.progressLabel}</div>
                 <div className="proposalInlinePendingDots" aria-hidden="true"><span /><span /><span /></div>
               </div>
             </div> : null}
-            {view.interrupted ? <div className="mutedSmall">Stopped</div> : null}
+            {view.interrupted ? <div className="chatStopped">Stopped</div> : null}
           </div>
         </div>;
       })}

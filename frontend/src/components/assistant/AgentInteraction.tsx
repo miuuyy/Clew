@@ -38,11 +38,12 @@ export function AgentInteraction({ question, quiz, controls }: {
       })}
     </div>
     {question && pending ? <form className="agentQuestionForm" onSubmit={(event) => { event.preventDefault(); void send(); }}>
-      <textarea className="textarea textareaCompact" aria-label="Your answer" placeholder={question.choices.length ? "Or write your own answer…" : "Your answer…"} value={value} disabled={busy} maxLength={12000} onChange={(event) => setValue(event.target.value)} />
-      <button className="btn btn-sm" type="submit" disabled={busy || !value.trim()}>{busy ? "Sending…" : "Send answer"}</button>
+      <textarea className="agentQuestionInput" rows={1} aria-label="Your answer" placeholder={question.choices.length ? "Or write your own answer…" : "Your answer…"} value={value} disabled={busy} maxLength={12000} onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }} />
+      <button className="agentQuestionSend" type="submit" aria-label="Send answer" disabled={busy || !value.trim()}>{busy ? "Sending…" : "Send"}</button>
     </form> : null}
-    {question?.answer ? <div className="mutedSmall">Your answer: {question.answer}</div> : null}
-    {!pending && !answered ? <div className="mutedSmall">This question is closed. Continue the conversation to ask again.</div> : null}
-    {error ? <div className="inlineNotice inlineNoticeError" role="alert">{error}</div> : null}
+    {question?.answer && !question.choices.includes(question.answer) ? <div className="inlineQuizNote">Your answer: {question.answer}</div> : null}
+    {!pending && !answered ? <div className="inlineQuizNote">This question is closed. Continue the conversation to ask again.</div> : null}
+    {error ? <div className="inlineQuizNote inlineQuizNoteError" role="alert">{error}</div> : null}
   </div>;
 }

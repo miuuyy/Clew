@@ -1,0 +1,322 @@
+/* Dialogs: one surface with a header, a scrolling body and a footer of actions. */
+
+.uiOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  animation: uiFadeIn 0.15s ease-out;
+}
+
+:root[data-theme="light"] .uiOverlay { background: rgba(60, 44, 28, 0.18); }
+
+@keyframes uiFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.uiModal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: min(820px, calc(100vh - 48px));
+  overflow: hidden;
+  border-radius: var(--ui-radius-window);
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--ui-shadow-window);
+  color: var(--ui-fg);
+  outline: none;
+  animation: uiPopIn 0.2s var(--ui-ease);
+}
+
+.uiModal-sm { max-width: 420px; }
+.uiModal-md { max-width: 560px; }
+.uiModal-lg { max-width: 760px; }
+
+.uiModalHeader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 16px 6px 24px;
+}
+
+.uiModalHeading {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.uiModalHeading h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--ui-fg);
+}
+
+.uiModalHeading p {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+  color: var(--ui-fg-3);
+}
+
+.uiModalBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 24px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+}
+
+.uiModalText {
+  margin: 0;
+  font-size: var(--ui-text-md);
+  line-height: 1.55;
+  color: var(--ui-fg-2);
+}
+
+.uiModalFooter {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px 12px 24px;
+  border-top: 1px solid var(--ui-line);
+}
+
+.uiModalFooterStart {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.uiMono { font-family: var(--mono); overflow-wrap: anywhere; }
+
+.uiFieldPair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+/* Switch rows: divided, never boxed. */
+.uiRows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ui-line);
+}
+
+.uiSwitchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-line);
+  cursor: pointer;
+}
+
+.uiSwitchRowCopy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.uiSwitchRowTitle {
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  color: var(--ui-fg);
+}
+
+/* File and folder pickers */
+.uiDropzone {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 22px 16px;
+  border: 1px dashed var(--ui-line-strong);
+  border-radius: var(--ui-radius-block);
+  background: var(--ui-fill-1);
+  color: var(--ui-fg-2);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.uiDropzone:hover { background: var(--ui-fill-2); color: var(--ui-fg); }
+
+.uiDropzoneReady {
+  border-style: solid;
+  border-color: var(--ui-line);
+}
+
+.uiDropzoneTitle {
+  font-size: var(--ui-text-md);
+  font-weight: 650;
+  color: var(--ui-fg);
+  overflow-wrap: anywhere;
+}
+
+.uiStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-fg-3);
+}
+
+.uiStats strong { font: 600 var(--ui-text-sm)/1 var(--mono); color: var(--ui-fg); }
+.uiStatsWarn strong { color: var(--ui-warn); }
+.uiStatsBad strong { color: var(--ui-bad); }
+
+.uiIssueList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ui-line);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.uiIssueList li {
+  display: flex;
+  gap: 9px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ui-line);
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+}
+
+.uiIssueList li::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.uiIssueWarn { color: var(--ui-warn); }
+.uiIssueBad { color: var(--ui-bad); }
+
+/* Completion quiz */
+
+.quizList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: quiz;
+}
+
+.quizItem {
+  counter-increment: quiz;
+  display: grid;
+  gap: 10px;
+  padding: 18px 0;
+  border-top: 1px solid var(--ui-line);
+}
+
+.quizItem:first-child { border-top: 0; padding-top: 2px; }
+
+.quizPrompt {
+  display: flex;
+  gap: 10px;
+  font-size: var(--ui-text-md);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ui-fg);
+}
+
+.quizPrompt::before {
+  content: counter(quiz, decimal-leading-zero);
+  flex: 0 0 auto;
+  padding-top: 0.15em;
+  font: 600 var(--ui-text-xs)/1.4 var(--mono);
+  color: var(--ui-fg-3);
+}
+
+.quizChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding-left: 28px;
+}
+
+.quizChoice {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control);
+  background: none;
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-sm)/1.4 var(--sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.quizChoice:hover { border-color: var(--ui-line-strong); background: var(--ui-fill-1); }
+
+.quizChoice.quizChoiceSelected,
+.quizChoice.quizChoiceSelected:hover {
+  border-color: var(--ui-fg);
+  background: var(--ui-fill-2);
+}
+
+:root[data-theme="light"] .quizChoice.quizChoiceSelected {
+  border-color: var(--ui-accent);
+  background: rgba(207, 110, 69, 0.08);
+}
+
+.quizVerdict,
+.quizNote {
+  padding-left: 28px;
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+}
+
+.quizVerdictGood { color: var(--ui-good); font-weight: 600; }
+.quizVerdictBad { color: var(--ui-bad); font-weight: 600; }
+.quizNote { color: var(--ui-fg-2); }
+
+.inlineNoticeSuccess {
+  background: var(--ui-good-fill);
+  color: var(--ui-good);
+}
+
+@media (max-width: 640px) {
+  .uiOverlay { place-items: end center; padding: 0; }
+  .uiModal { max-height: 92vh; border-radius: var(--ui-radius-window) var(--ui-radius-window) 0 0; }
+  .uiModal-sm, .uiModal-md, .uiModal-lg { max-width: none; }
+  .uiFieldPair, .quizChoices { grid-template-columns: minmax(0, 1fr); }
+  .quizChoices, .quizVerdict, .quizNote { padding-left: 0; }
+}
+
+/* Inline math in answer choices reads at body size. */
+.quizChoice .katex,
+.inlineQuizChoice .katex,
+.inlineQuizQuestion .katex,
+.quizPrompt .katex { font-size: 1.12em; }

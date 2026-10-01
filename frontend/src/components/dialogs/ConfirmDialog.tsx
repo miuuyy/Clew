@@ -1,11 +1,12 @@
 import React from "react";
 
+import { Modal } from "../ui/Modal";
+
 export function ConfirmDialog({
   open,
   modalRef,
   cancelButtonRef,
-  titleId,
-  descriptionId,
+  id,
   title,
   body,
   message,
@@ -17,8 +18,7 @@ export function ConfirmDialog({
   open: boolean;
   modalRef: React.RefObject<HTMLDivElement | null>;
   cancelButtonRef: React.RefObject<HTMLButtonElement | null>;
-  titleId: string;
-  descriptionId: string;
+  id: string;
   title: string;
   body: string;
   message: string;
@@ -30,32 +30,20 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="quizOverlay confirmOverlay">
-      <div
-        ref={modalRef}
-        className="quizModal confirmModal"
-        style={{ maxWidth: 400 }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-        tabIndex={-1}
-      >
-        <div className="quizModalHeader">
-          <div>
-            <div id={titleId} className="cardTitle">{title}</div>
-            <div id={descriptionId} className="mutedSmall">{body}</div>
-          </div>
-          <button className="modalCloseButton" onClick={onCancel} type="button">✕</button>
-        </div>
-        <div className="quizModalBody stack">
-          <p style={{ margin: "0 0 6px", color: "var(--text-secondary)" }}>{message}</p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-            <button ref={cancelButtonRef} className="btn btnGhost" onClick={onCancel} type="button">{cancelLabel}</button>
-            <button className="btn btnDanger" type="button" onClick={onConfirm}>{confirmLabel}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal
+      id={id}
+      modalRef={modalRef}
+      title={title}
+      description={body}
+      closeLabel={cancelLabel}
+      onClose={onCancel}
+      size="sm"
+      footer={<>
+        <button ref={cancelButtonRef} className="uiButton uiButtonQuiet" onClick={onCancel} type="button">{cancelLabel}</button>
+        <button className="uiButton uiButtonDanger" type="button" onClick={onConfirm}>{confirmLabel}</button>
+      </>}
+    >
+      <p className="uiModalText">{message}</p>
+    </Modal>
   );
 }

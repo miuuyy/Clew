@@ -1,30 +1,12 @@
 /* Light theme surface overrides. */
 :root[data-theme="light"] .sidebarGraphRowActive,
 :root[data-theme="light"] .sidebarGraphRowEditing,
-:root[data-theme="light"] .sidebarAccountTrigger:hover,
-:root[data-theme="light"] .sidebarTreeItemGhost:hover {
+:root[data-theme="light"] .sidebarAccountTrigger:hover {
   background: var(--clew-surface-highlight) !important;
   box-shadow: inset 0 0 0 1px rgba(var(--clew-accent-rgb), 0.12);
   border-radius: var(--clew-radius-panel);
 }
 
-:root[data-theme="light"] .sessionItemGroupActive,
-:root[data-theme="light"] .sessionItemActive,
-:root[data-theme="light"] .assistantTemplateActive,
-:root[data-theme="light"] .groundingToggleActive,
-:root[data-theme="light"] .webGroundingToggle.active,
-:root[data-theme="light"] .graphTabChipActive,
-:root[data-theme="light"] .workspaceUtilityButtonActive,
-:root[data-theme="light"] .thinkingModeChipActive,
-:root[data-theme="light"] .mobileGraphChipActive,
-:root[data-theme="light"] .settingsTabActive {
-  background: var(--clew-surface-highlight) !important;
-  border-color: var(--clew-surface-highlight-border) !important;
-  color: var(--clew-surface-highlight-text) !important;
-}
-
-:root[data-theme="light"] .assistantTemplate,
-:root[data-theme="light"] .webGroundingToggle,
 :root[data-theme="light"] .groundingToggle {
   min-height: 38px;
   padding: 8px 13px;
@@ -36,102 +18,18 @@
   font-weight: 600;
 }
 
-:root[data-theme="light"] .assistantTemplate:hover,
-:root[data-theme="light"] .webGroundingToggle:hover,
 :root[data-theme="light"] .groundingToggle:hover,
-:root[data-theme="light"] .workspaceUtilityButton:hover,
-:root[data-theme="light"] .btnGhost:hover,
-:root[data-theme="light"] .mobileGraphChip:hover,
-:root[data-theme="light"] .mobileGraphCreate:hover,
-:root[data-theme="light"] .settingsTab:hover {
+:root[data-theme="light"] .btnGhost:hover {
   background: #ffffff !important;
   border-color: rgba(195, 90, 44, 0.2) !important;
   color: rgba(45, 43, 40, 0.94) !important;
 }
 
-@media (max-width: 1180px) {
-  :root[data-theme="light"] .mobileDockItemActive,
-  :root[data-theme="light"] .mobileDockItem:hover,
-  :root[data-theme="light"] .mobileDockItem:focus-visible {
-    background: rgba(195, 90, 44, 0.1) !important;
-    border-color: rgba(195, 90, 44, 0.24) !important;
-    color: rgba(145, 63, 28, 0.96) !important;
-    box-shadow: none !important;
-  }
-
-  :root[data-theme="light"] .mobileDockItemChat.mobileDockItemActive,
-  :root[data-theme="light"] .mobileDockItemChat:hover,
-  :root[data-theme="light"] .mobileDockItemChat:focus-visible {
-    background: rgba(195, 90, 44, 0.1) !important;
-    border-color: rgba(195, 90, 44, 0.24) !important;
-    color: rgba(145, 63, 28, 0.96) !important;
-    box-shadow: none !important;
-  }
-
-  :root[data-theme="light"] .mobileGraphCreate,
-  :root[data-theme="light"] .mobileGraphCreate:hover,
-  :root[data-theme="light"] .mobileGraphCreate:focus-visible {
-    box-shadow: none !important;
-  }
-}
-
-:root[data-theme="light"] .settingsTab:hover .sidebarIcon,
-:root[data-theme="light"] .settingsTabActive .sidebarIcon {
-  color: rgba(145, 63, 28, 0.96) !important;
-}
-
-:root[data-theme="light"] .chatBubble {
-  max-width: min(100%, 420px);
-  padding: 15px 17px;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid #e9e1d7;
-  box-shadow: 0 10px 24px rgba(45, 43, 40, 0.06);
-  border-radius: 22px;
-}
-
-:root[data-theme="light"] .chatMessage-user .chatBubble {
-  background: linear-gradient(180deg, rgba(250, 247, 243, 0.98), rgba(240, 233, 223, 0.98));
-  color: rgba(45, 43, 40, 0.94);
-  border-color: rgba(224, 213, 203, 0.96);
-  box-shadow: 0 8px 18px rgba(45, 43, 40, 0.04);
-}
-
-:root[data-theme="light"] .chatCopy {
-  font-size: 14px;
-  line-height: 1.62;
-  color: rgba(45, 43, 40, 0.88);
-}
-
-:root[data-theme="light"] .assistantComposerWrap {
-  padding: 18px 20px 20px;
-  background: transparent;
-}
-
-:root[data-theme="light"] .assistantComposerWrap::before {
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(250, 249, 246, 0.08) 22%,
-    rgba(250, 249, 246, 0.24) 44%,
-    rgba(250, 249, 246, 0.56) 66%,
-    rgba(250, 249, 246, 0.86) 84%,
-    #faf9f6 100%
-  );
-}
-
-:root[data-theme="light"] .assistantComposerHint {
-  color: rgba(139, 133, 128, 0.9);
-}
-
-:root[data-theme="light"] .assistantSendButton,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton,
 :root[data-theme="light"] .emptyStateAction,
-:root[data-theme="light"] .sidebarNewAction,
 :root[data-theme="light"] .btnPrimary,
 :root[data-theme="light"] .btn.btnPrimary,
 :root[data-theme="light"] .btn.btnSave,
-:root[data-theme="light"] .btn.btnStart,
-:root[data-theme="light"] .startQuizButton {
+:root[data-theme="light"] .btn.btnStart {
   background: var(--clew-accent-primary) !important;
   color: var(--clew-accent-on-primary) !important;
   border: 1px solid transparent !important;
@@ -139,58 +37,20 @@
   font-weight: 700;
 }
 
-:root[data-theme="light"] .startQuizButton {
-  min-width: max-content !important;
-  width: auto !important;
-  height: 40px !important;
-  padding: 0 16px !important;
-  border-radius: 16px !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
-  line-height: 1.1 !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .quizSubmitButton,
-:root[data-theme="light"] .assistantSendButton:not(.assistantSendButtonIcon) {
-  min-width: max-content !important;
-  width: auto !important;
-  height: 40px !important;
-  padding: 0 16px !important;
-  border-radius: 16px !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
-  line-height: 1.1 !important;
-}
-
-:root[data-theme="light"] .assistantSendButton:hover,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton:hover:not(:disabled),
 :root[data-theme="light"] .emptyStateAction:hover,
-:root[data-theme="light"] .sidebarNewAction:hover,
 :root[data-theme="light"] .btnPrimary:hover,
 :root[data-theme="light"] .btn.btnPrimary:hover,
 :root[data-theme="light"] .btn.btnSave:hover,
-:root[data-theme="light"] .btn.btnStart:hover,
-:root[data-theme="light"] .startQuizButton:hover {
+:root[data-theme="light"] .btn.btnStart:hover {
   background: var(--clew-accent-primary-hover) !important;
   color: #ffffff !important;
 }
 
-:root[data-theme="light"] .assistantSendButton:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-:root[data-theme="light"] .workspaceUtilityButton,
 :root[data-theme="light"] .btnGhost,
-:root[data-theme="light"] .graphTabChip,
-:root[data-theme="light"] .thinkingModeChip,
-:root[data-theme="light"] .quizChoice,
-:root[data-theme="light"] .inlineQuizChoice {
+:root[data-theme="light"] .quizChoice {
   border-radius: 16px;
 }
 
-:root[data-theme="light"] .workspaceUtilityButton,
-:root[data-theme="light"] .graphTabChip,
 :root[data-theme="light"] .btnGhost {
   min-height: 40px;
   padding: 10px 14px;
@@ -204,26 +64,9 @@
 /* Light theme keeps orange as the main accent. */
 :root[data-theme="light"] .sidebarTreeItem,
 :root[data-theme="light"] .sidebarSectionHeader,
-:root[data-theme="light"] .sidebarNewAction,
-:root[data-theme="light"] .workspaceUtilityButton,
-:root[data-theme="light"] .graphTabChip,
-:root[data-theme="light"] .sessionItem,
-:root[data-theme="light"] .sessionItemGroup,
-:root[data-theme="light"] .assistantTemplate,
 :root[data-theme="light"] .groundingToggle,
-:root[data-theme="light"] .webGroundingToggle,
 :root[data-theme="light"] .btnGhost,
-:root[data-theme="light"] .thinkingModeChip,
-:root[data-theme="light"] .quizChoice,
-:root[data-theme="light"] .inlineQuizChoice,
-:root[data-theme="light"] .proposalMiniItem,
-:root[data-theme="light"] .previewStatCard,
-:root[data-theme="light"] .proposalAddButton,
-:root[data-theme="light"] .proposalInlinePending,
-:root[data-theme="light"] .inlineNotice,
-:root[data-theme="light"] .settingsInlineNotice,
-:root[data-theme="light"] .settingsToggleRow,
-:root[data-theme="light"] .listItem {
+:root[data-theme="light"] .quizChoice {
   background: rgba(255, 255, 255, 0.96) !important;
   border-color: var(--border) !important;
   color: rgba(45, 43, 40, 0.82) !important;
@@ -232,50 +75,15 @@
 
 :root[data-theme="light"] .sidebarTreeItem:hover,
 :root[data-theme="light"] .sidebarSectionHeader:hover,
-:root[data-theme="light"] .workspaceUtilityButton:hover,
-:root[data-theme="light"] .graphTabChip:hover,
-:root[data-theme="light"] .sessionItem:hover,
-:root[data-theme="light"] .sessionItemGroup:hover,
-:root[data-theme="light"] .assistantTemplate:hover,
 :root[data-theme="light"] .groundingToggle:hover,
-:root[data-theme="light"] .webGroundingToggle:hover,
 :root[data-theme="light"] .btnGhost:hover,
-:root[data-theme="light"] .thinkingModeChip:hover,
-:root[data-theme="light"] .quizChoice:hover,
-:root[data-theme="light"] .inlineQuizChoice:hover:not(:disabled),
-:root[data-theme="light"] .proposalMiniItem:hover,
-:root[data-theme="light"] .proposalAddButton:hover,
-:root[data-theme="light"] .listItem:hover {
+:root[data-theme="light"] .quizChoice:hover {
   background: #ffffff !important;
   border-color: rgba(195, 90, 44, 0.16) !important;
   color: rgba(45, 43, 40, 0.94) !important;
 }
 
-:root[data-theme="light"] .sidebarTreeLabel,
-:root[data-theme="light"] .graphTabChipMeta,
-:root[data-theme="light"] .assistantModeCopy,
-:root[data-theme="light"] .assistantComposerHint,
-:root[data-theme="light"] .sessionItemNew,
-:root[data-theme="light"] .sessionDeleteBtn,
-:root[data-theme="light"] .settingsPanelEyebrow,
-:root[data-theme="light"] .settingsSidebarTitle,
-:root[data-theme="light"] .mutedSmall,
-:root[data-theme="light"] .proposalInlinePendingLabel,
-:root[data-theme="light"] .topicPopoverCopy,
-:root[data-theme="light"] .topicPopoverPath {
-  color: rgba(139, 133, 128, 0.92) !important;
-}
-
-:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem,
-:root[data-theme="light"] .sessionItemGroupActive,
-:root[data-theme="light"] .sessionItemActive,
-:root[data-theme="light"] .assistantTemplateActive,
-:root[data-theme="light"] .groundingToggleActive,
-:root[data-theme="light"] .webGroundingToggle.active,
-:root[data-theme="light"] .graphTabChipActive,
-:root[data-theme="light"] .workspaceUtilityButtonActive,
-:root[data-theme="light"] .thinkingModeChipActive,
-:root[data-theme="light"] .settingsTabActive {
+:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem {
   background: rgba(195, 90, 44, 0.1) !important;
   border-color: rgba(195, 90, 44, 0.22) !important;
   color: rgba(217, 119, 87, 0.96) !important;
@@ -287,26 +95,10 @@
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span,
-:root[data-theme="light"] .graphTabChipActive strong,
-:root[data-theme="light"] .workspaceUtilityButtonActive,
-:root[data-theme="light"] .sessionItemGroupActive .sessionItemLabel,
-:root[data-theme="light"] .sessionItemActive .sessionItemLabel {
+:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span {
   color: rgba(217, 119, 87, 0.96) !important;
 }
 
-:root[data-theme="light"] .chatMessage-user .chatBubble,
-:root[data-theme="light"] .workspaceShellLightDockMode .chatMessage-user .chatBubble {
-  background: rgba(250, 247, 243, 0.98) !important;
-  border-color: rgba(233, 225, 215, 0.98) !important;
-  color: rgba(45, 43, 40, 0.94) !important;
-}
-
-:root[data-theme="light"] .chatCopy,
-:root[data-theme="light"] .assistantHelloTitle,
-:root[data-theme="light"] .assistantHelloCopy,
-:root[data-theme="light"] .inlineQuizQuestion,
-:root[data-theme="light"] .proposalInlineTitle,
 :root[data-theme="light"] .chatEmphasis {
   color: rgba(45, 43, 40, 0.88) !important;
 }
@@ -323,62 +115,13 @@
 }
 
 :root[data-theme="light"] .badge-red,
-:root[data-theme="light"] .inlineNoticeError,
 :root[data-theme="light"] .btn.btnDanger {
   background: rgba(212, 74, 60, 0.08) !important;
   border-color: rgba(212, 74, 60, 0.2) !important;
   color: #a63a2f !important;
 }
 
-:root[data-theme="light"] .proposalInlineCard,
-:root[data-theme="light"] .proposalInlinePending,
-:root[data-theme="light"] .inlineQuizCard {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .settingsModal {
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.92) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 24px 54px rgba(45, 43, 40, 0.12) !important;
-}
-
-:root[data-theme="light"] .settingsSidebar {
-  background: rgba(247, 244, 238, 0.88) !important;
-}
-
 /* Light theme surface fixes. */
-
-:root[data-theme="light"] .quizOverlay {
-  background: rgba(250, 249, 246, 0.36) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-@media (min-width: 1181px) {
-  :root[data-theme="light"] .quizOverlay.settingsOverlay {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-}
-
-:root[data-theme="light"] .lightDockButton:hover,
-:root[data-theme="light"] .lightDockButtonLink:hover,
-:root[data-theme="light"] .lightDockButtonActive {
-  color: rgba(92, 53, 35, 0.98) !important;
-  background: rgba(214, 106, 51, 0.16) !important;
-  border-radius: 999px !important;
-}
-
-:root[data-theme="light"] .sidebarNewAction,
-:root[data-theme="light"] .sidebarNewAction:hover {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
 
 :root[data-theme="light"] .sidebarGraphRowActive,
 :root[data-theme="light"] .sidebarGraphRowEditing {
@@ -387,115 +130,32 @@
 }
 
 :root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem,
-:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span,
-:root[data-theme="light"] .graphTabChipActive,
-:root[data-theme="light"] .workspaceUtilityButtonActive {
+:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span {
   background: rgba(195, 90, 44, 0.1) !important;
   border-color: rgba(195, 90, 44, 0.22) !important;
   color: rgba(217, 119, 87, 0.96) !important;
 }
 
-:root[data-theme="light"] .pageStatControl,
-:root[data-theme="light"] .floatingStatusButton,
-:root[data-theme="light"] .snapshotsCard .btn,
-:root[data-theme="light"] .listActions .btn,
 :root[data-theme="light"] .badge-blue {
   border-radius: 999px !important;
 }
 
-:root[data-theme="light"] .lightDockButtonActive,
-:root[data-theme="light"] .lightDockButton:hover,
-:root[data-theme="light"] .lightDockButtonLink:hover {
-  color: rgba(92, 53, 35, 0.98) !important;
-}
-
-:root[data-theme="light"] .quizModal,
-:root[data-theme="light"] .settingsModal,
-:root[data-theme="light"] .settingsSidebar,
 :root[data-theme="light"] .settingsPanel {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
 /* Reviewed surface cleanup. */
-:root[data-theme="light"] .proposalInlineCard,
-:root[data-theme="light"] .proposalInlinePending,
-:root[data-theme="light"] .proposalMiniItem,
-:root[data-theme="light"] .previewStatCard {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding-inline: 0 !important;
-}
 
-:root[data-theme="light"] .proposalAddButton {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  padding: 0 !important;
-  border-radius: 999px !important;
-  background: rgba(195, 90, 44, 0.1) !important;
-  border: 1px solid rgba(195, 90, 44, 0.18) !important;
-  color: rgba(217, 119, 87, 0.96) !important;
-}
-
-:root[data-theme="light"] .proposalAddButton:hover {
-  background: rgba(195, 90, 44, 0.14) !important;
-  border-color: rgba(195, 90, 44, 0.26) !important;
-}
-
-:root[data-theme="light"] .assistantComposerFooter {
-  margin-top: 2px;
-}
-
-:root[data-theme="light"] .assistantInput,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantInput,
 :root[data-theme="light"] .input,
 :root[data-theme="light"] select.input,
 :root[data-theme="light"] .textarea {
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .settingsContentHeader::after,
-:root[data-theme="light"] .settingsFooterBar,
-:root[data-theme="light"] .quizModalHeader::after {
-  background: linear-gradient(
-    180deg,
-    rgba(250, 249, 246, 0) 0%,
-    rgba(250, 249, 246, 0.72) 48%,
-    rgba(250, 249, 246, 0.94) 100%
-  ) !important;
-}
-
-:root[data-theme="light"] .settingsContentHeader {
-  background: rgba(255, 255, 255, 0.98) !important;
-}
-
-:root[data-theme="light"] .settingsSidebar,
-:root[data-theme="light"] .settingsPanel,
-:root[data-theme="light"] .settingsContentHeader,
-:root[data-theme="light"] .quizModal {
+:root[data-theme="light"] .settingsPanel {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-}
-
-:root[data-theme="light"] .pageStatControl,
-:root[data-theme="light"] .snapshotsCard .btn,
-:root[data-theme="light"] .listActions .btn {
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  border: 1px solid var(--border) !important;
-  color: rgba(45, 43, 40, 0.86) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .pageStatControl:hover,
-:root[data-theme="light"] .snapshotsCard .btn:hover,
-:root[data-theme="light"] .listActions .btn:hover {
-  border-color: rgba(195, 90, 44, 0.18) !important;
-  color: rgba(45, 43, 40, 0.94) !important;
 }
 
 :root[data-theme="light"] .badge-blue {
@@ -505,61 +165,8 @@
   border-color: rgba(195, 90, 44, 0.22) !important;
 }
 
-:root[data-theme="light"] .sidebarNewAction .sidebarIcon,
-:root[data-theme="light"] .sidebarNewAction svg {
-  color: currentColor !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="light"] .assistantSendButton,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton,
-:root[data-theme="light"] .quizSubmitButton,
-:root[data-theme="light"] .startQuizButton {
-  min-width: max-content !important;
-  height: 40px !important;
-  padding: 0 16px !important;
-  white-space: nowrap;
-  font-size: 13px;
-  letter-spacing: 0;
-}
-
-:root[data-theme="light"] .assistantSendButton svg,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton svg {
-  flex-shrink: 0;
-}
-
 /* Light theme component cleanup. */
-:root[data-theme="light"] .pageStat,
-:root[data-theme="light"] .pageStatWarn,
-:root[data-theme="light"] .pageStatHint,
-:root[data-theme="light"] .pageStatGood,
-:root[data-theme="light"] .pageStatComplete,
-:root[data-theme="light"] .pageStatAssessment {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border: 1px solid var(--border) !important;
-  color: rgba(45, 43, 40, 0.82) !important;
-  box-shadow: none !important;
-}
 
-:root[data-theme="light"] .pageStat strong,
-:root[data-theme="light"] .pageStatComplete strong,
-:root[data-theme="light"] .pageStatAssessment strong {
-  color: rgba(45, 43, 40, 0.9) !important;
-}
-
-:root[data-theme="light"] .pageStatControl,
-:root[data-theme="light"] .floatingStatusButton,
-:root[data-theme="light"] .snapshotsCard .btn,
-:root[data-theme="light"] .listActions .btn {
-  border-radius: 999px !important;
-  border: 1px solid var(--border) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  color: rgba(45, 43, 40, 0.84) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .pageStatControlActive,
-:root[data-theme="light"] .floatingStatusButtonActive,
 :root[data-theme="light"] .badge-blue {
   background: rgba(195, 90, 44, 0.1) !important;
   border: 1px solid rgba(195, 90, 44, 0.22) !important;
@@ -574,107 +181,8 @@
 }
 
 :root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem,
-:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span,
-:root[data-theme="light"] .sidebarTreeItemActive {
+:root[data-theme="light"] .sidebarGraphRowActive > .sidebarTreeItem span {
   color: rgba(217, 119, 87, 0.96) !important;
-}
-
-:root[data-theme="light"] .sidebarNewAction {
-  color: #c35a2c !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-  border: 0 !important;
-  padding-top: 2px !important;
-  padding-bottom: 10px !important;
-  font-weight: 600 !important;
-}
-
-:root[data-theme="light"] .sidebarNewAction:hover {
-  color: #ab4d24 !important;
-  background: transparent !important;
-}
-
-:root[data-theme="light"] .sidebarNewAction svg,
-:root[data-theme="light"] .sidebarNewAction .sidebarIcon {
-  color: currentColor !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="light"] .lightWindowActionButton {
-  width: auto !important;
-  height: auto !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: #c35a2c !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-}
-
-:root[data-theme="light"] .lightWindowActionButton:hover {
-  background: transparent !important;
-  border: 0 !important;
-  color: #ab4d24 !important;
-}
-
-:root[data-theme="light"] .lightDockButton::before,
-:root[data-theme="light"] .lightDockButtonLink::before {
-  background: rgba(214, 106, 51, 0.14) !important;
-  opacity: 0 !important;
-  transform: scale(0.82) !important;
-}
-
-:root[data-theme="light"] .lightDockButton:hover,
-:root[data-theme="light"] .lightDockButtonLink:hover {
-  color: rgba(45, 43, 40, 0.94) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItem:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(195, 90, 44, 0.12) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItemActive .lightWorkspaceListTitle,
-:root[data-theme="light"] .lightWorkspaceListItemActive .lightWorkspaceListMeta {
-  color: rgba(217, 119, 87, 0.96) !important;
-}
-
-:root[data-theme="light"] .proposalInlineCard,
-:root[data-theme="light"] .proposalInlinePending,
-:root[data-theme="light"] .proposalMiniList,
-:root[data-theme="light"] .proposalMiniItem,
-:root[data-theme="light"] .previewStatGrid,
-:root[data-theme="light"] .previewStatCard {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding-inline: 0 !important;
-}
-
-:root[data-theme="light"] .proposalInlineCard {
-  gap: 10px;
-  margin-top: 6px !important;
-  padding: 0 !important;
-}
-
-:root[data-theme="light"] .proposalMiniItem,
-:root[data-theme="light"] .previewStatCard {
-  padding: 0 !important;
-  min-height: auto !important;
-}
-
-:root[data-theme="light"] .proposalInlinePendingLabel,
-:root[data-theme="light"] .proposalInlineTitle,
-:root[data-theme="light"] .previewStatCard span,
-:root[data-theme="light"] .previewStatCard strong {
-  color: rgba(45, 43, 40, 0.82) !important;
 }
 
 :root[data-theme="light"] .input,
@@ -686,8 +194,6 @@
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .assistantInput:focus,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantInput:focus,
 :root[data-theme="light"] .input:focus,
 :root[data-theme="light"] select.input:focus,
 :root[data-theme="light"] .textarea:focus {
@@ -695,46 +201,7 @@
   box-shadow: none !important;
 }
 
-:root[data-theme="light"] .quizModal,
-:root[data-theme="light"] .settingsModal {
-  border-radius: 28px !important;
-  background: rgba(255, 255, 255, 0.985) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 24px 54px rgba(45, 43, 40, 0.1) !important;
-}
-
-:root[data-theme="light"] .quizModalHeader,
-:root[data-theme="light"] .settingsContentHeader {
-  border-bottom: 1px solid rgba(233, 225, 215, 0.72) !important;
-  background: rgba(255, 255, 255, 0.98) !important;
-}
-
-:root[data-theme="light"] .settingsContentHeader::after,
-:root[data-theme="light"] .quizModalHeader::after,
-:root[data-theme="light"] .settingsFooterBar {
-  background: linear-gradient(
-    180deg,
-    rgba(250, 249, 246, 0) 0%,
-    rgba(250, 249, 246, 0.76) 46%,
-    rgba(250, 249, 246, 0.95) 100%
-  ) !important;
-}
-
-:root[data-theme="light"] .btn.btnImport,
-:root[data-theme="light"] .assistantSendButton,
-:root[data-theme="light"] .quizSubmitButton,
-:root[data-theme="light"] .startQuizButton {
-  border-radius: 999px !important;
-}
-
-:root[data-theme="light"] .assistantSendButton,
-:root[data-theme="light"] .quizSubmitButton,
-:root[data-theme="light"] .startQuizButton {
-  min-width: max-content !important;
-  height: 40px !important;
-  padding: 0 16px !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
+:root[data-theme="light"] .btn.btnImport {
   border-radius: 999px !important;
 }
 
@@ -746,577 +213,16 @@
 }
 
 /* Light overlay fixes. */
-:root[data-theme="light"] .quizOverlay,
-:root[data-theme="light"] .quizOverlay.settingsOverlay {
-  background: rgba(250, 249, 246, 0.12) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-:root[data-theme="light"] .settingsOverlay .settingsModal,
-:root[data-theme="light"] .debugLogsModal,
-:root[data-theme="light"] .debugLogsModal .settingsContent,
-:root[data-theme="light"] .debugLogsModal .settingsContentHeader,
-:root[data-theme="light"] .debugLogColumn {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-:root[data-theme="light"] .quizModalHeader,
-:root[data-theme="light"] .settingsContentHeader,
-:root[data-theme="light"] .debugLogColumnHeader {
-  border-bottom: 0 !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .quizModalHeader::after,
-:root[data-theme="light"] .settingsContentHeader::after {
-  display: none !important;
-}
-
-:root[data-theme="light"] .settingsFooterBar {
-  background: linear-gradient(
-    180deg,
-    rgba(250, 249, 246, 0) 0%,
-    rgba(250, 249, 246, 0.58) 42%,
-    rgba(250, 249, 246, 0.94) 100%
-  ) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItem,
-:root[data-theme="light"] .lightWorkspaceListItem:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListButton {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  grid-template-rows: auto auto !important;
-  column-gap: 10px !important;
-  row-gap: 4px !important;
-  align-items: center !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListTitle {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListMeta {
-  grid-column: 1 !important;
-  grid-row: 2 !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListCount {
-  background: rgba(195, 90, 44, 0.1) !important;
-  border: 1px solid rgba(195, 90, 44, 0.18) !important;
-  color: rgba(217, 119, 87, 0.96) !important;
-  grid-column: 2 !important;
-  grid-row: 1 / span 2 !important;
-  align-self: center !important;
-  min-width: 30px !important;
-  padding: 4px 8px !important;
-  border-radius: 999px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.01em !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItem {
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  box-shadow: none !important;
-  border-radius: 18px !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItemActive {
-  background: rgba(195, 90, 44, 0.07) !important;
-  border-color: rgba(195, 90, 44, 0.2) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceListItemActive .lightWorkspaceListCount {
-  background: rgba(195, 90, 44, 0.16) !important;
-  border-color: rgba(195, 90, 44, 0.24) !important;
-  color: rgba(120, 46, 17, 0.98) !important;
-}
 
 /* Neutral light logs and white chat glow. */
-:root[data-theme="light"] .debugLogsGrid {
-  gap: 12px !important;
-  background: transparent !important;
-}
-
-:root[data-theme="light"] .debugLogsModal,
-:root[data-theme="light"] .debugLogsModal .settingsContent,
-:root[data-theme="light"] .debugLogsModal .settingsContentHeader,
-:root[data-theme="light"] .debugLogColumn,
-:root[data-theme="light"] .debugLogColumnBody {
-  background: rgba(252, 251, 248, 0.958) !important;
-}
-
-:root[data-theme="light"] .debugLogColumn,
-:root[data-theme="light"] .debugLogColumn + .debugLogColumn {
-  border: 1px solid rgba(229, 223, 215, 0.96) !important;
-  border-left: 0 !important;
-  border-radius: 18px !important;
-  background: rgba(252, 251, 248, 0.958) !important;
-  box-shadow: none !important;
-  overflow: hidden !important;
-}
-
-:root[data-theme="light"] .debugLogColumnHeader {
-  background: rgba(252, 251, 248, 0.958) !important;
-  color: rgba(92, 84, 76, 0.9) !important;
-  border-bottom: 1px solid rgba(231, 225, 217, 0.92) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .debugLogColumnBody {
-  padding: 10px 12px 12px !important;
-  overflow-x: hidden !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-:root[data-theme="light"] .debugLogColumnBody::-webkit-scrollbar {
-  display: none !important;
-}
 
 /* Light workspace explorer. */
-:root[data-theme="light"] .lightWorkspaceWindow {
-  border-radius: 22px !important;
-  border: 1px solid rgba(223, 214, 203, 0.96) !important;
-  background: rgba(249, 245, 239, 0.965) !important;
-  box-shadow:
-    0 20px 44px rgba(112, 84, 58, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.74) inset !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowHeader {
-  align-items: center !important;
-  padding: 16px 18px 12px !important;
-  border-bottom: 1px solid rgba(229, 221, 212, 0.92) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 248, 0.84) 0%, rgba(249, 245, 239, 0.52) 100%) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowTitle {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.01em !important;
-  color: rgba(62, 49, 39, 0.96) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowSubtle {
-  margin-top: 2px !important;
-  color: rgba(132, 115, 100, 0.88) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceExplorerBody {
-  padding: 10px 10px 12px !important;
-  gap: 2px !important;
-  align-items: stretch !important;
-  background:
-    linear-gradient(180deg, rgba(248, 244, 238, 0.95) 0%, rgba(245, 240, 233, 0.94) 100%) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceWindowHeaderActions .lightWindowCreateWorkspaceButton {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  min-height: 30px !important;
-  padding: 0 10px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(210, 127, 86, 0.18) !important;
-  background: rgba(255, 250, 244, 0.8) !important;
-  color: rgba(217, 119, 87, 0.96) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  box-shadow: none !important;
-  line-height: 1 !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceWindowHeaderActions .lightWindowCreateWorkspaceButton:hover {
-  background: rgba(255, 248, 241, 0.9) !important;
-  border-color: rgba(195, 90, 44, 0.22) !important;
-  color: rgba(217, 119, 87, 0.96) !important;
-}
-
-:root[data-theme="light"] .lightWindowCreateWorkspaceGlyph {
-  font-size: 16px;
-  line-height: 1;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolder {
-  display: flex !important;
-  flex: 0 0 auto !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  position: relative !important;
-  height: auto !important;
-  min-height: 0 !important;
-  border-radius: 14px !important;
-  border: 1px solid transparent !important;
-  border-bottom-color: rgba(228, 220, 211, 0.84) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: hidden !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderActive {
-  background: rgba(255, 250, 245, 0.46) !important;
-  border-color: rgba(215, 184, 163, 0.3) !important;
-  border-bottom-color: rgba(215, 184, 163, 0.44) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolder:hover {
-  background: rgba(255, 251, 246, 0.56) !important;
-  border-color: rgba(216, 199, 184, 0.42) !important;
-  border-bottom-color: rgba(216, 199, 184, 0.46) !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderRow {
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-  padding: 5px 6px;
-  min-height: 52px;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: background 140ms ease, color 140ms ease;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderMain:hover {
-  background: transparent !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderCaret,
-:root[data-theme="light"] .lightWorkspaceFolderIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--clew-accent-primary);
-  flex-shrink: 0;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderTitleRow {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderTitle {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(45, 43, 40, 0.96);
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderCount {
-  flex-shrink: 0;
-  min-width: 22px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: rgba(195, 90, 44, 0.06);
-  color: rgba(141, 81, 52, 0.9);
-  font-size: 9px;
-  font-weight: 700;
-  text-align: center;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderSubtle {
-  font-size: 10px;
-  color: rgba(130, 117, 104, 0.82);
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderActions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderAction {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: rgba(133, 121, 111, 0.88);
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderAction:hover,
-:root[data-theme="light"] .lightWorkspaceFolderActionActive {
-  background: rgba(195, 90, 44, 0.07);
-  color: rgba(217, 119, 87, 0.96);
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderActionDanger:hover {
-  background: rgba(186, 62, 44, 0.1);
-  color: rgba(147, 43, 29, 0.96);
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderInput {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: rgba(45, 43, 40, 0.96);
-  font: inherit;
-  font-weight: 700;
-  outline: none;
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicList {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 0 0 auto;
-  padding: 0 8px 8px 32px;
-}
-
-:root[data-theme="light"] .lightWorkspaceFolderOpen {
-  background: rgba(255, 252, 247, 0.68) !important;
-  border-color: rgba(216, 199, 184, 0.48) !important;
-  border-bottom-color: rgba(216, 199, 184, 0.48) !important;
-  min-height: 0 !important;
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: background 140ms ease;
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicItem:hover {
-  background: rgba(255, 255, 255, 0.72);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicItemActive {
-  background: rgba(195, 90, 44, 0.075);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicBullet {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(161, 153, 144, 0.72);
-  flex-shrink: 0;
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicBulletRoot::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border: 1px dashed rgba(113, 104, 95, 0.58);
-  border-radius: 999px;
-  pointer-events: none;
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicBulletNeutral {
-  background: rgba(161, 153, 144, 0.78);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicBulletGood {
-  background: rgba(78, 162, 101, 0.92);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicBulletWarn {
-  background: rgba(214, 152, 48, 0.94);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicLabel {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: rgba(59, 53, 48, 0.92);
-}
-
-:root[data-theme="light"] .lightWorkspaceTopicEmpty {
-  padding: 8px 12px 4px;
-  font-size: 12px;
-  color: rgba(120, 111, 101, 0.82);
-}
-
-:root[data-theme="light"] .debugLogEntry {
-  background: rgba(255, 255, 255, 0.72) !important;
-  border: 1px solid rgba(229, 223, 215, 0.96) !important;
-  box-shadow: none !important;
-  border-bottom: 1px solid rgba(236, 231, 225, 0.92) !important;
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
-}
-
-:root[data-theme="light"] .debugLogMeta,
-:root[data-theme="light"] .debugLogBody,
-:root[data-theme="light"] .debugLogDetails,
-:root[data-theme="light"] .debugLogDetails pre {
-  color: rgba(107, 96, 86, 0.88) !important;
-}
-
-:root[data-theme="light"] .debugLogTitle {
-  color: rgba(45, 43, 40, 0.96) !important;
-}
 
 @media (min-width: 1181px) {
-  :root[data-theme="light"] .debugLogsOverlay {
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    padding: 86px 0 0 104px !important;
-    background: transparent !important;
-    pointer-events: none !important;
-  }
 
-  :root[data-theme="light"] .debugLogsOverlay .debugLogsModal {
-    pointer-events: auto !important;
-    width: min(980px, calc(100vw - 152px)) !important;
-  }
-
-  :root[data-theme="light"] .leftSidebar,
-  :root[data-theme="light"] .lightDock {
+  :root[data-theme="light"] .leftSidebar {
     z-index: 140 !important;
   }
-}
-
-:root[data-theme="light"] .assistantComposerWrap,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantComposerWrap {
-  background: transparent !important;
-  padding: 12px 16px 16px !important;
-  border-top: 0 !important;
-  border-right: 0 !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .assistantSendButtonIcon,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButtonIcon {
-  min-width: 42px !important;
-  height: 42px !important;
-  border-radius: 999px !important;
-  width: 42px !important;
-  padding: 0 !important;
-  background: #c35a2c !important;
-  border: 1px solid #c35a2c !important;
-  color: #fffaf6 !important;
-  box-shadow: 0 14px 28px rgba(195, 90, 44, 0.18) !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="light"] .assistantSendButton:hover:not(:disabled),
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton:hover:not(:disabled) {
-  background: #ab4d24 !important;
-  border-color: #ab4d24 !important;
-  color: #ffffff !important;
-}
-
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.startQuizButton,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.startQuizButton:hover,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.startQuizButton:focus-visible,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.markFinishedButton,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.markFinishedButton:hover,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton.markFinishedButton:focus-visible {
-  background: #d97757 !important;
-  border-color: transparent !important;
-  color: #fffaf6 !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-:root[data-theme="light"] .topicClosureActions .assistantSendButton:not(.assistantSendButtonIcon),
-:root[data-theme="light"] .topicClosureActions .assistantSendButton:not(.assistantSendButtonIcon):hover,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton:not(.assistantSendButtonIcon):focus-visible,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton:not(.assistantSendButtonIcon):active:not(:disabled) {
-  background: #d97757 !important;
-  border-color: transparent !important;
-  color: #fffaf6 !important;
-  box-shadow: none !important;
-  filter: none !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-:root[data-theme="light"] .assistantSendButton:disabled,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantSendButton:disabled {
-  background: rgba(195, 90, 44, 0.92) !important;
-  border-color: rgba(195, 90, 44, 0.92) !important;
-  color: rgba(255, 250, 246, 0.98) !important;
-  box-shadow: 0 10px 20px rgba(195, 90, 44, 0.12) !important;
-  opacity: 0.72 !important;
-}
-
-:root[data-theme="light"] .quizSubmitButton,
-:root[data-theme="light"] .startQuizButton,
-:root[data-theme="light"] .assistantSendButton:not(.assistantSendButtonIcon) {
-  min-width: max-content !important;
-  width: auto !important;
-  height: 40px !important;
-  padding: 0 16px !important;
-  border-radius: 999px !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
-  line-height: 1.1 !important;
-}
-
-:root[data-theme="light"] .startQuizButton,
-:root[data-theme="light"] .startQuizButton:hover,
-:root[data-theme="light"] .startQuizButton:focus-visible {
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  background: #d97757 !important;
-  border-color: transparent !important;
-  color: #fffaf6 !important;
-  filter: none !important;
-  transform: none !important;
-  transition: none !important;
 }
 
 /* Shared light palette for chat and workspace surfaces. */
@@ -1330,230 +236,33 @@
   --dt-light-primary: #c35a2c;
 }
 
-:root[data-theme="light"] .lightChatWindow,
-:root[data-theme="light"] .lightWorkspaceWindow {
-  border-color: var(--dt-light-border) !important;
-  background: rgba(250, 249, 246, 0.965) !important;
-  box-shadow:
-    0 1px 8px rgba(0, 0, 0, 0.03),
-    0 16px 34px rgba(45, 43, 40, 0.06) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .lightFloatingWindowHeader,
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowHeader {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(233, 225, 215, 0.72) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .lightFloatingWindowTitle,
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowTitle,
 :root[data-theme="light"] .assistantDockTitle {
   color: var(--dt-light-text) !important;
 }
 
-:root[data-theme="light"] .lightChatWindow .lightFloatingWindowSubtle,
-:root[data-theme="light"] .lightWorkspaceWindow .lightFloatingWindowSubtle,
 :root[data-theme="light"] .assistantDockSubtle {
   color: var(--dt-light-muted) !important;
 }
 
-:root[data-theme="light"] .assistantThread,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantThread,
-:root[data-theme="light"] .assistantComposerWrap,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantComposerWrap {
-  background: var(--dt-light-bg) !important;
-}
-
-:root[data-theme="light"] .assistantComposerWrap::before,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantComposerWrap::before {
-  display: block !important;
-  height: 52px !important;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(250, 249, 246, 0.08) 22%,
-    rgba(250, 249, 246, 0.2) 42%,
-    rgba(250, 249, 246, 0.44) 64%,
-    rgba(250, 249, 246, 0.72) 84%,
-    #faf9f6 100%
-  ) !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="light"] .assistantTemplates {
-  gap: 8px !important;
-  padding-bottom: 4px !important;
-}
-
-:root[data-theme="light"] .assistantTemplate,
-:root[data-theme="light"] .webGroundingToggle,
-:root[data-theme="light"] .groundingToggle,
-:root[data-theme="light"] .sessionItem,
-:root[data-theme="light"] .sessionItemGroup {
+:root[data-theme="light"] .groundingToggle {
   background: var(--dt-light-secondary) !important;
   border: 1px solid transparent !important;
   color: var(--dt-light-muted) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.62) !important;
 }
 
-:root[data-theme="light"] .assistantTemplate:hover,
-:root[data-theme="light"] .webGroundingToggle:hover,
-:root[data-theme="light"] .groundingToggle:hover,
-:root[data-theme="light"] .sessionItem:hover,
-:root[data-theme="light"] .sessionItemGroup:hover {
+:root[data-theme="light"] .groundingToggle:hover {
   background: rgba(250, 249, 246, 0.92) !important;
   border-color: rgba(233, 225, 215, 0.96) !important;
   color: var(--dt-light-text) !important;
 }
-
-:root[data-theme="light"] .assistantTemplateActive,
-:root[data-theme="light"] .groundingToggleActive,
-:root[data-theme="light"] .webGroundingToggle.active,
-:root[data-theme="light"] .sessionItemGroupActive,
-:root[data-theme="light"] .sessionItemActive {
-  background: rgba(195, 90, 44, 0.1) !important;
-  border-color: rgba(195, 90, 44, 0.18) !important;
-  color: var(--dt-light-primary) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .assistantComposer,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantComposer {
-  background: var(--dt-light-card) !important;
-  border: 1px solid var(--dt-light-border) !important;
-  border-radius: 22px !important;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03) !important;
-  padding: 0 !important;
-  gap: 12px;
-}
-
-:root[data-theme="light"] .assistantInput,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantInput {
-  background: transparent !important;
-  border: 0 !important;
-  color: var(--dt-light-text) !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  min-height: 96px !important;
-  padding: 16px 18px !important;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-:root[data-theme="light"] .assistantInput::placeholder,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantInput::placeholder {
-  color: var(--dt-light-muted) !important;
-}
-
-:root[data-theme="light"] .assistantInput:focus,
-:root[data-theme="light"] .workspaceShellLightDockMode .assistantInput:focus {
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .chatBubble,
-:root[data-theme="light"] .workspaceShellLightDockMode .chatBubble {
-  background: var(--dt-light-card) !important;
-  border: 1px solid var(--dt-light-border) !important;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03) !important;
-  border-radius: 22px !important;
-  color: var(--dt-light-text) !important;
-}
 /* Light dock and chat cleanup. */
-:root[data-theme="light"] .lightDock .lightDockButtonActive::before {
-  box-shadow: none !important;
-}
-:root[data-theme="light"] .lightDock .lightDockButton.lightDockButtonActive::before {
-  box-shadow: none !important;
-}
 
 /* Light dock and chat active state. */
-:root[data-theme="light"] .lightDockButtonActive {
-  color: rgba(62, 49, 39, 0.96) !important;
-  background: rgba(214, 106, 51, 0.16) !important;
-  border-radius: 999px !important;
-}
-
-:root[data-theme="light"] .lightDockButtonActive::before {
-  opacity: 0 !important;
-  transform: scale(1) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .lightChatWindow {
-  background: rgba(255, 255, 255, 0.978) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .lightFloatingWindowHeader {
-  border-bottom: 0 !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionListWrap {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(233, 225, 215, 0.9) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionListWrap::before,
-:root[data-theme="light"] .lightChatWindow .sessionListWrap::after,
-:root[data-theme="light"] .lightChatWindow .assistantComposerWrap::before {
-  display: none !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionList,
-:root[data-theme="light"] .lightChatWindow .assistantThread,
-:root[data-theme="light"] .lightChatWindow .assistantComposerWrap {
-  background: rgba(252, 251, 248, 0.94) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionItem,
-:root[data-theme="light"] .lightChatWindow .sessionItemGroup {
-  background: rgba(240, 233, 223, 0.88) !important;
-  border: 1px solid transparent !important;
-  border-radius: 999px !important;
-  color: var(--dt-light-muted) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionItem:hover,
-:root[data-theme="light"] .lightChatWindow .sessionItemGroup:hover {
-  background: rgba(245, 241, 235, 0.96) !important;
-  border-color: rgba(233, 225, 215, 0.92) !important;
-  border-width: 1px !important;
-  border-style: solid !important;
-  color: var(--dt-light-text) !important;
-}
-
-:root[data-theme="light"] .lightChatWindow .sessionItemActive,
-:root[data-theme="light"] .lightChatWindow .sessionItemGroupActive {
-  background: rgba(240, 233, 223, 0.98) !important;
-  border-color: rgba(233, 225, 215, 0.98) !important;
-  border-width: 1px !important;
-  border-style: solid !important;
-  border-radius: 999px !important;
-  color: var(--dt-light-text) !important;
-  box-shadow: none !important;
-}
 
 /* Light chat and dock harmony. */
-:root[data-theme="light"] .lightDock {
-  background: rgba(246, 242, 236, 0.97) !important;
-  border-color: rgba(233, 225, 215, 0.98) !important;
-}
-
-:root[data-theme="light"] .lightDockButton,
-:root[data-theme="light"] .lightDockButtonLink {
-  color: var(--dt-light-muted) !important;
-}
 
 /* Light-theme disabled save button needs to stay visible — base rule
    collapses opacity to 0.42 on a transparent background, which on cream
    surface reads as no button at all. Make it muted but readable. */
-:root[data-theme="light"] .settingsFooterBar .assistantSendButton:disabled,
-:root[data-theme="light"] .settingsFooterBar .assistantSendButton:disabled:hover {
-  background: rgba(195, 90, 44, 0.5) !important;
-  border: 1px solid rgba(195, 90, 44, 0.6) !important;
-  color: rgba(255, 250, 246, 0.96) !important;
-  opacity: 0.95 !important;
-  box-shadow: none !important;
-}
+

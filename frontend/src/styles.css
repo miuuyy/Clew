@@ -2,3 +2,9 @@
 @import "./styles/workspace-chat.css";
 @import "./styles/dialogs-canvas.css";
 @import "./styles/theme-tokens.css";
+@import "./styles/system.css";
+@import "./styles/components/shell.css";
+@import "./styles/components/chat.css";
+@import "./styles/components/popover.css";
+@import "./styles/components/settings.css";
+@import "./styles/components/modal.css";

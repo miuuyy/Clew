@@ -1,0 +1,241 @@
+/* Workspace configuration: one window, sections divided by hairlines. */
+
+.stOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 84px 24px 24px 104px;
+  pointer-events: none;
+}
+
+.stModal {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(1040px, 100%);
+  height: min(820px, 100%);
+  overflow: hidden;
+  border-radius: var(--ui-radius-window);
+  background: var(--ui-surface);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--ui-shadow-window);
+  color: var(--ui-fg);
+  animation: uiPopIn 0.2s var(--ui-ease);
+}
+
+.stHeader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px 28px;
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.stHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.stScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+}
+
+.stGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+}
+
+.stColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stColumn + .stColumn { border-left: 1px solid var(--ui-line); }
+
+.stSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px 26px;
+}
+
+.stSection + .stSection { border-top: 1px solid var(--ui-line); }
+
+.stSectionHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stEyebrow {
+  margin-bottom: 4px;
+  font: 600 10.5px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ui-fg-3);
+}
+
+.stTitle {
+  margin: 0;
+  font-size: var(--ui-text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ui-fg);
+}
+
+.stLead {
+  margin: 0;
+  font-size: var(--ui-text-md);
+  line-height: 1.55;
+  color: var(--ui-fg-2);
+}
+
+.stSection p.uiHelp { margin: 0; }
+.stSection p.uiHelp strong { color: var(--ui-fg-2); font-weight: 650; }
+
+.stFieldPair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stNarrow { max-width: 160px; }
+
+/* Account */
+
+.stAccount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--ui-radius-block);
+  background: var(--ui-fill-1);
+}
+
+.stAccountDot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-fg-3);
+}
+
+.stAccountDotOn { background: var(--ui-good); box-shadow: 0 0 0 3px var(--ui-good-fill); }
+.stAccountDotPending { background: var(--ui-warn); animation: uiDotPulse 1.4s ease infinite; }
+
+.stAccountMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.stAccountName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-text-md);
+  font-weight: 650;
+}
+
+.stConnect {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+/* Snapshots */
+
+.stSnapshots {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0 -10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-fill-3) transparent;
+}
+
+.stSnapshot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--ui-radius-control);
+}
+
+.stSnapshot:hover { background: var(--ui-fill-1); }
+.stSnapshotCurrent { background: var(--ui-fill-1); }
+
+.stSnapshotMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.stSnapshotTitle {
+  font-size: var(--ui-text-sm);
+  font-weight: 650;
+}
+
+.stSnapshotMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: var(--ui-text-xs);
+  line-height: 1.45;
+  color: var(--ui-fg-3);
+}
+
+.stSnapshotMeta > span:first-child { font-family: var(--mono); }
+
+.stFooter {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 12px 18px 12px 28px;
+  border-top: 1px solid var(--ui-line);
+}
+
+@media (max-width: 1180px) {
+  /* Leave the bottom dock reachable while settings are open. */
+  .stOverlay {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding: 0;
+    pointer-events: auto;
+  }
+
+  .stModal {
+    width: 100%;
+    height: 100%;
+    border-radius: 0 0 var(--ui-radius-window) var(--ui-radius-window);
+  }
+
+  .stGrid { grid-template-columns: minmax(0, 1fr); }
+  .stColumn + .stColumn { border-left: 0; border-top: 1px solid var(--ui-line); }
+  .stSection { padding: 20px 18px 22px; }
+  .stHeader { padding-left: 18px; }
+}
+
+@media (max-width: 520px) {
+  .stFieldPair { grid-template-columns: minmax(0, 1fr); }
+  .uiSegmented { grid-auto-flow: row; }
+  .stAccount { flex-wrap: wrap; }
+}

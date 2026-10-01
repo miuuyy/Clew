@@ -1,3 +1,4 @@
+import { X } from "@phosphor-icons/react";
 import React from "react";
 
 import type { AppCopy } from "../../lib/appCopy";
@@ -137,7 +138,7 @@ export function AssistantSessionList({
                 aria-label={copy.sessions.deleteSessionAria(fallbackTitle)}
                 type="button"
               >
-                ×
+                <X size={11} weight="bold" aria-hidden="true" />
               </button>
             </div>
           );

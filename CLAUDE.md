@@ -53,6 +53,9 @@ Never weaken these:
 - `frontend/src/components/GraphCanvas.tsx`: graph rendering and interaction
 - `frontend/src/components/SettingsModal.tsx`: provider, memory, debug, and UX controls
 - `frontend/src/lib/`: API, graph helpers, copy, contracts, debug logging
+- `frontend/src/styles/system.css`: design tokens (`--ui-*`, both themes) and shared controls (`ui*` classes)
+- `frontend/src/styles/components/`: component styles built only on those tokens; new UI goes here, not into the legacy theme files
+- `frontend/src/components/ui/`: shared `Modal` and `SwitchRow`
 
 ## Backend quick map
 

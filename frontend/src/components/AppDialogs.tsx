@@ -253,8 +253,7 @@ export function AppDialogs(props: AppDialogsProps): React.JSX.Element {
         open={Boolean(deleteConfirm)}
         modalRef={deleteGraphModalRef}
         cancelButtonRef={deleteGraphCancelButtonRef}
-        titleId="delete-graph-dialog-title"
-        descriptionId="delete-graph-dialog-description"
+        id="delete-graph-dialog"
         title={copy.dialogs.deleteGraphTitle}
         body={copy.dialogs.deleteGraphBody}
         message={deleteConfirm ? copy.dialogs.deleteGraphConfirm(deleteConfirm.title) : ""}
@@ -268,8 +267,7 @@ export function AppDialogs(props: AppDialogsProps): React.JSX.Element {
         open={Boolean(sessionDeleteConfirm && activeGraph)}
         modalRef={sessionDeleteModalRef}
         cancelButtonRef={sessionDeleteCancelButtonRef}
-        titleId="delete-session-dialog-title"
-        descriptionId="delete-session-dialog-description"
+        id="delete-session-dialog"
         title={copy.dialogs.deleteChatSessionTitle}
         body={copy.dialogs.deleteChatSessionBody}
         message={sessionDeleteConfirm ? copy.dialogs.deleteChatSessionConfirm(sessionDeleteConfirm.title) : ""}

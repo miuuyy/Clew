@@ -1,5 +1,5 @@
 import React from "react";
-import { Cube, Graph, LockSimple, LockSimpleOpen, Moon, PencilSimple, SunDim } from "@phosphor-icons/react";
+import { Cube, Graph, LockSimple, LockSimpleOpen, Moon, PencilSimple, SunDim, X } from "@phosphor-icons/react";
 
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphAssessment, WorkspaceEnvelope, GraphEnvelope } from "../lib/types";
@@ -38,38 +38,41 @@ export function GraphStatItems({
   topOverlayCompact: boolean;
   isMobileViewport: boolean;
 }): React.JSX.Element {
+  const assessment = activeAssessmentCards.map((card) => (
+    <span
+      key={card.label}
+      className={`statSeg ${card.tone === "good" ? "statSegGood" : card.tone === "warn" ? "statSegWarn" : ""}`}
+      title={card.rationale}
+    >
+      <span className="statSegLabel">{card.label}</span>
+      <strong>{card.value}</strong>
+    </span>
+  ));
+  const notices = [assessmentError, error].filter((entry): entry is string => !!entry);
   return (
     <>
-      {activeGraph ? <span className="pageStat" style={{ fontWeight: 700, letterSpacing: "0.04em" }}>{activeGraph.language.toUpperCase()}</span> : null}
-      <span className="pageStat">
-        <strong>{graphSummary.topicCount}</strong>
-        {copy.graphStats.topics}
-      </span>
-      <span className="pageStat pageStatComplete">
-        <strong>{graphSummary.completedPercent}%</strong>
-        {copy.graphStats.complete}
-      </span>
-      {graphSummary.reviewCount > 0 ? (
-        <span className="pageStat pageStatWarn">
-          <strong>{graphSummary.reviewCount}</strong>
-          {copy.graphStats.review}
+      <div className="statStrip">
+        {activeGraph ? <span className="statSeg statSegLang">{activeGraph.language.toUpperCase()}</span> : null}
+        <span className="statSeg">
+          <strong>{graphSummary.topicCount}</strong>
+          <span className="statSegLabel">{copy.graphStats.topics}</span>
         </span>
-      ) : null}
-      {activeAssessmentCards.map((card) => (
-        <span
-          key={card.label}
-          className={`pageStat pageStatAssessment ${card.tone === "good" ? "pageStatGood" : card.tone === "warn" ? "pageStatWarn" : ""}`}
-          title={card.rationale}
-        >
-          <strong>{card.label}</strong>
-          {card.value}
+        <span className={`statSeg ${graphSummary.completedPercent > 0 ? "statSegGood" : ""}`}>
+          <strong>{graphSummary.completedPercent}%</strong>
+          <span className="statSegLabel">{copy.graphStats.complete}</span>
         </span>
-      ))}
-      {data ? <span className="badge badge-gray">{copy.graphStats.snapshot(data.snapshot.id)}</span> : null}
-      {assessmentError ? <span className="badge badge-red">{assessmentError}</span> : null}
-      {configSaving ? <span className="badge badge-yellow">{copy.graphStats.saving}</span> : null}
-      {error ? <span className="badge badge-red">{error}</span> : null}
-      {graphLayoutEditing && !topOverlayCompact && !isMobileViewport ? <span className="pageStat pageStatHint">{copy.graphStats.mayJitterWhileDragging}</span> : null}
+        {graphSummary.reviewCount > 0 ? (
+          <span className="statSeg statSegWarn">
+            <strong>{graphSummary.reviewCount}</strong>
+            <span className="statSegLabel">{copy.graphStats.review}</span>
+          </span>
+        ) : null}
+        {assessment}
+        {data ? <span className="statSeg statSegQuiet">{copy.graphStats.snapshot(data.snapshot.id)}</span> : null}
+        {configSaving ? <span className="statSeg statSegQuiet">{copy.graphStats.saving}</span> : null}
+      </div>
+      {notices.map((entry) => <span key={entry} className="statNotice">{entry}</span>)}
+      {graphLayoutEditing && !topOverlayCompact && !isMobileViewport ? <span className="statHint">{copy.graphStats.mayJitterWhileDragging}</span> : null}
     </>
   );
 }
@@ -105,15 +108,16 @@ export function OverlayControls({
   graphViewMode: GraphViewMode;
   setGraphViewMode: React.Dispatch<React.SetStateAction<GraphViewMode>>;
 }): React.JSX.Element {
+  if (!activeGraph) return <></>;
   return (
-    <>
+    <div className="controlStrip">
       {activeGraph ? (
         <button
           className={`floatingStatusButton ${themeMode === "light" ? "floatingStatusButtonActive" : ""}`}
           onClick={() => setThemeMode((current) => current === "light" ? "dark" : "light")}
           type="button"
           title={themeMode === "light" ? copy.graphStats.switchToDarkTheme : copy.graphStats.switchToLightTheme}
-          aria-pressed={themeMode === "light"}
+          aria-label={themeMode === "light" ? copy.graphStats.switchToDarkTheme : copy.graphStats.switchToLightTheme}
         >
           {themeMode === "light" ? <Moon size={15} weight="bold" /> : <SunDim size={15} weight="bold" />}
         </button>
@@ -142,6 +146,7 @@ export function OverlayControls({
           onClick={() => setViewportCenteredZoom((value: boolean) => !value)}
           type="button"
           title={viewportCenteredZoom ? copy.graphStats.viewportCenteredZoomEnabled : copy.graphStats.pointerFollowZoomEnabled}
+          aria-label={viewportCenteredZoom ? copy.graphStats.viewportCenteredZoomEnabled : copy.graphStats.pointerFollowZoomEnabled}
           aria-pressed={viewportCenteredZoom}
         >
           {viewportCenteredZoom ? <LockSimple size={15} weight="bold" /> : <LockSimpleOpen size={15} weight="bold" />}
@@ -149,7 +154,7 @@ export function OverlayControls({
       ) : null}
       {activeGraph && graphViewMode === "2d" ? (
         <button
-          className={`pageStat pageStatControl ${graphLayoutEditing ? "pageStatControlActive" : ""}`}
+          className={`floatingStatusButton ${graphLayoutEditing ? "floatingStatusButtonText floatingStatusButtonActive" : ""}`}
           onClick={() => {
             if (graphLayoutEditing) {
               void saveGraphLayout();
@@ -160,13 +165,15 @@ export function OverlayControls({
           type="button"
           disabled={graphLayoutSaving}
           title={graphLayoutEditing ? copy.graphStats.saveLayout : copy.graphStats.editGraphLayout}
+          aria-label={graphLayoutEditing ? copy.graphStats.saveLayout : copy.graphStats.editGraphLayout}
         >
-          {graphLayoutEditing ? copy.graphStats.saveLayout : <PencilSimple size={13} weight="bold" />}
+          {graphLayoutEditing ? copy.graphStats.saveLayout : <PencilSimple size={15} weight="bold" />}
         </button>
       ) : null}
       {graphViewMode === "2d" && graphLayoutEditing ? (
         <button
-          className="pageStat layoutCancelBtn"
+          className="floatingStatusButton"
+          aria-label={copy.graphStats.cancelLayoutEdit}
           onClick={() => {
             setGraphLayoutEditing(false);
             setGraphLayoutDraft(null);
@@ -174,9 +181,9 @@ export function OverlayControls({
           type="button"
           title={copy.graphStats.cancelLayoutEdit}
         >
-          ✕
+          <X size={14} weight="bold" />
         </button>
       ) : null}
-    </>
+    </div>
   );
 }

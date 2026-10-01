@@ -1,0 +1,335 @@
+/* Clew design system: fonts, semantic tokens and shared primitives.
+   Component styles under ./components build only on these tokens, so both themes
+   come from one rule set. */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-cyrillic.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-cyrillic.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+:root {
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ui-radius-window: 22px;
+  --ui-radius-block: 14px;
+  --ui-radius-control: 10px;
+  --ui-radius-pill: 999px;
+
+  --ui-text-xs: 11px;
+  --ui-text-sm: 12.5px;
+  --ui-text-md: 13.5px;
+  --ui-text-lg: 15px;
+
+  --ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root,
+:root[data-theme="dark"] {
+  --ui-fg: rgba(255, 255, 255, 0.94);
+  --ui-fg-2: rgba(255, 255, 255, 0.66);
+  --ui-fg-3: rgba(255, 255, 255, 0.42);
+  --ui-surface: rgba(13, 13, 14, 0.94);
+  --ui-fill-1: rgba(255, 255, 255, 0.035);
+  --ui-fill-2: rgba(255, 255, 255, 0.07);
+  --ui-fill-3: rgba(255, 255, 255, 0.11);
+  --ui-line: rgba(255, 255, 255, 0.08);
+  --ui-line-strong: rgba(255, 255, 255, 0.16);
+  --ui-primary: #f4f2ee;
+  --ui-primary-hover: #ffffff;
+  --ui-on-primary: #111111;
+  --ui-accent: #d97757;
+  --ui-good: #4cc38a;
+  --ui-good-fill: rgba(76, 195, 138, 0.1);
+  --ui-warn: #e3b55b;
+  --ui-warn-fill: rgba(227, 181, 91, 0.09);
+  --ui-bad: #f2685c;
+  --ui-bad-fill: rgba(242, 104, 92, 0.1);
+  --ui-shadow-window: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --ui-focus: rgba(255, 255, 255, 0.28);
+}
+
+:root[data-theme="light"] {
+  --ui-fg: #2d2b28;
+  --ui-fg-2: rgba(45, 43, 40, 0.68);
+  --ui-fg-3: rgba(45, 43, 40, 0.46);
+  --ui-surface: rgba(252, 251, 248, 0.96);
+  --ui-fill-1: rgba(120, 92, 60, 0.04);
+  --ui-fill-2: rgba(120, 92, 60, 0.075);
+  --ui-fill-3: rgba(120, 92, 60, 0.12);
+  --ui-line: rgba(120, 92, 60, 0.13);
+  --ui-line-strong: rgba(120, 92, 60, 0.24);
+  --ui-primary: #cf6e45;
+  --ui-primary-hover: #bd613b;
+  --ui-on-primary: #fffaf6;
+  --ui-accent: #cf6e45;
+  --ui-good: #2f8f5b;
+  --ui-good-fill: rgba(47, 143, 91, 0.09);
+  --ui-warn: #a46a12;
+  --ui-warn-fill: rgba(196, 136, 40, 0.1);
+  --ui-bad: #c2453a;
+  --ui-bad-fill: rgba(194, 69, 58, 0.08);
+  --ui-shadow-window: 0 18px 50px rgba(74, 52, 30, 0.1), 0 0 0 1px rgba(120, 92, 60, 0.1);
+  --ui-focus: rgba(207, 110, 69, 0.35);
+}
+
+/* Inline notices: tinted text blocks, never another bordered card. */
+.inlineNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-fill-2);
+  color: var(--ui-fg-2);
+  font-size: var(--ui-text-sm);
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+.inlineNoticeError {
+  background: var(--ui-bad-fill);
+  color: var(--ui-bad);
+}
+
+/* Controls. New surfaces use these instead of the legacy .btn/.input family. */
+
+.uiButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control);
+  background: none;
+  color: var(--ui-fg);
+  font: 600 var(--ui-text-sm)/1 var(--sans);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}
+
+.uiButton:hover:not(:disabled) {
+  border-color: var(--ui-line-strong);
+  background: var(--ui-fill-1);
+}
+
+.uiButton:disabled { opacity: 0.45; cursor: default; }
+
+.uiButtonPrimary {
+  border-color: transparent;
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+}
+
+.uiButtonPrimary:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--ui-primary-hover);
+}
+
+.uiButtonPrimary:disabled {
+  opacity: 1;
+  background: var(--ui-fill-2);
+  color: var(--ui-fg-3);
+}
+
+.uiButtonDanger {
+  border-color: transparent;
+  background: var(--ui-bad);
+  color: #fff;
+}
+
+.uiButtonDanger:hover:not(:disabled) { border-color: transparent; background: var(--ui-bad); filter: brightness(1.08); }
+
+.uiButtonQuiet {
+  border-color: transparent;
+  color: var(--ui-fg-2);
+}
+
+.uiButtonQuiet:hover:not(:disabled) { border-color: transparent; background: var(--ui-fill-2); color: var(--ui-fg); }
+
+.uiButtonSmall { height: 28px; padding: 0 11px; font-size: var(--ui-text-xs); border-radius: 8px; }
+
+.uiIconButton {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: none;
+  color: var(--ui-fg-3);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.uiIconButton:hover { background: var(--ui-fill-2); color: var(--ui-fg); }
+
+.uiField {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.uiLabel {
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  color: var(--ui-fg);
+}
+
+.uiHelp {
+  font-size: var(--ui-text-xs);
+  line-height: 1.5;
+  color: var(--ui-fg-3);
+}
+
+.uiInput,
+.uiSelect,
+.uiTextarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-fill-1);
+  color: var(--ui-fg);
+  font: 500 var(--ui-text-md)/1.4 var(--sans);
+  outline: none;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.uiInput,
+.uiSelect { height: 38px; padding: 0 12px; }
+
+.uiTextarea { min-height: 96px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
+
+.uiSelect {
+  appearance: none;
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ui-fg-3) 50%), linear-gradient(135deg, var(--ui-fg-3) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.uiInput::placeholder,
+.uiTextarea::placeholder { color: var(--ui-fg-3); }
+
+.uiInput:hover,
+.uiSelect:hover,
+.uiTextarea:hover { border-color: var(--ui-line-strong); }
+
+.uiInput:focus,
+.uiSelect:focus,
+.uiTextarea:focus {
+  border-color: var(--ui-line-strong);
+  background-color: var(--ui-fill-2);
+  box-shadow: 0 0 0 3px var(--ui-fill-1);
+}
+
+.uiInput:disabled,
+.uiSelect:disabled { opacity: 0.5; cursor: default; }
+
+.uiSwitch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-fill-3);
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.uiSwitch > span {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s var(--ui-ease);
+}
+
+.uiSwitchOn { background: var(--ui-good); }
+:root[data-theme="light"] .uiSwitchOn { background: var(--ui-accent); }
+.uiSwitchOn > span { transform: translateX(15px); }
+
+.uiSegmented {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--ui-fill-2);
+}
+
+.uiSegmented > button {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ui-fg-2);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.uiSegmented > button > :first-child { font-size: var(--ui-text-sm); font-weight: 650; }
+.uiSegmented > button > :last-child { font-size: var(--ui-text-xs); color: var(--ui-fg-3); line-height: 1.35; }
+
+.uiSegmented > button.uiSegmentedActive {
+  background: var(--ui-surface);
+  color: var(--ui-fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--ui-line);
+}
+
+.uiTag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-fill-2);
+  color: var(--ui-fg-2);
+  font: 600 var(--ui-text-xs)/1 var(--sans);
+}

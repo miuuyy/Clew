@@ -1,6 +1,8 @@
 import React from "react";
 import { UploadSimple } from "@phosphor-icons/react";
 
+import { Modal } from "../ui/Modal";
+
 import type { AppCopy } from "../../lib/appCopy";
 import type { CreateGraphRequest } from "../../lib/types";
 
@@ -38,101 +40,54 @@ export function CreateGraphDialog({
   };
 
   return (
-    <div className="quizOverlay">
-      <div
-        ref={modalRef}
-        className="quizModal workspaceCreateModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-graph-dialog-title"
-        aria-describedby="create-graph-dialog-description"
-        tabIndex={-1}
-      >
-        <div className="quizModalHeader">
-          <div>
-            <div id="create-graph-dialog-title" className="cardTitle">{copy.dialogs.createGraphTitle}</div>
-            <div id="create-graph-dialog-description" className="mutedSmall">{copy.dialogs.createGraphBody}</div>
-          </div>
-          <button
-            className="modalCloseButton"
-            onClick={closeModal}
-            type="button"
-            aria-label={copy.dialogs.createGraphAria}
-          >
-            ×
+    <Modal
+      id="create-graph-dialog"
+      modalRef={modalRef}
+      title={copy.dialogs.createGraphTitle}
+      description={copy.dialogs.createGraphBody}
+      closeLabel={copy.dialogs.createGraphAria}
+      onClose={closeModal}
+      footer={<>
+        <div className="uiModalFooterStart">
+          <button className="uiButton uiButtonQuiet" onClick={openImportObsidianModal} type="button">{copy.dialogs.importFromObsidian}</button>
+          <button className="uiButton uiButtonQuiet" onClick={openImportGraphModal} type="button">
+            <UploadSimple size={14} aria-hidden="true" />
+            <span>{copy.dialogs.importFromDisk}</span>
           </button>
         </div>
-        <div className="quizModalBody stack">
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.graphTitle}</span>
-            <input
-              ref={titleInputRef}
-              className="input"
-              value={draft.title}
-              onChange={(event) => patch({ title: event.target.value })}
-              placeholder={copy.dialogs.graphTitlePlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.subject}</span>
-            <input
-              className="input"
-              value={draft.subject}
-              onChange={(event) => patch({ subject: event.target.value })}
-              placeholder={copy.dialogs.subjectPlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.language}</span>
-            <select
-              className="input"
-              value={draft.language}
-              onChange={(event) => patch({ language: event.target.value as CreateGraphRequest["language"] })}
-            >
-              <option value="uk">{copy.dialogs.languageOptions.uk}</option>
-              <option value="ru">{copy.dialogs.languageOptions.ru}</option>
-              <option value="en">{copy.dialogs.languageOptions.en}</option>
-            </select>
-          </label>
-          <label className="field">
-            <span className="fieldLabel">{copy.dialogs.description}</span>
-            <textarea
-              className="textarea textareaCompact textareaPersona"
-              value={draft.description}
-              onChange={(event) => patch({ description: event.target.value })}
-              placeholder={copy.dialogs.descriptionPlaceholder}
-            />
-          </label>
-          {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
-          <div className="quizActions">
-            <div className="quizActionsGroup">
-              <button
-                className="btn btnImport"
-                onClick={openImportObsidianModal}
-                type="button"
-              >
-                <span>{copy.dialogs.importFromObsidian}</span>
-              </button>
-              <button
-                className="btn btnImport"
-                onClick={openImportGraphModal}
-                type="button"
-              >
-                <UploadSimple size={14} weight="bold" />
-                <span>{copy.dialogs.importFromDisk}</span>
-              </button>
-            </div>
-            <button
-              className="assistantSendButton quizSubmitButton"
-              disabled={loading || !draft.title.trim() || !draft.subject.trim()}
-              onClick={() => void createGraph()}
-              type="button"
-            >
-              {loading ? copy.dialogs.creating : copy.dialogs.createGraph}
-            </button>
-          </div>
-        </div>
+        <button
+          className="uiButton uiButtonPrimary"
+          disabled={loading || !draft.title.trim() || !draft.subject.trim()}
+          onClick={() => void createGraph()}
+          type="button"
+        >
+          {loading ? copy.dialogs.creating : copy.dialogs.createGraph}
+        </button>
+      </>}
+    >
+      <label className="uiField">
+        <span className="uiLabel">{copy.dialogs.graphTitle}</span>
+        <input ref={titleInputRef} className="uiInput" value={draft.title} onChange={(event) => patch({ title: event.target.value })} placeholder={copy.dialogs.graphTitlePlaceholder} />
+      </label>
+      <div className="uiFieldPair">
+        <label className="uiField">
+          <span className="uiLabel">{copy.dialogs.subject}</span>
+          <input className="uiInput" value={draft.subject} onChange={(event) => patch({ subject: event.target.value })} placeholder={copy.dialogs.subjectPlaceholder} />
+        </label>
+        <label className="uiField">
+          <span className="uiLabel">{copy.dialogs.language}</span>
+          <select className="uiSelect" value={draft.language} onChange={(event) => patch({ language: event.target.value as CreateGraphRequest["language"] })}>
+            <option value="uk">{copy.dialogs.languageOptions.uk}</option>
+            <option value="ru">{copy.dialogs.languageOptions.ru}</option>
+            <option value="en">{copy.dialogs.languageOptions.en}</option>
+          </select>
+        </label>
       </div>
-    </div>
+      <label className="uiField">
+        <span className="uiLabel">{copy.dialogs.description}</span>
+        <textarea className="uiTextarea" value={draft.description} onChange={(event) => patch({ description: event.target.value })} placeholder={copy.dialogs.descriptionPlaceholder} />
+      </label>
+      {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
+    </Modal>
   );
 }

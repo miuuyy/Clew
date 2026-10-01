@@ -45,8 +45,8 @@ export function AssistantComposer({
 }: AssistantComposerProps): React.JSX.Element {
   return (
     <div className="assistantComposerWrap">
-      {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{chatError}<button className="btn btn-sm" type="button" onClick={agentControls.reconnect}>Reconnect chat</button></div> : null}
-      {!agentControls.authenticated ? <div className="chatgptChatConnect"><span>Sign in with ChatGPT to start learning.</span><button className="btn btn-sm" type="button" onClick={agentControls.connect}>Sign in with ChatGPT</button></div> : null}
+      {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{chatError}<button className="composerInlineAction" type="button" onClick={agentControls.reconnect}>Reconnect</button></div> : null}
+      {!agentControls.authenticated ? <div className="chatgptChatConnect"><span>Sign in with ChatGPT to start learning.</span><button className="composerInlineAction" type="button" onClick={agentControls.connect}>Sign in</button></div> : null}
       {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{chatSessionsError}</div> : null}
       {applyError ? <div className="inlineNotice inlineNoticeError">{applyError}</div> : null}
       <div className="assistantTemplates">
@@ -65,7 +65,6 @@ export function AssistantComposer({
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ marginRight: "6px" }}
           >
             <circle cx="12" cy="12" r="10" />
             <line x1="2" y1="12" x2="22" y2="12" />
@@ -110,7 +109,7 @@ export function AssistantComposer({
           placeholder={copy.sessions.composerPlaceholder}
         />
         <button
-          className="assistantSendButton assistantSendButtonIcon"
+          className="composerSendButton"
           disabled={chatThreadLoading || (!chatLoading && (!currentChatState.input.trim() || !agentControls.authenticated))}
           onClick={() => chatLoading ? void agentControls.stop() : sendChat()}
           aria-label={chatLoading ? "Stop reply" : "Send message"}

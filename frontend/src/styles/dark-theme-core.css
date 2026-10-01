@@ -1,330 +1,9 @@
 /* Dark topic asset geometry parity. */
 
-:root[data-theme="dark"] .topicAssetModal .quizModalHeader {
-  margin: 0 -18px 14px !important;
-  padding: 18px 18px 14px !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .quizModalBody {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
 /* Dark cleanup removes non-color drift from chat, settings, and logs. */
-:root[data-theme="dark"] .lightChatWindow .assistantThread,
-:root[data-theme="dark"] .debugLogsList,
-:root[data-theme="dark"] .lightWorkspaceWindowBody,
-:root[data-theme="dark"] .lightWorkspaceExplorerBody {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantThread::-webkit-scrollbar,
-:root[data-theme="dark"] .debugLogsList::-webkit-scrollbar,
-:root[data-theme="dark"] .lightWorkspaceWindowBody::-webkit-scrollbar,
-:root[data-theme="dark"] .lightWorkspaceExplorerBody::-webkit-scrollbar {
-  display: none !important;
-}
-
-:root[data-theme="dark"] .topicPopover {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-:root[data-theme="dark"] .topicPopover::-webkit-scrollbar {
-  display: none !important;
-}
-
-:root[data-theme="dark"] .settingsContentHeader,
-:root[data-theme="dark"] .settingsPanelHeader {
-  border-bottom: 0 !important;
-}
-
-:root[data-theme="dark"] .settingsPanelTitle,
-:root[data-theme="dark"] .cardTitle {
-  line-height: 1.2 !important;
-}
-
-:root[data-theme="dark"] .settingsSnapshotsCard .btn,
-:root[data-theme="dark"] .snapshotsCard .btn,
-:root[data-theme="dark"] .listActions .btn,
-:root[data-theme="dark"] .pageStatControl,
-:root[data-theme="dark"] .floatingStatusButton {
-  min-height: 32px !important;
-  padding: 0 12px !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .settingsSnapshotsCard .btn:hover,
-:root[data-theme="dark"] .snapshotsCard .btn:hover,
-:root[data-theme="dark"] .listActions .btn:hover {
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap,
-:root[data-theme="dark"] .lightChatWindow .assistantThread,
-:root[data-theme="dark"] .workspaceShellLightDockMode .assistantThread {
-  background: #050505 !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap::before,
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap::after {
-  background: linear-gradient(90deg, rgba(5, 5, 5, 0.98), rgba(5, 5, 5, 0)) !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap::after {
-  background: linear-gradient(270deg, rgba(5, 5, 5, 0.98), rgba(5, 5, 5, 0)) !important;
-}
-
-:root[data-theme="light"] .topicClosureActions,
-:root[data-theme="dark"] .topicClosureActions {
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-}
-
-:root[data-theme="dark"] .topicClosureActions .assistantSendButton,
-:root[data-theme="light"] .topicClosureActions .assistantSendButton {
-  order: 2 !important;
-}
-
-:root[data-theme="light"] .topicClosureBlockedHint,
-:root[data-theme="dark"] .topicClosureBlockedHint {
-  flex: 0 0 auto !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  align-self: center !important;
-  order: 1 !important;
-  max-width: none !important;
-  margin-top: 0 !important;
-  margin-right: 8px !important;
-  font-size: 11px !important;
-  line-height: 1 !important;
-  text-align: right !important;
-  white-space: nowrap !important;
-}
-
-:root[data-theme="light"] .topicClosureBlockedHint {
-  color: rgba(217, 119, 87, 0.94) !important;
-}
-
-:root[data-theme="dark"] .topicClosureBlockedHint {
-  color: rgba(255, 214, 102, 0.86) !important;
-}
-
-:root[data-theme="dark"] .topicPopoverInlineAddButton {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  color: rgba(255, 255, 255, 0.42) !important;
-}
-
-:root[data-theme="dark"] .topicPopoverInlineAddButton:hover,
-:root[data-theme="dark"] .topicPopoverInlineAddButton:focus-visible {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal {
-  border-radius: 20px !important;
-  background: rgba(11, 11, 12, 0.982) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-:root[data-theme="dark"] .topicAssetOverlay {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .quizModalHeader,
-:root[data-theme="dark"] .topicAssetModalBody {
-  background: rgba(11, 11, 12, 0.982) !important;
-}
-
-:root[data-theme="dark"] .quizModalBody {
-  background: transparent !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .cardTitle {
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal #topic-asset-dialog-description,
-:root[data-theme="dark"] .topicAssetModal .mutedSmall {
-  color: rgba(255, 255, 255, 0.56) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .modalCloseButton {
-  width: 22px !important;
-  height: 22px !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.66) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .modalCloseButton:hover,
-:root[data-theme="dark"] .topicAssetModal .modalCloseButton:focus-visible {
-  background: transparent !important;
-  box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.94) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .quizModalHeader::after {
-  display: none !important;
-}
-
-:root[data-theme="dark"] .quizModal .input,
-:root[data-theme="dark"] .quizModal select.input,
-:root[data-theme="dark"] .quizModal .textarea,
-:root[data-theme="dark"] .topicAssetTextInput,
-:root[data-theme="dark"] .topicAssetResourceInput {
-  background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-  font-family: var(--sans) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModalBody {
-  gap: 8px !important;
-}
-
-:root[data-theme="dark"] .topicAssetField {
-  gap: 4px !important;
-}
-
-:root[data-theme="dark"] .topicAssetFieldLabel,
-:root[data-theme="dark"] .topicAssetTopicTitle {
-  color: rgba(255, 255, 255, 0.56) !important;
-}
-
-:root[data-theme="dark"] .topicAssetTextInput::placeholder,
-:root[data-theme="dark"] .topicAssetResourceInput::placeholder {
-  color: rgba(255, 255, 255, 0.34) !important;
-}
-
-:root[data-theme="dark"] .topicAssetResourceInput {
-  min-height: 56px !important;
-  line-height: 1.5 !important;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .quizActions {
-  width: 100% !important;
-  margin-top: 0 !important;
-  justify-content: flex-end !important;
-}
-
-:root[data-theme="dark"] .quizModal .btn.btnImport,
-:root[data-theme="dark"] .quizModal .btn.btnImportWide,
-:root[data-theme="dark"] .topicAssetModal .topicAssetSaveButton,
-:root[data-theme="dark"] .topicAssetSaveButton {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: rgba(255, 255, 255, 0.72) !important;
-  box-shadow: none !important;
-  font-family: var(--sans) !important;
-}
-
-:root[data-theme="dark"] .quizModal .btn.btnImport:hover,
-:root[data-theme="dark"] .quizModal .btn.btnImportWide:hover,
-:root[data-theme="dark"] .topicAssetSaveButton:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .quizModalWide {
-  background: rgba(10, 10, 11, 0.94) !important;
-}
-
-:root[data-theme="dark"] .workspaceCreateModal,
-:root[data-theme="dark"] .workspaceCreateModal .quizModalHeader,
-:root[data-theme="dark"] .workspaceCreateModal .quizModalBody {
-  background: rgba(10, 10, 11, 0.94) !important;
-}
-
-:root[data-theme="dark"] .workspaceCreateModal .quizModalHeader::after {
-  display: none !important;
-}
-
-:root[data-theme="dark"] .quizModalWide .previewStatCard {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .quizModalWide .settingsToggleRow {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .quizModalWide .settingsToggleRow:hover {
-  background: rgba(255, 255, 255, 0.045) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-:root[data-theme="dark"] .topicAssetModal .topicAssetSaveButton,
-:root[data-theme="dark"] .topicAssetModal .topicAssetSaveButton:hover,
-:root[data-theme="dark"] .topicAssetModal .topicAssetSaveButton:disabled {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: rgba(255, 255, 255, 0.72) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .floatingStatusButton,
-:root[data-theme="dark"] .pageStatControl {
-  border-radius: 999px !important;
-}
-
-:root[data-theme="dark"] .floatingStatusButton svg,
-:root[data-theme="dark"] .pageStatControl svg {
-  width: 16px !important;
-  height: 16px !important;
-  flex-shrink: 0 !important;
-}
 
 /* Dark desktop overlays match light window behavior. */
-@media (min-width: 1181px) {
-  :root[data-theme="dark"] .quizOverlay.settingsOverlay {
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    padding: 86px 0 0 104px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    pointer-events: none !important;
-  }
 
-  :root[data-theme="dark"] .settingsOverlay .settingsModal {
-    pointer-events: auto !important;
-    width: min(1040px, calc(100vw - 152px)) !important;
-    height: min(820px, calc(100vh - 116px)) !important;
-    max-height: calc(100vh - 116px) !important;
-    border-radius: 24px !important;
-  }
-
-  :root[data-theme="dark"] .settingsOverlay .debugLogsModal {
-    width: min(980px, calc(100vw - 152px)) !important;
-  }
-}
-
-
-:root[data-theme="dark"] .lightWorkspaceFolderAction,
 :root[data-theme="dark"] .sidebarRenameBtn,
 :root[data-theme="dark"] .sidebarDeleteBtn,
 :root[data-theme="dark"] .sidebarExportBtn {
@@ -333,8 +12,6 @@
   box-shadow: none !important;
 }
 
-:root[data-theme="dark"] .lightWorkspaceFolderAction:hover,
-:root[data-theme="dark"] .lightWorkspaceFolderActionActive,
 :root[data-theme="dark"] .sidebarRenameBtn:hover,
 :root[data-theme="dark"] .sidebarRenameBtnActive,
 :root[data-theme="dark"] .sidebarExportBtn:hover {
@@ -344,61 +21,11 @@
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-:root[data-theme="dark"] .lightWorkspaceFolderActionDanger:hover,
 :root[data-theme="dark"] .sidebarDeleteBtn:hover {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
   color: rgba(248, 113, 113, 0.98) !important;
-}
-
-:root[data-theme="dark"] .proposalInlineCard,
-:root[data-theme="dark"] .proposalMiniList,
-:root[data-theme="dark"] .proposalMiniItem,
-:root[data-theme="dark"] .previewStatGrid,
-:root[data-theme="dark"] .previewStatCard {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .proposalInlineCard {
-  padding: 0 !important;
-  margin-top: 6px !important;
-  gap: 10px !important;
-}
-
-:root[data-theme="dark"] .proposalMiniItem,
-:root[data-theme="dark"] .previewStatCard {
-  padding: 0 !important;
-  min-height: auto !important;
-}
-
-:root[data-theme="dark"] .settingsContentHeader::after,
-:root[data-theme="dark"] .debugLogsModal .settingsContentHeader::after {
-  display: block !important;
-  content: "" !important;
-  position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: -20px !important;
-  height: 28px !important;
-  background: linear-gradient(
-    180deg,
-    rgba(11, 11, 12, 0.96) 0%,
-    rgba(11, 11, 12, 0.58) 54%,
-    rgba(11, 11, 12, 0) 100%
-  ) !important;
-  pointer-events: none !important;
-}
-
-:root[data-theme="dark"] .settingsFooterBar {
-  background: linear-gradient(
-    180deg,
-    rgba(11, 11, 12, 0) 0%,
-    rgba(11, 11, 12, 0.66) 42%,
-    rgba(11, 11, 12, 0.94) 100%
-  ) !important;
 }
 
 :root[data-theme="dark"] .debugLogsFlatList {
@@ -409,40 +36,23 @@
   flex-direction: column !important;
 }
 
-
 :root[data-theme="dark"] .badge,
 :root[data-theme="dark"] .badge-blue,
 :root[data-theme="dark"] .badge-yellow,
 :root[data-theme="dark"] .badge-red,
 :root[data-theme="dark"] .badge-gray,
 :root[data-theme="dark"] .badge-green,
-:root[data-theme="dark"] .lightWorkspaceFolderCount,
 :root[data-theme="dark"] .debugLogRowSource {
   border-radius: 999px !important;
 }
 
-:root[data-theme="dark"] .lightWorkspaceFolderAction,
-:root[data-theme="dark"] .lightWorkspaceFolderAction:hover,
-:root[data-theme="dark"] .lightWorkspaceFolderActionActive,
-:root[data-theme="dark"] .lightWorkspaceFolderActionDanger:hover {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .proposalInlineHead {
-  gap: 14px !important;
-}
-
-
 :root[data-theme="dark"] .badge,
 :root[data-theme="dark"] .badge-blue,
 :root[data-theme="dark"] .badge-yellow,
 :root[data-theme="dark"] .badge-red,
 :root[data-theme="dark"] .badge-gray,
 :root[data-theme="dark"] .badge-green,
-:root[data-theme="dark"] .debugLogRowSource,
-:root[data-theme="dark"] .lightWorkspaceFolderCount {
+:root[data-theme="dark"] .debugLogRowSource {
   border-radius: 999px !important;
 }
 
@@ -451,25 +61,11 @@
   padding: 4px 10px !important;
 }
 
-:root[data-theme="dark"] .proposalAddButton[title="Applied"],
-:root[data-theme="dark"] .proposalAddButtonApplied,
-:root[data-theme="dark"] .proposalAddButton[title="Applied"]:disabled,
-:root[data-theme="dark"] .proposalAddButtonApplied:disabled,
-:root[data-theme="dark"] .proposalAddButton[title="Applied"]:hover,
-:root[data-theme="dark"] .proposalAddButtonApplied:hover {
-  background: rgba(48, 209, 88, 0.045) !important;
-  border-color: rgba(48, 209, 88, 0.16) !important;
-  color: rgba(143, 226, 165, 0.94) !important;
-  opacity: 1 !important;
-}
-
-
 :root[data-theme="dark"] .badge-gray,
 :root[data-theme="dark"] .badge-yellow,
 :root[data-theme="dark"] .badge-blue,
 :root[data-theme="dark"] .badge-green,
-:root[data-theme="dark"] .debugLogRowSource,
-:root[data-theme="dark"] .lightWorkspaceFolderCount {
+:root[data-theme="dark"] .debugLogRowSource {
   border-radius: 999px !important;
 }
 
@@ -481,120 +77,19 @@
   padding-inline: 10px !important;
 }
 
-:root[data-theme="dark"] .lightWorkspaceFolderAction:hover,
-:root[data-theme="dark"] .lightWorkspaceFolderActionActive,
-:root[data-theme="dark"] .lightWorkspaceFolderActionDanger:hover {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolderAction:hover,
-:root[data-theme="dark"] .lightWorkspaceFolderActionActive {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolderActionDanger:hover {
-  color: rgba(248, 113, 113, 0.98) !important;
-}
-
-:root[data-theme="dark"] .proposalInlineCard,
-:root[data-theme="dark"] .proposalInlinePending {
-  gap: 12px !important;
-  padding: 12px 14px !important;
-  border-radius: 18px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .proposalInlineTitle {
-  font-size: 13px !important;
-  line-height: 1.45 !important;
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .proposalInlinePendingLabel {
-  color: rgba(255, 255, 255, 0.68) !important;
-}
-
-:root[data-theme="dark"] .proposalInlinePendingDots span {
-  background: rgba(255, 255, 255, 0.58) !important;
-}
-
-:root[data-theme="dark"] .proposalAddButton {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  flex-basis: 32px !important;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.09) !important;
-}
-
-:root[data-theme="dark"] .proposalAddButton:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-}
-
-:root[data-theme="dark"] .settingsModal,
-:root[data-theme="dark"] .debugLogsModal,
-:root[data-theme="dark"] .settingsContent,
-:root[data-theme="dark"] .settingsSidebar,
-:root[data-theme="dark"] .settingsContentHeader,
-:root[data-theme="dark"] .settingsContentScroll,
-:root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .settingsPanelHeader,
-:root[data-theme="dark"] .settingsPanelBody,
-:root[data-theme="dark"] .debugLogsModal .settingsContent,
-:root[data-theme="dark"] .debugLogsModal .settingsContentHeader,
-:root[data-theme="dark"] .debugLogsList {
+:root[data-theme="dark"] .settingsPanel {
   background: #0b0b0c !important;
 }
 
-:root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .settingsPanelHeader,
-:root[data-theme="dark"] .settingsPanelBody,
-:root[data-theme="dark"] .settingsSnapshotsCard,
-:root[data-theme="dark"] .snapshotsCard,
-:root[data-theme="dark"] .settingsToggleRow,
-:root[data-theme="dark"] .settingsInlineNotice,
-:root[data-theme="dark"] .inlineNotice,
-:root[data-theme="dark"] .listItem,
-:root[data-theme="dark"] .thinkingModeChip {
+:root[data-theme="dark"] .settingsPanel {
   border-radius: 16px !important;
 }
 
-
-:root[data-theme="dark"] .settingsModal,
-:root[data-theme="dark"] .settingsContent,
-:root[data-theme="dark"] .settingsSidebar,
-:root[data-theme="dark"] .settingsContentHeader,
-:root[data-theme="dark"] .settingsContentScroll,
-:root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .settingsPanelHeader,
-:root[data-theme="dark"] .settingsPanelBody,
-:root[data-theme="dark"] .debugLogsModal,
-:root[data-theme="dark"] .debugLogsModal .settingsContent,
-:root[data-theme="dark"] .debugLogsModal .settingsContentHeader,
-:root[data-theme="dark"] .debugLogsList {
+:root[data-theme="dark"] .settingsPanel {
   background: #0b0b0c !important;
 }
 
-:root[data-theme="dark"] .settingsModal,
-:root[data-theme="dark"] .debugLogsModal {
-  border-radius: 28px !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.52),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-}
-
-:root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .settingsPanelHeader,
-:root[data-theme="dark"] .settingsPanelBody,
-:root[data-theme="dark"] .settingsSnapshotsCard,
-:root[data-theme="dark"] .snapshotsCard {
+:root[data-theme="dark"] .settingsPanel {
   border-radius: 22px !important;
 }
 
@@ -607,377 +102,33 @@
   color: rgba(255, 255, 255, 0.74) !important;
 }
 
-:root[data-theme="dark"] .lightChatWindow .assistantComposerWrap {
-  padding: 18px 20px 20px !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantComposerWrap::before {
-  display: block !important;
-  height: 56px !important;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(5, 5, 5, 0.06) 16%,
-    rgba(5, 5, 5, 0.18) 34%,
-    rgba(5, 5, 5, 0.44) 56%,
-    rgba(5, 5, 5, 0.74) 78%,
-    #050505 100%
-  ) !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantComposer {
-  position: relative !important;
-  border-radius: 24px !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantInput {
-  min-height: 108px !important;
-  padding-right: 54px !important;
-  padding-bottom: 18px !important;
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantSendButtonIcon {
-  position: absolute !important;
-  right: 12px !important;
-  bottom: 12px !important;
-  width: 29px !important;
-  min-width: 29px !important;
-  height: 29px !important;
-  padding: 7px !important;
-  margin: 0 !important;
-  align-self: auto !important;
-  border-radius: 999px !important;
-}
-
 /* Dark theme shape alignment. */
-:root[data-theme="dark"] .pageStat,
-:root[data-theme="dark"] .floatingStatusButton,
-:root[data-theme="dark"] .pageStatControl {
-  border-radius: 16px !important;
-}
 
-:root[data-theme="dark"] .pageStatControl,
-:root[data-theme="dark"] .floatingStatusButton {
-  width: 36px !important;
-  height: 36px !important;
-}
-
-:root[data-theme="dark"] .pageStatControlActive {
-  width: auto !important;
-  min-width: max-content !important;
-  padding: 6px 12px !important;
-}
-
-:root[data-theme="dark"] .sessionItem,
-:root[data-theme="dark"] .sessionItemGroup,
-:root[data-theme="dark"] .assistantTemplate,
 :root[data-theme="dark"] .groundingToggle,
-:root[data-theme="dark"] .webGroundingToggle,
-:root[data-theme="dark"] .graphTabChip,
-:root[data-theme="dark"] .workspaceUtilityButton,
-:root[data-theme="dark"] .thinkingModeChip,
 :root[data-theme="dark"] .btnGhost {
   border-radius: 16px !important;
 }
 
-:root[data-theme="dark"] .chatBubble,
-:root[data-theme="dark"] .workspaceShellLightDockMode .chatBubble {
-  border-radius: 22px !important;
-}
-
-:root[data-theme="dark"] .assistantComposer {
-  border-radius: 20px !important;
-}
-
-:root[data-theme="dark"] .assistantInput {
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .lightWindowCreateWorkspaceButton,
-:root[data-theme="dark"] .lightWorkspaceWindowHeaderActions .lightWindowCreateWorkspaceButton {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  width: auto !important;
-  max-width: 100% !important;
-  min-height: 42px !important;
-  padding: 0 14px !important;
-  border-radius: 16px !important;
-  white-space: nowrap !important;
-  line-height: 1.1 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: rgba(255, 255, 255, 0.86) !important;
-}
-
-:root[data-theme="dark"] .lightWindowCreateWorkspaceButton:hover,
-:root[data-theme="dark"] .lightWorkspaceWindowHeaderActions .lightWindowCreateWorkspaceButton:hover,
-:root[data-theme="dark"] .lightWindowCreateWorkspaceButton:active,
-:root[data-theme="dark"] .lightWindowCreateWorkspaceButton:focus-visible {
-  background: rgba(255, 255, 255, 0.09) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .lightWindowCreateWorkspaceGlyph {
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-
-:root[data-theme="dark"] .settingsModal,
-:root[data-theme="dark"] .debugLogsModal,
-:root[data-theme="dark"] .quizModal {
-  border-radius: 28px !important;
-}
-
-:root[data-theme="dark"] .settingsToggleRow,
-:root[data-theme="dark"] .settingsInlineNotice,
-:root[data-theme="dark"] .inlineNotice,
-:root[data-theme="dark"] .listItem {
-  border-radius: 16px !important;
-}
-
 /* Dark theme template unification. */
-:root[data-theme="dark"] .lightFloatingWindow,
-:root[data-theme="dark"] .settingsModal,
-:root[data-theme="dark"] .quizModal,
-:root[data-theme="dark"] .debugLogsModal {
-  border-radius: 28px !important;
-}
-
-:root[data-theme="dark"] .lightFloatingWindow {
-  background: rgba(8, 8, 8, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.52),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-}
-
-:root[data-theme="dark"] .lightDock {
-  border-radius: 28px !important;
-  padding: 12px 10px !important;
-}
-
-:root[data-theme="dark"] .lightDockButton,
-:root[data-theme="dark"] .lightDockButtonLink {
-  width: 56px !important;
-  height: 56px !important;
-}
-
-:root[data-theme="dark"] .lightDockButton::before,
-:root[data-theme="dark"] .lightDockButtonLink::before {
-  inset: 4px !important;
-  border-radius: 999px !important;
-}
-
-:root[data-theme="dark"] .lightFloatingWindowHeader {
-  padding: 16px 18px 12px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceWindow .lightFloatingWindowHeader {
-  background: #050505 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceWindow .lightFloatingWindowTitle {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.01em !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceWindow .lightFloatingWindowSubtle {
-  margin-top: 2px !important;
-  font-size: 11px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceWindowBody,
-:root[data-theme="dark"] .lightWorkspaceExplorerBody,
-:root[data-theme="dark"] .lightChatWindow .assistantThread,
-:root[data-theme="dark"] .lightChatWindow .assistantComposerWrap,
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap {
-  background: #050505 !important;
-}
-
-:root[data-theme="dark"] .lightWindowActionButton,
-:root[data-theme="dark"] .lightWindowCreateWorkspaceButton,
-:root[data-theme="dark"] .lightWorkspaceWindowHeaderActions .lightWindowCreateWorkspaceButton {
-  min-height: 30px !important;
-  border-radius: 999px !important;
-  padding: 0 10px !important;
-  font-weight: 650 !important;
-  font-size: 11px !important;
-  line-height: 1 !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolder {
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolderRow {
-  min-height: 52px !important;
-  padding: 5px 6px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolderMain {
-  border-radius: 11px !important;
-  padding: 7px 9px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceFolderAction {
-  border-radius: 999px !important;
-  width: 26px !important;
-  height: 26px !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .lightFloatingWindowHeader {
-  position: relative !important;
-  z-index: 12 !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantDockTitleRow,
-:root[data-theme="dark"] .lightChatWindow .assistantInlineModelTrigger {
-  position: relative !important;
-  z-index: 14 !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .sessionListWrap {
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-:root[data-theme="dark"] .quizModal.confirmModal {
-  background: #0a0a0b !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalBody {
-  background: #0a0a0b !important;
-}
-
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalHeader::after {
-  display: none !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceTopicList {
-  padding: 0 10px 10px 34px !important;
-  gap: 4px !important;
-}
-
-:root[data-theme="dark"] .lightWorkspaceTopicItem {
-  border-radius: 12px !important;
-  padding: 8px 11px !important;
-}
 
 :root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .snapshotsCard,
 :root[data-theme="dark"] .card {
   border-radius: 22px !important;
 }
 
-:root[data-theme="dark"] .settingsTab,
-:root[data-theme="dark"] .settingsToggleRow,
-:root[data-theme="dark"] .thinkingModeChip,
-:root[data-theme="dark"] .quizChoice,
-:root[data-theme="dark"] .inlineQuizChoice,
-:root[data-theme="dark"] .listItem {
+:root[data-theme="dark"] .quizChoice {
   border-radius: 16px !important;
 }
 
-:root[data-theme="dark"] .settingsSidebar {
-  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
-  background: rgba(9, 9, 10, 0.94) !important;
-}
-
-:root[data-theme="dark"] .settingsContentHeader,
-:root[data-theme="dark"] .debugLogsModal .settingsContentHeader,
-:root[data-theme="dark"] .quizModalHeader {
-  padding: 22px 24px 14px !important;
-}
-
-:root[data-theme="dark"] .settingsContentScroll,
-:root[data-theme="dark"] .debugLogsList,
-:root[data-theme="dark"] .quizModalBody {
-  padding-left: 24px !important;
-  padding-right: 24px !important;
-}
-
-:root[data-theme="dark"] .settingsTab {
-  border-radius: 16px !important;
-  padding: 12px 14px !important;
-}
-
-:root[data-theme="dark"] .settingsPanel,
-:root[data-theme="dark"] .settingsPanelHeader,
-:root[data-theme="dark"] .settingsPanelBody,
-:root[data-theme="dark"] .snapshotsCard,
-:root[data-theme="dark"] .settingsSnapshotsCard {
+:root[data-theme="dark"] .settingsPanel {
   border-radius: 22px !important;
   background: rgba(12, 12, 13, 0.94) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-:root[data-theme="dark"] .settingsPanelHeader {
-  padding-bottom: 18px !important;
-  padding: 18px 20px 14px !important;
-}
-
-:root[data-theme="dark"] .settingsPanelBody {
-  padding: 18px 20px 20px !important;
-}
-
-:root[data-theme="dark"] .settingsToggleRow,
-:root[data-theme="dark"] .settingsInlineNotice,
-:root[data-theme="dark"] .inlineNotice,
-:root[data-theme="dark"] .listItem,
-:root[data-theme="dark"] .thinkingModeChip {
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .thinkingModeChip,
-:root[data-theme="dark"] .settingsToggleRow,
-:root[data-theme="dark"] .listItem {
-  min-height: 44px !important;
-}
-
-:root[data-theme="dark"] .thinkingModeChip {
-  padding: 14px 15px !important;
-}
-
-:root[data-theme="dark"] .settingsToggleRow {
-  padding: 14px 15px !important;
-}
-
-:root[data-theme="dark"] .quizQuestion {
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .quizChoice,
-:root[data-theme="dark"] .inlineQuizChoice {
+:root[data-theme="dark"] .quizChoice {
   border-radius: 16px !important;
   padding: 12px 13px !important;
-}
-
-:root[data-theme="dark"] .debugLogsModal {
-  width: min(1080px, calc(100vw - 56px)) !important;
-}
-
-:root[data-theme="dark"] .debugLogsList {
-  min-height: 0 !important;
-  max-height: min(72vh, 780px) !important;
-  overflow: auto !important;
-  padding: 4px 18px 18px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 14px !important;
-  padding-top: 14px !important;
-  padding-bottom: 18px !important;
 }
 
 :root[data-theme="dark"] .debugLogRow {
@@ -987,264 +138,8 @@
 }
 
 /* Create-workspace modal avoids extra dark layered fills. */
-:root[data-theme="dark"] .quizModal.workspaceCreateModal {
-  background: #0a0a0b !important;
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.52),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-}
-
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalBody,
-:root[data-theme="dark"] .quizModal.obsidianImportModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.obsidianImportModal .quizModalBody,
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalBody {
-  padding-left: 18px !important;
-  padding-right: 18px !important;
-}
-
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalBody {
-  background: #0a0a0b !important;
-}
-
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalHeader::after {
-  display: none !important;
-  background: transparent !important;
-}
-
-:root[data-theme="dark"] .quizModal.obsidianImportModal {
-  background: #0a0a0b !important;
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.52),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-}
-
-:root[data-theme="dark"] .quizModal.obsidianImportModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.obsidianImportModal .quizModalBody {
-  background: #0a0a0b !important;
-}
-
-:root[data-theme="dark"] .quizModal.obsidianImportModal .quizModalHeader::after {
-  display: none !important;
-  background: transparent !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .btn.btnImport,
-:root[data-theme="dark"] .obsidianImportModal .btn.btnImportWide {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  color: rgba(255, 255, 255, 0.88) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .btn.btnImport:hover,
-:root[data-theme="dark"] .obsidianImportModal .btn.btnImportWide:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .obsidianVaultSummary {
-  background: rgba(255, 255, 255, 0.015) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .obsidianVaultSummaryLabel {
-  color: rgba(255, 255, 255, 0.48) !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .obsidianVaultSummaryValue {
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow {
-  background: rgba(255, 255, 255, 0.018) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-  padding: 13px 14px !important;
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow,
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow {
-  justify-content: flex-start !important;
-  align-items: flex-start !important;
-  gap: 12px !important;
-  text-align: left !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow strong,
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow strong {
-  display: block !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 1.34 !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  text-align: left !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow span,
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow span {
-  display: block !important;
-  font-size: 12px !important;
-  line-height: 1.38 !important;
-  color: rgba(255, 255, 255, 0.7) !important;
-  text-align: left !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleRow input[type="checkbox"],
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow input[type="checkbox"] {
-  width: 15px !important;
-  height: 15px !important;
-  margin-top: 3px !important;
-  flex-shrink: 0 !important;
-}
-
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow {
-  background: rgba(255, 255, 255, 0.018) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-  padding: 13px 14px !important;
-  border-radius: 18px !important;
-}
-
-:root[data-theme="dark"] .exportGraphModal .settingsToggleRow:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-:root[data-theme="dark"] .exportGraphModal .settingsToggleCopy,
-:root[data-theme="dark"] .obsidianImportModal .settingsToggleCopy {
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  gap: 4px !important;
-  min-width: 0 !important;
-}
-
-:root[data-theme="dark"] .quizModal.exportGraphModal {
-  background: #0a0a0b !important;
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.52),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-}
-
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalBody {
-  background: #0a0a0b !important;
-}
-
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalHeader::after {
-  display: none !important;
-  background: transparent !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .previewStatCard {
-  background: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-  border-radius: 999px !important;
-  padding: 8px 11px !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .previewStatCard strong,
-:root[data-theme="dark"] .obsidianImportModal .previewStatCard span {
-  color: rgba(255, 255, 255, 0.84) !important;
-}
-
-:root[data-theme="dark"] .obsidianImportModal .previewStatCard strong {
-  color: rgba(255, 255, 255, 0.96) !important;
-}
-
-:root[data-theme="dark"] .settingsModal .modalCloseButton,
-:root[data-theme="dark"] .debugLogsModal .modalCloseButton {
-  display: none !important;
-}
 
 /* Dark create-graph fields align with light theme geometry. */
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalHeader {
-  padding-bottom: 12px !important;
-  padding: 22px 18px 12px !important;
-}
-
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .quizModalBody {
-  padding-top: 2px !important;
-  padding: 0 0 18px !important;
-}
-
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .input,
-:root[data-theme="dark"] .quizModal.workspaceCreateModal select.input,
-:root[data-theme="dark"] .quizModal.workspaceCreateModal .textarea {
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-  text-indent: 0 !important;
-}
-
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalHeader {
-  padding: 22px 18px 12px !important;
-}
-
-:root[data-theme="dark"] .quizModal.exportGraphModal .quizModalBody {
-  padding: 0 0 18px !important;
-}
 
 /* Dark chat and delete cleanup. */
-:root[data-theme="dark"] .quizOverlay.confirmOverlay {
-  background: rgba(0, 0, 0, 0.28) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
 
-:root[data-theme="dark"] .quizModal.confirmModal,
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalHeader,
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalBody {
-  background: #0a0a0b !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .quizModal.confirmModal .quizModalBody p {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .assistantHello {
-  min-height: 220px !important;
-  gap: 12px !important;
-  padding: 20px 12px 8px !important;
-}
-
-:root[data-theme="dark"] .assistantHelloTitle {
-  font-size: 36px !important;
-  line-height: 1.02 !important;
-  letter-spacing: -0.01em !important;
-  font-weight: 520 !important;
-}
-
-:root[data-theme="dark"] .assistantHelloCopy {
-  line-height: 1.5 !important;
-  max-width: 30ch !important;
-  font-size: 15px !important;
-}
-
-:root[data-theme="dark"] .lightChatWindow .assistantModelMenu {
-  left: 0 !important;
-  right: auto !important;
-  top: calc(100% + 8px) !important;
-  min-width: 180px !important;
-  max-width: min(240px, calc(100vw - 48px)) !important;
-  z-index: 30 !important;
-  background: #0a0a0b !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  opacity: 1 !important;
-  background-image: none !important;
-}

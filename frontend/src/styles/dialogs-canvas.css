@@ -1,243 +1,4 @@
-.quizModalBody {
-  position: relative;
-}
 
-.quizModalWide {
-  width: min(920px, calc(100vw - 32px));
-  max-width: min(920px, calc(100vw - 32px));
-}
-
-.obsidianImportGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.obsidianSettingsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.obsidianPreviewStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.obsidianIssueList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 220px;
-  overflow: auto;
-}
-
-.obsidianVaultSummary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.obsidianVaultSummaryLabel {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1;
-}
-
-.obsidianVaultSummaryValue {
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: right;
-}
-
-.obsidianVaultSummaryEmpty .obsidianVaultSummaryValue {
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.obsidianImportModal .obsidianPreviewStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.obsidianImportModal .previewStatCard {
-  min-height: auto;
-}
-
-.obsidianImportModal .settingsToggleRow {
-  align-items: flex-start;
-}
-
-.modalCloseButton {
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.76);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
-}
-
-.modalCloseButton:hover {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.96);
-}
-
-.modalCloseButton:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.36);
-  outline-offset: 4px;
-  color: rgba(255, 255, 255, 0.96);
-}
-
-.settingsModal {
-  width: min(1080px, 95vw);
-  height: min(85vh, 800px);
-  background: rgba(14, 14, 14, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  display: flex;
-  overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.02), 0 30px 60px rgba(0,0,0,0.6);
-  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.settingsSidebar {
-  width: 240px;
-  background: rgba(10, 10, 10, 0.3);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.settingsSidebarTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 8px 12px;
-  margin-bottom: 4px;
-}
-
-.settingsTab {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.1s ease;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.settingsTab .sidebarIcon {
-  color: rgba(255, 255, 255, 0.5);
-  transition: all 0.1s ease;
-  flex-shrink: 0;
-}
-
-.settingsTabLabel {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settingsTab:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.settingsTab:hover .sidebarIcon {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.settingsTabActive {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff;
-}
-
-.settingsTabActive .sidebarIcon {
-  color: #fff;
-}
-
-.settingsContent {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  position: relative;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.settingsContent::-webkit-scrollbar {
-  display: none;
-}
-
-.settingsContentHeader {
-  position: sticky;
-  top: 0;
-  background: rgba(10, 10, 10, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 10;
-  padding: 24px 32px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.settingsContentHeader h2 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-  color: #fff;
-}
-
-.settingsContentScroll {
-  padding: 24px 32px 40px;
-}
-
-.quizQuestion {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px 15px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: linear-gradient(180deg, rgba(19, 19, 19, 0.96), rgba(12, 12, 12, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
 
 .quizPrompt {
   font-size: 13px;
@@ -274,81 +35,14 @@
   color: rgba(255, 255, 255, 0.94);
 }
 
-.quizChoiceText {
-  flex: 1;
-}
-
-.quizReviewLine {
-  font-size: 12px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.76);
-}
-
-.quizActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.quizActionsGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
-.quizActionsRight {
-  justify-content: flex-end;
-}
-
-.exportSettingsGrid {
-  margin-top: 2px;
-}
-
-.exportSettingsToggleRow {
-  align-items: flex-start;
-}
-
-.exportGraphHint {
-  margin-top: -2px;
-}
-
-.quizSubmitButton {
-  align-self: auto;
-}
-
-.mobileDock {
-  display: none;
-}
-
-.mobileDock {
-  background: #0f0f0f;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
 @media (max-width: 960px) {
-  .workspaceUtilityActions {
-    justify-content: flex-start;
-  }
 
   .assistantDock {
     width: min(100%, 420px) !important;
   }
 
-  .configGrid {
-    grid-template-columns: 1fr;
-  }
-
   .split {
     grid-template-columns: 1fr;
-  }
-
-  .plannerConfigGrid {
-    grid-template-columns: 1fr 1fr;
   }
 
   .leftSidebar {
@@ -373,21 +67,6 @@
     min-height: 100vh;
   }
 
-  .graphTabChip {
-    min-width: 136px;
-  }
-
-  .workspaceUtilityActions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-  }
-
-  .workspaceUtilityButton {
-    justify-content: center;
-    text-align: center;
-  }
-
   .emptyStateContent {
     width: min(100% - 36px, 420px);
     gap: 12px;
@@ -402,84 +81,9 @@
     gap: 14px;
   }
 
-  .mobileDock {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 50;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    gap: 8px;
-    padding: 8px;
-    border-radius: 18px;
-    background: rgba(13, 13, 13, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
-    backdrop-filter: blur(18px);
-  }
-
-  .mobileDockItem {
-    border: 0;
-    padding: 12px 10px;
-    border-radius: 14px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.68);
-    font-weight: 600;
-  }
-
-  .mobileDockItemActive {
-    background: rgba(255, 214, 102, 0.16);
-    color: #fff8df;
-  }
-
-  .subbar {
-    padding: 10px 14px;
-  }
-
-  .subbarRight {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .titleBlock {
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .pageTitle {
-    font-size: 24px;
-    text-align: left;
-  }
-
-  .pageStats {
-    justify-content: flex-start;
-  }
-
-  .plannerConfigGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .topicPopover {
-    width: min(360px, calc(100% - 24px));
-  }
-
-  .assistantThread,
-  .assistantComposerWrap,
-  .assistantDockHeader,
-  .sessionList {
+  .assistantDockHeader {
     padding-left: 14px;
     padding-right: 14px;
-  }
-
-  .assistantModeRow,
-  .assistantComposerFooter {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .assistantComposerHint {
-    text-align: left;
   }
 
   .quizChoices {
@@ -487,217 +91,11 @@
   }
 }
 
-.settingsModal {
-  background: rgba(8, 8, 9, 0.96);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.48);
-}
-
-.settingsSidebar {
-  background: rgba(10, 10, 11, 0.92);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.settingsTab {
-  border-radius: 12px;
-}
-
-.settingsTabActive {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-
-.settingsContentHeader {
-  background: rgba(8, 8, 9, 0.94);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.settingsContentScroll {
-  padding: 24px 28px 32px;
-}
-
-.settingsConfigSurface {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.settingsConfigGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 380px);
-  gap: 16px;
-  align-items: start;
-}
-
-.settingsPrimaryColumn,
-.settingsSecondaryColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.settingsSnapshotsCard {
-  min-height: 280px;
-}
-
 .settingsPanel {
   background: rgba(14, 14, 15, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   overflow: hidden;
-}
-
-.settingsPanelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.settingsPanelEyebrow {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.42);
-  margin-bottom: 6px;
-}
-
-.settingsPanelTitle {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #fff;
-}
-
-.settingsPanelBody {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 18px 20px 20px;
-}
-
-.settingsLead,
-.settingsInlineNotice {
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.settingsInlineNotice {
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.settingsInlineFields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.thinkingModeSwitch {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.settingsPresetSwitch {
-  margin-top: 2px;
-}
-
-.thinkingModeChip {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  color: #fff;
-  padding: 14px 15px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: border-color 0.18s ease, background 0.18s ease;
-}
-
-.thinkingModeChip:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.thinkingModeChipActive {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.thinkingModeChipLabel {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
-}
-
-.thinkingModeChipTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.settingsActionRow,
-.settingsFooterBar,
-.settingsPanelActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.settingsPanelActions {
-  justify-content: flex-end;
-}
-
-.settingsFooterBar {
-  position: sticky;
-  bottom: 0;
-  z-index: 8;
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 28px 18px;
-  background: linear-gradient(180deg, rgba(8, 8, 9, 0), rgba(8, 8, 9, 0.68) 42%, rgba(8, 8, 9, 0.84));
-}
-
-@media (max-width: 980px) {
-  .settingsConfigGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .thinkingModeSwitch {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .settingsContentScroll {
-    padding: 18px 16px 22px;
-  }
-
-  .settingsFooterBar {
-    width: 100%;
-    padding: 8px 16px 14px;
-  }
-
-  .settingsInlineFields {
-    grid-template-columns: 1fr;
-  }
-
-  .settingsFooterBar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 @media (max-width: 1180px) {
@@ -713,70 +111,6 @@
 
   .floatingStatusContainer {
     display: none;
-  }
-
-  .mobileGraphStrip {
-    position: absolute;
-    top: calc(29px + env(safe-area-inset-top, 0px));
-    left: 12px;
-    right: 12px;
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: transparent;
-  }
-
-  .mobileGraphScroller {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    scroll-padding-inline: 4px;
-  }
-
-  .mobileGraphScroller::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mobileGraphChip,
-  .mobileGraphCreate {
-    appearance: none;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: transparent !important;
-    color: rgba(255, 255, 255, 0.86);
-    border-radius: 999px;
-    height: 34px;
-    padding: 0 12px;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-  }
-
-  .mobileGraphChipActive {
-    background: rgba(255, 255, 255, 0.14) !important;
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.42);
-  }
-
-  .mobileGraphCreate {
-    border-color: rgba(255, 255, 255, 0.46) !important;
-    color: #fff !important;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
   }
 
   .workspaceShell {
@@ -829,35 +163,6 @@
     display: none;
   }
 
-  .pageStat {
-    flex-shrink: 0;
-    padding: 8px 10px;
-    font-size: 11px;
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-    background: #0b0b0b;
-    border-color: rgba(255, 255, 255, 0.18);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
-  }
-
-  .pageStatWarn {
-    background: #2a1f0e;
-    border-color: rgba(255, 214, 120, 0.36);
-  }
-
-  .pageStatComplete,
-  .pageStatGood {
-    background: #122617;
-    border-color: rgba(118, 255, 168, 0.36);
-  }
-
-  .pageStat strong {
-    font-size: 12px;
-  }
-
   .workspaceShell,
   .workspaceMain,
   .neuroLayout,
@@ -869,7 +174,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    top: calc(137px + env(safe-area-inset-top, 0px));
+    top: calc(164px + env(safe-area-inset-top, 0px));
     bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     width: auto !important;
     height: auto !important;
@@ -879,10 +184,6 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     transition: transform 180ms ease, opacity 140ms ease;
-  }
-
-  .assistantMobileResizeHandle {
-    display: none;
   }
 
   .assistantDockOpen {
@@ -897,58 +198,13 @@
     pointer-events: none;
   }
 
-  .assistantDockResize,
-  .assistantDockHandleClosed {
+  .assistantDockResize {
     display: none;
   }
 
   .assistantDockHeader {
     padding-top: 14px;
     padding-bottom: 12px;
-  }
-
-  .sessionListWrap::before,
-  .sessionListWrap::after {
-    display: none !important;
-  }
-
-  .sessionList {
-    padding: 0 14px 10px 14px;
-    touch-action: pan-x;
-  }
-
-  .sessionShadow,
-  .sessionShadow::after {
-    display: none !important;
-  }
-
-  .assistantThread {
-    padding-bottom: 14px;
-  }
-
-  .chatBubble {
-    max-width: min(100%, 88vw);
-  }
-
-  .assistantInput {
-    min-height: 88px;
-  }
-
-  .topicPopover {
-    position: fixed;
-    left: 12px !important;
-    right: 12px;
-    top: auto !important;
-    bottom: calc(124px + env(safe-area-inset-bottom, 0px));
-    width: auto;
-    max-height: min(48vh, 500px);
-    overflow: auto;
-    border-radius: 18px;
-    padding-bottom: 18px;
-  }
-
-  .topicPopover::after {
-    display: none;
   }
 
   .emptyStateContent {
@@ -977,177 +233,6 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
-
-  .quizOverlay {
-    align-items: center;
-    justify-content: center;
-    padding: 14px;
-    background: rgba(0, 0, 0, 0.25);
-    animation: fadeInOverlay 0.2s ease-out forwards;
-  }
-
-  .quizOverlay.settingsOverlay {
-    align-items: stretch;
-    justify-content: stretch;
-    padding: 0;
-  }
-
-  .quizModal {
-    width: min(88vw, 460px);
-    max-height: min(82vh, 760px);
-    border-radius: 18px;
-    padding: 0 14px 14px;
-    animation: slideUpModal 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-  }
-
-  .quizModalHeader {
-    margin: 0 -14px 10px;
-    padding: 14px 14px 10px;
-  }
-
-  .quizModalBody {
-    padding-bottom: 8px;
-  }
-
-  .quizModalWide,
-  .obsidianImportGrid,
-  .obsidianSettingsGrid,
-  .obsidianPreviewStats {
-    grid-template-columns: 1fr;
-  }
-
-  .settingsModal {
-    width: 100%;
-    height: min(92vh, 100vh);
-    border-radius: 20px 20px 0 0;
-    flex-direction: column;
-    animation: slideUpModal 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-  }
-
-  .settingsOverlay .settingsModal {
-    height: 100svh;
-    max-height: none;
-    border-radius: 0;
-  }
-
-  .settingsOverlay .settingsSidebar {
-    display: none !important;
-  }
-
-  .settingsOverlay .settingsContent {
-    width: 100%;
-  }
-
-  .settingsSidebar {
-    width: 100%;
-    padding: 12px;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-    overscroll-behavior-x: contain;
-  }
-
-  .settingsSidebar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .settingsSidebarTitle {
-    display: none;
-  }
-
-  .settingsTab {
-    flex-shrink: 0;
-    max-width: min(48vw, 220px);
-  }
-
-  .settingsContentHeader {
-    padding: 16px 18px 12px;
-  }
-
-  .settingsContentHeader h2 {
-    font-size: 18px;
-  }
-
-  .settingsContentScroll {
-    padding: 18px 18px 112px;
-  }
-
-  .settingsOverlay .settingsContentScroll {
-    padding-bottom: 28px;
-  }
-
-  .settingsConfigGrid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .settingsInlineFields {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mobileDock {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    z-index: 50;
-    padding: 8px;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    background: #090909;
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  .mobileMenuSheet {
-    left: 12px;
-    right: 12px;
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .mobileDockItem {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    min-width: 0;
-    border: 1px solid transparent;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.72);
-  }
-
-  .mobileDockLabel {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mobileDockItemChat {
-    border-color: transparent;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.86);
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  .mobileDockItemActive {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.24);
-    color: #fff;
-  }
-
-  .mobileDockItemChat.mobileDockItemActive {
-    background: #fff;
-    border-color: #fff;
-    color: #000;
-    box-shadow: 0 10px 22px rgba(255, 255, 255, 0.18);
-  }
 }
 
 :root[data-theme="light"] .ambient-glow {
@@ -1156,12 +241,7 @@
 }
 
 :root[data-theme="light"] .leftSidebar,
-:root[data-theme="light"] .assistantDock,
-:root[data-theme="light"] .topicPopover,
-:root[data-theme="light"] .settingsModal,
-:root[data-theme="light"] .settingsSidebar,
-:root[data-theme="light"] .settingsContentHeader,
-:root[data-theme="light"] .mobileDock {
+:root[data-theme="light"] .assistantDock {
   background: var(--panel);
   border-color: var(--border);
   box-shadow: 0 18px 40px var(--shadow-soft);

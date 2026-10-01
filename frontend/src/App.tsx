@@ -1119,9 +1119,10 @@ export default function App(): React.JSX.Element {
   const hasInlinePlanningWidget = currentChatState.messages.some((message) => Boolean(message.planning_status));
   const overlayLeftOffset = leftSidebarOpen ? 280 : 68;
   const overlayRightOffset = assistantOpen ? assistantWidth + 20 : 56;
+  // Desktop windows float over the canvas and reserve no width; only the dock (left) and edge gutter count.
   const topOverlayCompact =
     !isMobileViewport
-    && viewportWidth - overlayLeftOffset - overlayRightOffset < COMPACT_TOP_OVERLAY_THRESHOLD;
+    && viewportWidth - 104 - 24 < COMPACT_TOP_OVERLAY_THRESHOLD;
 
   const openSidebar = useCallback(() => {
     if (sidebarCloseTimerRef.current) {

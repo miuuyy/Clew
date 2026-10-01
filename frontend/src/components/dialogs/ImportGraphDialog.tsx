@@ -1,6 +1,9 @@
 import React from "react";
 import { UploadSimple } from "@phosphor-icons/react";
 
+import { Modal } from "../ui/Modal";
+import { SwitchRow } from "../ui/SwitchRow";
+
 import type { AppCopy } from "../../lib/appCopy";
 import type { GraphExportPackagePayload } from "../../lib/types";
 
@@ -42,89 +45,50 @@ export function ImportGraphDialog({
   if (!open) return null;
 
   return (
-    <div className="quizOverlay">
-      <div
-        ref={modalRef}
-        className="quizModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="import-graph-dialog-title"
-        aria-describedby="import-graph-dialog-description"
-        tabIndex={-1}
-      >
-        <div className="quizModalHeader">
-          <div>
-            <div id="import-graph-dialog-title" className="cardTitle">{copy.dialogs.importGraphTitle}</div>
-            <div id="import-graph-dialog-description" className="mutedSmall">{copy.dialogs.importGraphBody}</div>
+    <Modal
+      id="import-graph-dialog"
+      modalRef={modalRef}
+      title={copy.dialogs.importGraphTitle}
+      description={copy.dialogs.importGraphBody}
+      closeLabel={copy.dialogs.cancel}
+      onClose={closeModal}
+      footer={<>
+        <button className="uiButton uiButtonQuiet" onClick={closeModal} type="button">{copy.dialogs.cancel}</button>
+        <button className="uiButton uiButtonPrimary" disabled={loading || !payload || !titleDraft.trim()} onClick={() => void importGraphFromPackage()} type="button">
+          {loading ? copy.dialogs.importingGraph : copy.dialogs.importGraph}
+        </button>
+      </>}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,.mapmind-graph.json,application/json"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0] ?? null;
+          if (file) {
+            void handleImportFile(file);
+          }
+          event.currentTarget.value = "";
+        }}
+      />
+      <button ref={fileButtonRef} className={`uiDropzone${fileName ? " uiDropzoneReady" : ""}`} type="button" onClick={() => fileInputRef.current?.click()}>
+        <UploadSimple size={18} aria-hidden="true" />
+        <span className="uiDropzoneTitle">{fileName ?? copy.dialogs.chooseFile}</span>
+        <span className="uiHelp">{payload ? `${payload.graph.title} · ${payload.graph.topics.length} ${copy.library.nodes}` : copy.dialogs.noFileChosen}</span>
+      </button>
+      {payload ? (
+        <>
+          <label className="uiField">
+            <span className="uiLabel">{copy.dialogs.graphTitle}</span>
+            <input className="uiInput" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} placeholder={copy.dialogs.importTitlePlaceholder} />
+          </label>
+          <div className="uiRows">
+            <SwitchRow title={copy.dialogs.importWithProgress} checked={includeProgressDraft} onChange={setIncludeProgressDraft} />
           </div>
-          <button className="modalCloseButton" onClick={closeModal} type="button" aria-label={copy.dialogs.cancel}>×</button>
-        </div>
-        <div className="quizModalBody stack">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,.mapmind-graph.json,application/json"
-            style={{ display: "none" }}
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              if (file) {
-                void handleImportFile(file);
-              }
-              event.currentTarget.value = "";
-            }}
-          />
-          <div className="stack" style={{ gap: 10 }}>
-            <button
-              ref={fileButtonRef}
-              className="btn btnImport btnImportWide"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <UploadSimple size={14} weight="bold" />
-              <span>{copy.dialogs.chooseFile}</span>
-            </button>
-            <div className={`inlineNotice ${fileName ? "inlineNoticeSuccess" : "inlineNoticeWarn"}`}>
-              {fileName ?? copy.dialogs.noFileChosen}
-            </div>
-          </div>
-          {payload ? (
-            <>
-              <div className="inlineNotice inlineNoticeNeutral">
-                {`${payload.graph.title} · ${payload.graph.topics.length} ${copy.library.nodes}`}
-              </div>
-              <label className="field">
-                <span className="fieldLabel">{copy.dialogs.graphTitle}</span>
-                <input
-                  className="input"
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  placeholder={copy.dialogs.importTitlePlaceholder}
-                />
-              </label>
-              <label className="settingsToggle">
-                <input
-                  type="checkbox"
-                  checked={includeProgressDraft}
-                  onChange={(event) => setIncludeProgressDraft(event.target.checked)}
-                />
-                <span>{copy.dialogs.importWithProgress}</span>
-              </label>
-            </>
-          ) : null}
-          {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
-          <div className="quizActions quizActionsRight">
-            <button className="btn btnGhost" onClick={closeModal} type="button">{copy.dialogs.cancel}</button>
-            <button
-              className="assistantSendButton quizSubmitButton"
-              disabled={loading || !payload || !titleDraft.trim()}
-              onClick={() => void importGraphFromPackage()}
-              type="button"
-            >
-              {loading ? copy.dialogs.importingGraph : copy.dialogs.importGraph}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        </>
+      ) : null}
+      {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
+    </Modal>
   );
 }
