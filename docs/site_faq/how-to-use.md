@@ -89,10 +89,8 @@ If an external assistant is helping you study, connect Clew Study Assist through
 
 Clew lets you tune:
 
-- provider and model
-- thinking budget
+- model and reasoning effort
 - memory profile
-- grounding
 - persona rules
 - theme
 - graph layout

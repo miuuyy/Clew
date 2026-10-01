@@ -2,20 +2,15 @@
 
 This guide is for developers and advanced users who want to run the public `main` branch locally.
 
-If you only want to try the product, the faster path is the hosted site:
-
-- [clew.my](https://clew.my)
-
-If you want local control over the workspace, providers, and graph packs, use this guide.
+Clew is local-only: there is no hosted workspace. Product docs live at [clew.my/docs](https://clew.my/docs).
 
 ## Requirements
 
 - macOS or Linux shell environment
 - Python 3.11+
 - Node 20+ or Node 22
-- one provider key:
-  - `KG_GEMINI_API_KEY`
-  - or `KG_OPENAI_API_KEY`
+- a ChatGPT Plus or Pro plan for AI features
+- an OS credential store (Keychain on macOS, Secret Service on Linux)
 
 ## Start the app
 
@@ -59,27 +54,11 @@ If you skip those values, the frontend falls back to its own origin and backend 
 
 If Vite cannot bind normally, the script falls back to a static frontend server.
 
-## Provider setup
+## Sign in with ChatGPT
 
-You only need one configured provider to use the workspace.
+AI features run on your ChatGPT plan. Open **Settings → ChatGPT → Sign in with ChatGPT** and approve the consent page. The OAuth redirect is `http://127.0.0.1:8787/auth/callback`, so the backend must be running on its default port. Tokens are stored in the OS credential store. Set a weekly limit for Clew in ChatGPT **Settings → Usage → App limits**.
 
-### Gemini
-
-```bash
-KG_GEMINI_API_KEY=...
-```
-
-### OpenAI
-
-```bash
-KG_OPENAI_API_KEY=...
-```
-
-Optional:
-
-```bash
-KG_OPENAI_BASE_URL=https://api.openai.com/v1
-```
+No provider API keys are used.
 
 ## Local data
 
@@ -129,7 +108,7 @@ PYTHONPATH=backend ./.venv/bin/python -m unittest discover -s backend/tests -v
 
 1. boot the workspace
 2. open the starter graph
-3. configure your provider in settings
+3. sign in with ChatGPT in settings
 4. ask for a focused expansion
 5. review the proposal
 6. apply it and try a closure quiz

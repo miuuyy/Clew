@@ -6,27 +6,19 @@ The shortest version:
 
 **Clew is roadmap.sh, but personalized and adaptive.**
 
-It gives you a clear path to anything you want to learn, with AI doing the heavy structural work and you staying in control of what becomes part of the graph.
+It gives you a clear path to anything you want to learn, with AI doing the heavy structural work and you staying in control of what becomes part of the graph. It runs on your machine and uses your ChatGPT plan.
 
-![Clew walkthrough](/docs-assets/walkthrough.gif)
+## What You Need
 
-## Start On The Website
+- a ChatGPT **Plus** or **Pro** plan for the AI features
+- Python 3.11 or newer
+- Node.js 20 or newer
+- macOS or Linux (on Windows, use WSL)
+- an OS credential store: Keychain on macOS, Secret Service on Linux
 
-Go to [clew.my](https://clew.my), open the app, and start with a graph.
+There is no account to create and no API key to copy.
 
-You can:
-
-- inspect a starter graph
-- create a fresh subject graph
-- paste a rough topic dump
-- import an Obsidian vault
-- ask AI to expand toward a target
-
-The first screen is the graph because the graph is the product. Chat supports it. Settings support it. Import and export support it. The graph is where the path becomes visible.
-
-## Run It Locally
-
-Use the local edition if you want your own provider keys, local SQLite state, MCP, and graph files.
+## Install And Run
 
 ```bash
 git clone https://github.com/miuuyy/Clew.git
@@ -35,15 +27,21 @@ cp .env.example .env
 ./scripts/dev.sh
 ```
 
-Open:
+The script creates a Python virtual environment, installs the frontend, and starts both servers:
 
-- frontend: `http://127.0.0.1:5178`
-- backend: `http://127.0.0.1:8787`
+- workspace: `http://127.0.0.1:5178`
+- local API: `http://127.0.0.1:8787`
 
-You only need one provider key:
+Stop everything with `./scripts/stop_dev.sh`.
 
-- `KG_GEMINI_API_KEY`
-- or `KG_OPENAI_API_KEY`
+## Sign In With ChatGPT
+
+Open **Settings → ChatGPT → Sign in with ChatGPT**. Your browser opens the OpenAI consent page; approve it and you land back in Clew.
+
+- Clew runs the agent on your ChatGPT plan. Usage counts against that plan.
+- Tokens are stored in your OS credential store, never in a plain file.
+- Set a weekly limit for Clew in ChatGPT **Settings → Usage → App limits**.
+- The graph works before you sign in. Only the assistant needs it.
 
 ## The First Good Session
 
@@ -85,4 +83,4 @@ You do not need to prepare a perfect curriculum. Clew exists because perfect cur
 - Export a graph back to Obsidian as a markdown vault.
 - Connect Clew Study Assist through MCP so Claude, Claude Code, or Cursor can read your current learning context.
 - Switch between Midnight and Paper themes depending on whether you want the dark graph mood or a brighter daylight workspace.
-- Tune memory, model, thinking budget, and persona rules when you want the AI to behave differently.
+- Pick a model and reasoning effort, tune memory, and write persona rules when you want the AI to behave differently.

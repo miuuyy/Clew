@@ -28,22 +28,24 @@ When you ask for help, Clew can assemble context from:
 - nearby prerequisites and unlocks
 - progress and closure state
 - recent chat history
-- provider/model settings
 - memory and persona settings
-- grounding preference
+- web search results when the model asks for them
 
 This is why Clew needs AI but does not collapse into chat. The model is working with a structured workspace.
 
-## 3. Requests Become Action Shapes
+## 3. Requests Become Tool Calls
 
-The assistant can choose a small set of product actions:
+The assistant works through a small set of Clew tools:
 
-- answer in context
-- generate an inline quiz
+- read the graph or one topic
+- ask a clarifying question
+- give an inline quiz
 - propose topic ingest
 - propose graph expansion
+- build a closure test
+- search the web
 
-The narrow action space is intentional. It keeps the model useful without pretending to be a general autonomous worker.
+The narrow tool set is intentional. It keeps the model useful without pretending to be a general autonomous worker.
 
 ## 4. Graph Changes Are Proposals
 
@@ -80,15 +82,17 @@ MCP exposes the local graph as read-only context for external assistants.
 
 Both integrations follow the same product rule: they support the graph, they do not replace it.
 
-## 7. Local Control Stays Explicit
+## 7. Everything Stays On Your Machine
 
-The local edition uses:
+The open-source edition uses:
 
-- SQLite for workspace state
-- your provider keys
-- Gemini or OpenAI/OpenAI-compatible providers
+- one SQLite file for workspace state
+- Sign in with ChatGPT, with tokens in your OS credential store
+- requests that go from your machine straight to OpenAI under your plan
 - local debug logs when enabled
 - local graph packages
+
+There is no Clew account and no Clew server.
 
 In one sentence:
 

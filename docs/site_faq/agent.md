@@ -13,24 +13,29 @@ The assistant can work from:
 - prerequisite and frontier context
 - progress and closure state
 - recent chat history
-- provider and model settings
 - memory settings
 - persona rules
-- grounding preference
+- web search results when it asks for them
 
 That context is the difference between a generic study chatbot and an assistant inside your learning workspace.
 
 ## What It Can Do
 
-The agent can:
+The agent works through a small set of Clew tools:
 
-- answer in context
-- generate inline quizzes
+- read the graph and open a topic
+- ask you a clarifying question with choices
+- give you an inline quiz, graded on your machine
 - propose graph ingest from source material
 - propose graph expansion toward a goal
-- help audit what is missing or too broad
+- build a closure test for a topic
+- search the web when a question needs fresh sources
 
 When the action changes the graph, the result is a proposal. You review it before it becomes state.
+
+## Where It Runs
+
+The agent runs on your ChatGPT plan through Sign in with ChatGPT. Your local Clew backend sends each request straight to OpenAI; there is no Clew server in the middle. Usage counts against your plan and the app limit you set in ChatGPT.
 
 ## Why This Is Agentic Enough
 
@@ -60,8 +65,8 @@ That keeps the product powerful without making the graph feel opaque.
 
 Clew lets you tune the assistant through:
 
-- model selection
-- thinking budget
+- model selection from your plan
+- reasoning effort
 - memory profile
 - graph context inclusion
 - progress context inclusion

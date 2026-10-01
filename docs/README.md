@@ -30,7 +30,7 @@ Product-facing website/FAQ source lives in [`site_faq/`](site_faq/README.md). It
 - [MCP Setup](MCP_SETUP.md): connect Clew Study Assist to Claude Desktop, Claude Code, or Cursor via the built-in MCP server
 - [Latest release](https://github.com/miuuyy/Clew/releases/latest): release notes live on GitHub
 - [ADR index](adr/README.md): long-lived decisions, including why external bridges must preserve the graph boundary
-- [Site FAQ source](site_faq/README.md): product-facing pages used by the hosted docs/site surface
+- [Site FAQ source](site_faq/README.md): product-facing pages rendered at clew.my/docs
 
 ## What is intentionally not here
 

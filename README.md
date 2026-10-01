@@ -17,7 +17,7 @@ Clew is a local, AI-assisted workspace for studying through dependency graphs. S
 
 The graph is the workspace. AI can draft, expand, audit, and reshape it, but changes stay visible, reviewable, and reversible.
 
-Try the hosted version at [clew.my](https://clew.my), or run this repo locally when you want to use your ChatGPT plan, local state, Obsidian import/export, and MCP context.
+Clew runs on your machine and uses your ChatGPT plan. Docs live at [clew.my](https://clew.my/docs).
 
 ## Quick Look
 
@@ -95,7 +95,7 @@ Instead of manually arranging a huge roadmap, you let AI draft the graph. Then y
 
 ## Docs
 
-- [Hosted docs](https://clew.my/how-to-use)
+- [Docs site](https://clew.my/docs)
 - [Quick start](docs/site_faq/quick-start.md)
 - [Features](docs/site_faq/features.md)
 - [How to use](docs/site_faq/how-to-use.md)
