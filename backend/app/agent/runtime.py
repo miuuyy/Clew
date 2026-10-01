@@ -41,6 +41,7 @@ class AgentRun:
     quiz_count: int | None = None
     quiz_session: TopicQuizSession | None = None
     cancel_requested: bool = False
+    web_searched: bool = False
 
     @property
     def thread_key(self) -> str:
@@ -144,7 +145,7 @@ class AgentRuntime:
             raise ValueError("Close prerequisite topics before taking this completion test.")
         selected = await self._select_model(model)
         run = AgentRun(id=uuid4().hex, graph_id=graph_id, session_id=None, model=selected,
-                       request=GraphChatRequest(prompt=f"Prepare a closure quiz for topic {topic_id}: exactly {question_count} questions. Call create_closure_quiz with the questions.", selected_topic_id=topic_id, use_grounding=False),
+                       request=GraphChatRequest(prompt=f"Prepare a closure quiz for topic {topic_id}: exactly {question_count} questions. Call create_closure_quiz with the questions.", selected_topic_id=topic_id),
                        done=asyncio.get_running_loop().create_future(), quiz_topic_id=topic_id, quiz_count=question_count)
         self.runs[run.id] = run
         run.task = asyncio.create_task(self._execute(run, []))
@@ -222,7 +223,8 @@ class AgentRuntime:
             run.model = await self._select_model(run.request.model or run.model or None)
             config = self.repository.current().workspace.config
             tools = tool_specs(CLOSURE_QUIZ_TOOLS if run.session_id is None else None)
-            if run.request.use_grounding:
+            # Chat turns may search the web; the model decides when. Quiz generation stays offline.
+            if run.session_id is not None:
                 tools.append({"type": "web_search"})
             transcript = self.store.transcript(run.session_id) if run.session_id else None
             items = list(transcript or [])
@@ -237,6 +239,8 @@ class AgentRuntime:
                 for item in output:
                     if item.get("type") == "message":
                         self._message_done(run, item)
+                    elif item.get("type") == "web_search_call":
+                        run.web_searched = True
                 items.extend(output)
                 calls = [item for item in output if item.get("type") == "function_call"]
                 if not calls:

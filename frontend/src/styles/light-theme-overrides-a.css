@@ -7,18 +7,6 @@
   border-radius: var(--clew-radius-panel);
 }
 
-:root[data-theme="light"] .groundingToggle {
-  min-height: 38px;
-  padding: 8px 13px;
-  border-radius: var(--clew-radius-pill);
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--border);
-  color: rgba(45, 43, 40, 0.74);
-  box-shadow: var(--clew-shadow-soft);
-  font-weight: 600;
-}
-
-:root[data-theme="light"] .groundingToggle:hover,
 :root[data-theme="light"] .btnGhost:hover {
   background: #ffffff !important;
   border-color: rgba(195, 90, 44, 0.2) !important;
@@ -64,7 +52,6 @@
 /* Light theme keeps orange as the main accent. */
 :root[data-theme="light"] .sidebarTreeItem,
 :root[data-theme="light"] .sidebarSectionHeader,
-:root[data-theme="light"] .groundingToggle,
 :root[data-theme="light"] .btnGhost,
 :root[data-theme="light"] .quizChoice {
   background: rgba(255, 255, 255, 0.96) !important;
@@ -75,7 +62,6 @@
 
 :root[data-theme="light"] .sidebarTreeItem:hover,
 :root[data-theme="light"] .sidebarSectionHeader:hover,
-:root[data-theme="light"] .groundingToggle:hover,
 :root[data-theme="light"] .btnGhost:hover,
 :root[data-theme="light"] .quizChoice:hover {
   background: #ffffff !important;
@@ -242,19 +228,6 @@
 
 :root[data-theme="light"] .assistantDockSubtle {
   color: var(--dt-light-muted) !important;
-}
-
-:root[data-theme="light"] .groundingToggle {
-  background: var(--dt-light-secondary) !important;
-  border: 1px solid transparent !important;
-  color: var(--dt-light-muted) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.62) !important;
-}
-
-:root[data-theme="light"] .groundingToggle:hover {
-  background: rgba(250, 249, 246, 0.92) !important;
-  border-color: rgba(233, 225, 215, 0.96) !important;
-  color: var(--dt-light-text) !important;
 }
 /* Light dock and chat cleanup. */
 

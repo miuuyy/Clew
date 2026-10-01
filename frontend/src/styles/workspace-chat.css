@@ -128,27 +128,6 @@ input[type="number"] {
   flex-wrap: wrap;
 }
 
-.groundingToggle {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.78);
-  border-radius: 999px;
-  padding: 8px 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: 160ms ease;
-  flex-shrink: 0;
-}
-
-.groundingToggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
 @keyframes proposalPendingPulse {
 
   0%,

@@ -104,7 +104,6 @@
 
 /* Dark theme shape alignment. */
 
-:root[data-theme="dark"] .groundingToggle,
 :root[data-theme="dark"] .btnGhost {
   border-radius: 16px !important;
 }

@@ -66,19 +66,6 @@
   flex-shrink: 0;
 }
 
-:root[data-theme="light"] .groundingToggle {
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(17, 24, 39, 0.08);
-  color: rgba(17, 24, 39, 0.66);
-  border-radius: 16px;
-}
-
-:root[data-theme="light"] .groundingToggle:hover {
-  background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(17, 24, 39, 0.16);
-  color: var(--text);
-}
-
 :root[data-theme="light"] .chatEmphasis {
   color: rgba(31, 41, 55, 0.86);
 }

@@ -27,7 +27,7 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
 
     async def start(self, scenario="answer", **kwargs):
         self.peer.scenario = scenario
-        session_id, run_id = await self.runtime.start_chat(self.graph_id, GraphChatRequest(prompt="Help me learn", use_grounding=False, **kwargs))
+        session_id, run_id = await self.runtime.start_chat(self.graph_id, GraphChatRequest(prompt="Help me learn", **kwargs))
         return session_id, self.runtime.runs[run_id]
 
     async def complete(self, run):
@@ -58,8 +58,10 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         request = self.peer.requests[0]
         self.assertEqual(request["model"], "test-model")
         self.assertNotIn("reasoning", request)
-        self.assertEqual({tool["name"] for tool in request["tools"]},
+        self.assertEqual({tool["name"] for tool in request["tools"] if tool["type"] == "function"},
                          {"read_graph", "read_topic", "propose_ingest", "propose_expand", "ask_question", "present_quiz", "create_closure_quiz"})
+        # Web search is always offered in chat; the model decides whether to use it.
+        self.assertIn({"type": "web_search"}, request["tools"])
 
     async def test_preambles_tools_and_final_answer_keep_one_reply_after_reload(self):
         before = self.repo.current().snapshot.id
@@ -195,7 +197,7 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         quiz = await asyncio.wait_for(self.runtime.generate_closure_quiz(self.graph_id, "arithmetics", 6, None), 30)
         self.assertEqual(len(quiz.questions), 6)
         self.assertEqual(self.repo.quiz_session(quiz.session_id).questions[0].correct_choice_index, 1)
-        self.assertEqual({tool["name"] for tool in self.peer.requests[0]["tools"]}, {"read_graph", "read_topic", "create_closure_quiz"})
+        self.assertEqual([tool.get("name") for tool in self.peer.requests[0]["tools"]], ["create_closure_quiz", "read_graph", "read_topic"])
         self.assertEqual(self.runtime.runs, {})
 
     async def test_missing_quiz_tool_result_fails_instead_of_fabricating_test(self):

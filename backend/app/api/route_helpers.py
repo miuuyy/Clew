@@ -30,7 +30,6 @@ def local_workspace_surface(repository: GraphRepository) -> dict:
         "recommended_actions": ["resume_workspace"] if graph_count > 0 else ["create_graph"],
         "can_create_graph": True,
         "can_import_from_library": False,
-        "grounding_default_enabled": workspace.config.web_search_enabled,
     }
 
 

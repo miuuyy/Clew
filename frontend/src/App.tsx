@@ -161,7 +161,6 @@ export default function App(): React.JSX.Element {
   const [debugLogs, setDebugLogs] = useState<DebugLogSnapshot | null>(null);
   const [debugLogsLoading, setDebugLogsLoading] = useState(false);
   const [debugLogsError, setDebugLogsError] = useState<string | null>(null);
-  const [composerUseGrounding, setComposerUseGrounding] = useState(true);
   const {
     assistantWidth,
     setAssistantWidth,
@@ -209,7 +208,6 @@ export default function App(): React.JSX.Element {
   const floatingStatsRef = useRef<HTMLDivElement | null>(null);
   const sessionDragRef = useRef<{ startX: number; scrollLeft: number } | null>(null);
   const bootstrapStartedRef = useRef(false);
-  const composerGroundingSeededRef = useRef(false);
   const sidebarCloseTimerRef = useRef<number | null>(null);
   const closeDeleteGraphModal = useCallback(() => setDeleteConfirm(null), []);
   const closeSessionDeleteModal = useCallback(() => setSessionDeleteConfirm(null), []);
@@ -464,7 +462,6 @@ export default function App(): React.JSX.Element {
     selectedTopicId,
     selectedChatModel,
     defaultModel: currentConfig?.default_model ?? null,
-    composerUseGrounding,
     loadChatError: copy.errors.loadChat,
     loadChatSessionsError: copy.errors.loadChatSessions,
   });
@@ -612,10 +609,6 @@ export default function App(): React.JSX.Element {
       if (!response.ok) return null;
       const payload = (await response.json()) as WorkspaceSurfacePayload;
       setWorkspaceSurface(payload);
-      if (!composerGroundingSeededRef.current) {
-        setComposerUseGrounding(payload.grounding_default_enabled);
-        composerGroundingSeededRef.current = true;
-      }
       return payload;
     } catch {
       return null;
@@ -630,10 +623,6 @@ export default function App(): React.JSX.Element {
       setSessionInfo(payload);
       if (payload.workspace_surface) {
         setWorkspaceSurface(payload.workspace_surface);
-        if (!composerGroundingSeededRef.current) {
-          setComposerUseGrounding(payload.workspace_surface.grounding_default_enabled);
-          composerGroundingSeededRef.current = true;
-        }
       }
       return payload;
     } catch {
@@ -1369,8 +1358,6 @@ export default function App(): React.JSX.Element {
           chatModelOptions,
           selectedChatModel,
           setSelectedChatModel,
-          composerUseGrounding,
-          setComposerUseGrounding,
           chatComposerRef,
         }}
       />

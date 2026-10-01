@@ -226,7 +226,6 @@ export type ProposalGenerateRequest = {
     testing_notes: string;
     links: Array<{ label: string; url: string }>;
   }>;
-  use_grounding: boolean;
   model?: string | null;
 };
 
@@ -386,7 +385,6 @@ export type WorkspaceConfig = {
   reasoning_effort: ReasoningEffort | null;
   ui_language: string;
   canonical_graph_language: string;
-  web_search_enabled: boolean;
   disable_idle_animations: boolean;
   memory_mode: "balanced" | "max" | "custom";
   assistant_nickname: string;

@@ -4,19 +4,6 @@
 
 /* Chat surfaces keep the workspace palette while staying lighter. */
 
-:root[data-theme="light"] .groundingToggle {
-  background: var(--dt-light-secondary) !important;
-  border: 1px solid transparent !important;
-  color: var(--dt-light-muted) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.62) !important;
-}
-
-:root[data-theme="light"] .groundingToggle:hover {
-  background: rgba(250, 249, 246, 0.92) !important;
-  border-color: rgba(233, 225, 215, 0.96) !important;
-  color: var(--dt-light-text) !important;
-}
-
 /* Reassert the active session label color against earlier label-specific rules. */
 
 /* Active session badges inherit the label tone and weight. */

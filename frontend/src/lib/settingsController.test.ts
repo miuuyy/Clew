@@ -10,7 +10,6 @@ function makeConfig(): WorkspaceConfig {
     reasoning_effort: null,
     ui_language: "en",
     canonical_graph_language: "en",
-    web_search_enabled: true,
     memory_mode: "balanced",
     assistant_nickname: "",
     disable_idle_animations: false,

@@ -237,6 +237,8 @@ class WorkspaceConfig(BaseModel):
             return data
         data = dict(data)
         # A one-time data migration, never a runtime provider/model fallback.
+        # Web search is always offered to the model; the old per-workspace default is gone.
+        data.pop("web_search_enabled", None)
         if data.get("agent_backend") == "codex":
             # Codex catalog ids and efforts do not carry over to the ChatGPT plan catalog.
             data["agent_backend"] = "chatgpt"
@@ -255,7 +257,6 @@ class WorkspaceConfig(BaseModel):
     reasoning_effort: ReasoningEffort | None = None
     ui_language: str = "en"
     canonical_graph_language: str = "en"
-    web_search_enabled: bool = True
     disable_idle_animations: bool = False
     memory_mode: MemoryMode = "balanced"
     assistant_nickname: str = ""
@@ -304,7 +305,6 @@ class UpdateWorkspaceConfigRequest(BaseModel):
     model_config = {"extra": "forbid"}
     default_model: str | None = None
     reasoning_effort: ReasoningEffort | None = None
-    web_search_enabled: bool | None = None
     disable_idle_animations: bool | None = None
     memory_mode: MemoryMode | None = None
     assistant_nickname: str | None = None
@@ -404,7 +404,6 @@ class GraphChatRequest(BaseModel):
     selected_topic_id: str | None = None
     session_id: str | None = None
     model: str | None = None
-    use_grounding: bool = True
 
 
 

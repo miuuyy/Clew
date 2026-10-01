@@ -121,7 +121,6 @@ export const APP_COPY = {
     learningSession: "Learning session",
     focusedOn: (title: string) => `Focused on ${title}`,
     noGraphSelected: "No graph selected",
-    groundingToggle: "Toggle web grounding for this request",
     composerPlaceholder: "Ask for help, paste topics, or describe a target.",
   },
   settingsPanel: {

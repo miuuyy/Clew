@@ -16,8 +16,6 @@ export type AssistantComposerProps = {
   chatError: string | null;
   chatSessionsError: string | null;
   applyError: string | null;
-  composerUseGrounding: boolean;
-  setComposerUseGrounding: React.Dispatch<React.SetStateAction<boolean>>;
   assistantTemplates: AssistantTemplate[];
   updateCurrentChatState: (updater: (current: GraphChatState) => GraphChatState) => void;
   chatComposerRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -33,8 +31,6 @@ export function AssistantComposer({
   chatError,
   chatSessionsError,
   applyError,
-  composerUseGrounding,
-  setComposerUseGrounding,
   assistantTemplates,
   updateCurrentChatState,
   chatComposerRef,
@@ -50,28 +46,6 @@ export function AssistantComposer({
       {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{chatSessionsError}</div> : null}
       {applyError ? <div className="inlineNotice inlineNoticeError">{applyError}</div> : null}
       <div className="assistantTemplates">
-        <button
-          className={`assistantTemplate webGroundingToggle ${composerUseGrounding ? "active" : ""}`}
-          onClick={() => setComposerUseGrounding((current) => !current)}
-          title={copy.sessions.groundingToggle}
-          type="button"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="2" y1="12" x2="22" y2="12" />
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-          </svg>
-          Web
-        </button>
         {assistantTemplates.map((template) => (
           <button
             key={template.id}

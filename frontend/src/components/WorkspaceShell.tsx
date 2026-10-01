@@ -228,8 +228,6 @@ type AssistantWorkspaceProps = {
   chatModelOptions: string[];
   selectedChatModel: string | null;
   setSelectedChatModel: StateSetter<string | null>;
-  composerUseGrounding: boolean;
-  setComposerUseGrounding: StateSetter<boolean>;
   chatComposerRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
@@ -381,8 +379,6 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
     chatModelOptions,
     selectedChatModel,
     setSelectedChatModel,
-    composerUseGrounding,
-    setComposerUseGrounding,
     chatComposerRef,
   } = assistant;
   const assistantDisplayName = data?.workspace.config.assistant_nickname?.trim() || copy.sessions.assistantTitle;
@@ -883,8 +879,6 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
       chatError={chatError}
       chatSessionsError={chatSessionsError}
       applyError={applyError}
-      composerUseGrounding={composerUseGrounding}
-      setComposerUseGrounding={setComposerUseGrounding}
       assistantTemplates={assistantTemplates}
       chatModelOptions={chatModelOptions}
       selectedChatModel={selectedChatModel}
@@ -1547,8 +1541,6 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
               chatError={chatError}
               chatSessionsError={chatSessionsError}
               applyError={applyError}
-              composerUseGrounding={composerUseGrounding}
-              setComposerUseGrounding={setComposerUseGrounding}
               assistantTemplates={assistantTemplates}
               updateCurrentChatState={updateCurrentChatState}
               chatComposerRef={chatComposerRef}

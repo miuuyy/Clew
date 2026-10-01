@@ -17,7 +17,7 @@ class ChatPersistenceTests(unittest.TestCase):
         self.assertEqual([m.content for m in thread.messages], ["hello", "world"])
 
     def test_native_stream_and_get_return_same_persisted_conversation(self):
-        response = self.client.post(self.url+"/stream", json={"prompt": "hello", "client_message_id": "test-user", "use_grounding": False})
+        response = self.client.post(self.url+"/stream", json={"prompt": "hello", "client_message_id": "test-user"})
         self.assertEqual(response.status_code, 200)
         events = [json.loads(line) for line in response.text.splitlines()]
         self.assertEqual(events[-1]["status"], "completed")

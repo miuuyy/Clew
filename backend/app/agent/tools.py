@@ -67,7 +67,7 @@ async def execute_tool(runtime: AgentRuntime, run: AgentRun, tool: str, call_id:
         elif tool in {"propose_ingest", "propose_expand"}:
             assert isinstance(parsed, ProposalDraft)
             proposal = ProposalService().prepare(graph, parsed, tool=tool, proposal_id=f"prop-{call_id}",
-                prompt=run.request.prompt, model=run.model, use_grounding=run.request.use_grounding)
+                prompt=run.request.prompt, model=run.model, use_grounding=run.web_searched)
             message.proposal = proposal
             message.action = tool
             result = {"status": "awaiting_review", "proposal_id": proposal.proposal_envelope.proposal_id,

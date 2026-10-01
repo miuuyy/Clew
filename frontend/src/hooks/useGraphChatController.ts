@@ -9,12 +9,12 @@ import type { ChatMessage, ChatSessionSummary, GraphChatThread, GraphEnvelope } 
 
 type Params = {
   activeGraph: GraphEnvelope | null; selectedTopicId: string | null; selectedChatModel: string | null;
-  defaultModel: string | null; composerUseGrounding: boolean; loadChatError: string; loadChatSessionsError: string;
+  defaultModel: string | null; loadChatError: string; loadChatSessionsError: string;
 };
 const empty = (): GraphChatState => ({ input: "", messages: [] });
 
 export function useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel, defaultModel,
-  composerUseGrounding, loadChatError, loadChatSessionsError }: Params) {
+  loadChatError, loadChatSessionsError }: Params) {
   const graphId = activeGraph?.graph_id ?? "";
   const [selectedSessions, setSelectedSessions] = useState<Record<string, string | null>>({});
   const activeSessionId = Object.prototype.hasOwnProperty.call(selectedSessions, graphId) ? selectedSessions[graphId] : readStoredActiveChatSession(graphId);
@@ -106,7 +106,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
         method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
         body: JSON.stringify({ prompt, client_message_id: user.id, hidden_user_message: user.hidden,
           selected_topic_id: activeSessionId ? sessions[graphId]?.find((session) => session.session_id === activeSessionId)?.topic_id ?? selectedTopicId : selectedTopicId,
-          session_id: state.sessionId ?? activeSessionId, model: selectedChatModel ?? defaultModel, use_grounding: composerUseGrounding }),
+          session_id: state.sessionId ?? activeSessionId, model: selectedChatModel ?? defaultModel }),
       });
       rejected = !response.ok;
       await readStream(response, key);
@@ -117,7 +117,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
         ...(rejected ? { input: prompt, messages: current.messages.filter((message) => message.id !== user.id) } : {}),
       }));
     } finally { busy.current.delete(key); void loadSessions(); }
-  }, [graphId, key, activeSessionId, selectedTopicId, selectedChatModel, defaultModel, composerUseGrounding, sessions, loadChatError, loadSessions, readStream, update]);
+  }, [graphId, key, activeSessionId, selectedTopicId, selectedChatModel, defaultModel, sessions, loadChatError, loadSessions, readStream, update]);
 
   const answerInteraction = async (interactionId: string, answer?: string, choiceIndex?: number) => {
     const sessionId = statesRef.current[key]?.sessionId;

@@ -444,8 +444,6 @@ export function LightChatWindow({
   chatError,
   chatSessionsError,
   applyError,
-  composerUseGrounding,
-  setComposerUseGrounding,
   assistantTemplates,
   chatModelOptions,
   selectedChatModel,
@@ -488,8 +486,6 @@ export function LightChatWindow({
   chatError: string | null;
   chatSessionsError: string | null;
   applyError: string | null;
-  composerUseGrounding: boolean;
-  setComposerUseGrounding: React.Dispatch<React.SetStateAction<boolean>>;
   assistantTemplates: Array<{ id: string; label: string; value: string }>;
   chatModelOptions: string[];
   selectedChatModel: string | null;
@@ -565,8 +561,6 @@ export function LightChatWindow({
         chatError={chatError}
         chatSessionsError={chatSessionsError}
         applyError={applyError}
-        composerUseGrounding={composerUseGrounding}
-        setComposerUseGrounding={setComposerUseGrounding}
         assistantTemplates={assistantTemplates}
         updateCurrentChatState={updateCurrentChatState}
         chatComposerRef={chatComposerRef}

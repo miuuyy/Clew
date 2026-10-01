@@ -62,7 +62,6 @@ export type WorkspaceSurfacePayload = {
   recommended_actions: Array<"create_graph" | "resume_workspace">;
   can_create_graph: boolean;
   can_import_from_library: boolean;
-  grounding_default_enabled: boolean;
 };
 
 export type AuthSessionPayload = {

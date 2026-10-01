@@ -579,12 +579,6 @@
 
 .assistantTemplate svg { width: 12px; height: 12px; margin-right: 5px; }
 
-.assistantTemplate.webGroundingToggle.active {
-  border-color: transparent;
-  background: var(--ui-fill-3);
-  color: var(--ui-fg);
-}
-
 .assistantComposer {
   position: relative;
   display: flex;
