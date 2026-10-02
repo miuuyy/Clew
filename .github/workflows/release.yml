@@ -113,6 +113,7 @@ jobs:
           ditto -x -k "$archive" "$stage"
           codesign --verify --deep --strict "$stage/Clew.app"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: clew-${{ runner.os }}-${{ matrix.arch }}
           path: |

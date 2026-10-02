@@ -3,6 +3,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const crypto = require('node:crypto');
+const { redact } = require('../logging.cjs');
 const root = path.join(__dirname, '..', '..');
 const folder = path.join(root, 'desktop/artifacts');
 const macFolder = process.arch === 'arm64' ? 'mac-arm64' : 'mac';
@@ -35,6 +36,8 @@ try {
   console.log('Packaged Clew: onboarding, stable storage across restart, CORS, session protection, sandbox and backend shutdown passed.');
   fs.rmSync(dataDir, { recursive: true, force: true });
 } catch (error) {
+  const diagnostic = path.join(dataDir, 'logs', 'desktop.log');
+  if (fs.existsSync(diagnostic)) console.error(redact(fs.readFileSync(diagnostic, 'utf8').slice(-16384)));
   console.error(`Smoke diagnostics retained: ${dataDir}`);
   throw error;
 }
