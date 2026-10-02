@@ -121,7 +121,7 @@ jobs:
             desktop/artifacts/*.exe
             desktop/artifacts/*.AppImage
             desktop/artifacts/*.deb
-            desktop/artifacts/*.yml
+            desktop/artifacts/latest*.yml
             desktop/artifacts/*.blockmap
             desktop/artifacts/smoke-*.json
             desktop/artifacts/smoke-*.png
