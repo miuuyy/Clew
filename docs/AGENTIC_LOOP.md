@@ -1,105 +1,47 @@
-# Agentic Loop
+# Agent loop
 
-Clew is not a generic autonomous agent. It is a **stateful learning workspace with an explicit decision-and-review loop**.
-
-The point of this file is to show where the agentic behavior actually lives:
-
-- context is assembled from workspace state
-- the model chooses an action shape
-- graph mutation stays proposal-based
-- accepted changes become rollbackable history
-
-## At a glance
+Clew runs one Responses API loop with the selected ChatGPT model. Each request
+receives the stored transcript, fresh workspace context and typed tools. The
+model chooses whether to answer, read a topic, ask a question, present a quiz or
+propose graph changes. There is no separate action classifier or proposal planner.
 
 ```mermaid
 flowchart TD
-    A["User message"] --> B["Context assembly"]
-
-    B --> B1["Workspace config\nprovider, model, thinking mode, persona rules"]
-    B --> B2["Graph state\nnodes, edges, zones, selected topic"]
-    B --> B3["Learning state\ntopic mastery, closure status, quiz history"]
-    B --> B4["Session state\nchat history, active learning session (not rollbacked)"]
-    B --> B5["System state\ngraph/workspace snapshots, rollbackable history"]
-
-    B --> C["Orchestrator decision model"]
-
-    C --> D1["Answer path"]
-    C --> D2["Inline quiz path"]
-    C --> D3["Propose ingest path"]
-    C --> D4["Propose expand path"]
-
-    D1 --> E1["Assistant response"]
-    D2 --> E2["Quiz card + later grading"]
-    E2 --> F2["Update learning state"]
-    F2 --> G["Persist to workspace state"]
-
-    D3 --> P["Planner"]
-    D4 --> P
-
-    P --> P1["Proposal envelope"]
-    P --> P2["Apply plan"]
-    P --> P3["Warnings / assumptions / open questions"]
-
-    P1 --> H["Human review gate"]
-    P2 --> H
-    P3 --> H
-
-    H -->|Approve| I["Apply state transition"]
-    H -->|Reject / ignore| J["Keep current state"]
-
-    I --> K["Snapshot commit"]
-    K --> G
-
-    G --> L["Updated graph + updated context"]
-
-    K --> M["Graph/workspace rollback path"]
-    M --> G
+    A[User message] --> B[Persist turn and assemble context]
+    B --> C[Selected ChatGPT model]
+    C --> D[Text reply]
+    C --> E[Typed tool call]
+    E --> F[Validate and execute the tool]
+    F --> G[Return tool result to the same model]
+    G --> C
+    F --> H[Graph proposal preview]
+    H -->|User applies| I[Revision check and snapshot transaction]
+    I --> J[Updated graph]
 ```
 
-## Why this qualifies as agentic
+Graph proposals are validated before review. Apply checks the graph revision and
+commits the change, snapshot and receipt together. Stale or invalid proposals
+fail explicitly. The model cannot award completion or silently rewrite the graph.
 
-The product is more than “user sends prompt, model returns text”.
+Questions and quizzes remain persistent cards. The runtime awaits the learner's
+answer, returns the result to the model and continues the same turn. Quiz grading
+and prerequisite closure are deterministic.
 
-It has:
+Chat events are persisted and replayed after a renderer reconnect. Stop cancels
+the active request. Backend restart interrupts unfinished turns while preserving
+completed messages and consistent transcript state. A bounded step limit fails
+explicitly; there is no alternate model or transport.
 
-- persistent world state
-- dynamic context assembly
-- multiple action paths
-- typed outputs
-- review before graph mutation
-- rollback after accepted changes
-
-That is what makes this an **agentic learning loop** — not an autonomous agent platform, just a model with persistent state and a review gate.
-
-## The five most important invariants
-
-1. The graph stays the center of truth.
-2. The model can propose mutation, not silently perform it.
-3. Accepted graph changes stay recoverable through snapshots.
-4. Runtime chat state and snapshot state are related but not identical.
-5. Completion is attached to topics and closure logic, not only to chat.
-
-## Action shapes
-
-At the orchestrator level the agent can choose among a small set of action families:
-
-- answer in context
-- emit an inline quiz
-- propose a graph ingest
-- propose a graph expansion
-
-That narrow action space is intentional. It keeps the model inside a legible product surface.
-
-## Where the loop lives in code
-
-| Area | Responsibility |
+| Owner | Responsibility |
 | --- | --- |
-| `backend/app/services/chat_orchestrator.py` | builds context and chooses action shape |
-| `backend/app/services/proposal_planner.py` | generates proposal drafts and applies validation bridges |
-| `backend/app/services/repository.py` | persists workspace, graph, snapshots, and config |
-| `backend/app/llm/contracts.py` | action-level contract layer |
-| `backend/app/llm/schemas.py` | structured generation schemas and planner draft shapes |
+| `backend/app/agent/runtime.py` | Turn lifecycle, Responses loop and interaction cards |
+| `backend/app/agent/context.py` | Scoped workspace context |
+| `backend/app/agent/contracts.py`, `tools.py` | Typed tools and handlers |
+| `backend/app/agent/store.py` | Transcripts, events and tool receipts |
+| `backend/app/services/proposal_validator.py` | Graph contract validation |
+| `backend/app/services/repository.py` | Apply, snapshots and concurrency |
+| `backend/app/services/quiz_service.py` | Grading and closure |
 
-## What this loop is not trying to do
-
-It is not trying to become a background worker swarm or a hidden supervisor mesh. The loop exists to make one thing work well: **help a learner build and evolve a structured graph without losing control of the workspace**.
+See [Architecture](ARCHITECTURE.md) for the full persistence and authentication
+contract and [ADR 0006](adr/0006-sign-in-with-chatgpt-agent-runtime.md) for the
+selected runtime boundary.

@@ -63,10 +63,13 @@ def normalize_resource_url(raw: str) -> str:
     value = raw.strip()
     if not value:
         return ""
-    parsed = urlparse(value)
-    if not parsed.scheme:
-        value = f"https://{value}"
+    try:
         parsed = urlparse(value)
+        if not parsed.scheme:
+            value = f"https://{value}"
+            parsed = urlparse(value)
+    except ValueError:
+        return ""
     if parsed.scheme not in {"http", "https"}:
         return ""
     if not parsed.netloc:

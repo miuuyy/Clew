@@ -63,32 +63,46 @@ export function useTopicPopover({
   const popoverDragOffsetRef = React.useRef(popoverDragOffset);
   popoverDragOffsetRef.current = popoverDragOffset;
   const lastAnchorCommitAtRef = React.useRef(0);
+  const previousGraphIdRef = React.useRef(activeGraph?.graph_id);
+  const previousUserSelectRef = React.useRef<string | null>(null);
+  const stopDrag = React.useCallback(() => {
+    popoverDragRef.current = null;
+    if (previousUserSelectRef.current !== null) {
+      document.body.style.userSelect = previousUserSelectRef.current;
+      previousUserSelectRef.current = null;
+    }
+  }, []);
 
   const selectedTopic: Topic | null = React.useMemo(() => {
-    if (!activeGraph || !selectedTopicId) return null;
+    if (!activeGraph || previousGraphIdRef.current !== activeGraph.graph_id || !selectedTopicId) return null;
     return activeGraph.topics.find((topic) => topic.id === selectedTopicId) ?? null;
   }, [activeGraph, selectedTopicId]);
 
   React.useEffect(() => {
-    if (!activeGraph) {
+    const changedGraph = previousGraphIdRef.current !== activeGraph?.graph_id;
+    previousGraphIdRef.current = activeGraph?.graph_id;
+    if (!activeGraph || changedGraph) {
       setSelectedTopicId(null);
       setSelectedTopicAnchor(null);
+      setPopoverPosition(null);
+      stopDrag();
       return;
     }
     setSelectedTopicId((previous) => {
       const stillExists = activeGraph.topics.some((topic) => topic.id === previous);
       return stillExists ? previous : null;
     });
-  }, [activeGraph]);
+  }, [activeGraph, stopDrag]);
 
   React.useEffect(() => {
+    stopDrag();
     setPopoverFollowAnchor(true);
     setPopoverDragOffset({ x: 0, y: 0 });
     if (!selectedTopicId) {
       setSelectedTopicAnchor(null);
       setPopoverPosition(null);
     }
-  }, [selectedTopicId]);
+  }, [selectedTopicId, stopDrag]);
 
   const handleSelectedTopicAnchorChange = React.useCallback(
     (next: TopicAnchorPoint | null) => {
@@ -186,11 +200,6 @@ export function useTopicPopover({
   }, [popoverFollowAnchor, selectedTopic, selectedTopicAnchor, popoverDragOffset, graphShellRef]);
 
   React.useEffect(() => {
-    function stopDrag(): void {
-      popoverDragRef.current = null;
-      document.body.style.userSelect = "";
-    }
-
     function onPointerMove(event: PointerEvent): void {
       const drag = popoverDragRef.current;
       const shell = graphShellRef.current;
@@ -214,6 +223,7 @@ export function useTopicPopover({
         height: popover.offsetHeight,
       } satisfies FloatingRect;
       setPopoverFollowAnchor(false);
+      if (previousUserSelectRef.current === null) previousUserSelectRef.current = document.body.style.userSelect;
       document.body.style.userSelect = "none";
       setPopoverPosition((current) => {
         if (!canPlaceFloatingRect(candidateRect, blockedRects)) {
@@ -230,11 +240,16 @@ export function useTopicPopover({
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+    window.addEventListener("blur", stopDrag);
     return () => {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("pointercancel", stopDrag);
+      window.removeEventListener("blur", stopDrag);
+      stopDrag();
     };
-  }, [graphShellRef, selectedTopicAnchor]);
+  }, [graphShellRef, stopDrag]);
 
   const handleSelectTopic = React.useCallback(
     (topicId: string | null, anchor: TopicAnchorPoint | null) => {

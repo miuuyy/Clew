@@ -368,11 +368,13 @@ export type ChatGPTModel = {
 export type ChatGPTLogin = {
   loginId: string;
   authUrl: string;
+  phase: "pending" | "completing";
 };
 export type ChatGPTAccount = {
   connected: boolean;
   authenticated: boolean;
   sharing: boolean;
+  can_disconnect: boolean;
   account: { email?: string | null; name?: string | null } | null;
   login: ChatGPTLogin | null;
   error: string | null;

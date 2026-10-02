@@ -11,7 +11,7 @@ Product-facing website/FAQ source lives in [`site_faq/`](site_faq/README.md). It
 1. [Local Quickstart](LOCAL_QUICKSTART.md)
 2. [Architecture](ARCHITECTURE.md)
 3. [Agentic Loop](AGENTIC_LOOP.md)
-4. [Provider Guide](PROVIDER_GUIDE.md)
+4. [ChatGPT Connection](PROVIDER_GUIDE.md)
 5. [Usage Guide](USAGE_GUIDE.md)
 6. [Obsidian Bridge](OBSIDIAN.md)
 7. [MCP Setup](MCP_SETUP.md)
@@ -24,7 +24,9 @@ Product-facing website/FAQ source lives in [`site_faq/`](site_faq/README.md). It
 - [Local Quickstart](LOCAL_QUICKSTART.md): exact setup, reset, and local runtime workflow
 - [Architecture](ARCHITECTURE.md): repository structure, boundaries, domain model, and service layout
 - [Agentic Loop](AGENTIC_LOOP.md): the decision and apply loop behind chat, proposals, quizzes, and rollback
-- [Provider Guide](PROVIDER_GUIDE.md): built-in providers, model config, and how to add another provider cleanly
+- [ChatGPT Connection](PROVIDER_GUIDE.md): sign-in, plan usage and model selection
+- [Desktop](DESKTOP.md): native installation, data locations and packaging
+- [Desktop release validation](DESKTOP_RELEASE_VALIDATION.md): automated gates, live checks and integration contracts
 - [Usage Guide](USAGE_GUIDE.md): source-material guidance for generating high-quality ingest input
 - [Obsidian Bridge](OBSIDIAN.md): import an Obsidian vault into Clew or export a graph back into Markdown
 - [MCP Setup](MCP_SETUP.md): connect Clew Study Assist to Claude Desktop, Claude Code, or Cursor via the built-in MCP server

@@ -6,7 +6,8 @@ from uuid import uuid4
 from pathlib import Path
 
 from app.models.api import ObsidianExportOptions
-from app.models.domain import Artifact, CreateGraphRequest, GraphProposal, PatchOperation, ProposalTopic, ProposalZone, QuizAttempt, ResourceLink
+from app.models.domain import Artifact, CreateGraphRequest, GraphProposal, PatchOperation, ProposalTopic, ProposalZone, QuizAttempt, ResourceLink, StudyGraph, Topic, Zone
+from app.services.obsidian_export import build_obsidian_export_package
 from app.services.assessment_service import AssessmentService
 from app.services.repository import GraphRepository
 
@@ -160,6 +161,40 @@ class RepositoryGraphTests(unittest.TestCase):
         self.assertEqual(imported_graph.quiz_attempts, [])
         self.assertEqual(imported_graph.metadata["imported_from_graph_id"], "mathematics-demo")
         self.assertFalse(imported_graph.metadata["imported_with_progress"])
+
+    def test_import_rejects_duplicate_ids_and_dangling_references_without_snapshot(self):
+        for defect in ("topic-id", "edge-id", "zone-id", "edge-reference", "topic-zone", "zone-topic"):
+            with self.subTest(defect=defect):
+                package = self.repository.export_graph_package("mathematics-demo")
+                graph = package.graph
+                if defect.endswith("-id"):
+                    collection = getattr(graph, defect.split("-")[0] + "s")
+                    collection.append(collection[0].model_copy(deep=True))
+                elif defect == "edge-reference":
+                    graph.edges[0].source_topic_id = "missing-topic"
+                elif defect == "topic-zone":
+                    graph.topics[0].zones.append("missing-zone")
+                else:
+                    graph.zones[0].topic_ids.append("missing-topic")
+                before = self.repository.current().snapshot.id
+                with self.assertRaises(ValueError):
+                    self.repository.import_graph_package(package)
+                self.assertEqual(self.repository.current().snapshot.id, before)
+
+    def test_obsidian_export_rejects_colliding_filenames_and_readme(self):
+        for titles in (("A/B", "A\\B"), ("Topic", "topic"), ("README",)):
+            with self.subTest(titles=titles):
+                graph = StudyGraph(graph_id="test", subject="test", title="Test",
+                    topics=[Topic(id=str(i), title=title, slug=str(i)) for i, title in enumerate(titles)])
+                with self.assertRaisesRegex(ValueError, "collid"):
+                    build_obsidian_export_package(graph, title="Test", include_progress=False, options=ObsidianExportOptions())
+
+    def test_obsidian_export_rejects_parent_directory_segments(self):
+        graph = StudyGraph(graph_id="test", subject="test", title="Test",
+            topics=[Topic(id="topic", title="Topic", slug="topic", zones=["zone"])],
+            zones=[Zone(id="zone", title="..", kind="test", color="#ffffff", topic_ids=["topic"])])
+        with self.assertRaisesRegex(ValueError, "directory"):
+            build_obsidian_export_package(graph, title="Test", include_progress=False, options=ObsidianExportOptions())
 
     def test_export_graph_to_obsidian_generates_markdown_vault_package(self) -> None:
         current = self.repository.current()

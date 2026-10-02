@@ -37,6 +37,10 @@ frontend/public/styles.css
 tmp-layout-check.png
 README.archive.local.md
 references/
+/References/
+node_modules/
+desktop/build/
+desktop/artifacts/
 logs/
 .agents/*
 !.agents/skills

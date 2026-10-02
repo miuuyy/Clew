@@ -12,6 +12,14 @@ function visibleMarkup(value: string): string {
 }
 
 describe("renderDisplayText", () => {
+  it("preserves JSON keys, braces and blank lines in quiz content", () => {
+    const html = visibleMarkup('{\n"difficulty": 3,\n\n"confidence": 0.8,\n"kind": "example"\n}');
+    expect(html).toContain("difficulty");
+    expect(html).toContain("confidence");
+    expect(html).toContain("{");
+    expect(html).toContain("}");
+    expect(html).toContain("<br/><br/>");
+  });
   it("renders explicit LaTeX fractions and functions through KaTeX", () => {
     const html = visibleMarkup(String.raw`F(x) = \frac{1}{3e}^{3x} + \frac{5}{3}`);
 

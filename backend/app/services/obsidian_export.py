@@ -297,6 +297,12 @@ def _build_topic_basenames(topics: list[Topic]) -> dict[str, str]:
             continue
         for topic in grouped_topics:
             basenames[topic.id] = _sanitize_path_segment(f"{title} ({topic.slug or topic.id})", fallback=topic.id)
+    used = {"readme"}
+    for basename in basenames.values():
+        key = basename.casefold()
+        if key in used:
+            raise ValueError(f"Obsidian export filenames collide: {basename}. Rename the conflicting topics before exporting.")
+        used.add(key)
     return basenames
 
 
@@ -314,7 +320,11 @@ def _primary_zone_for_topic(topic: Topic, *, zones_by_id: dict[str, Zone], graph
 def _sanitize_path_segment(value: str, *, fallback: str) -> str:
     cleaned = INVALID_PATH_CHARS_RE.sub(" ", value).strip()
     cleaned = WHITESPACE_RE.sub(" ", cleaned)
-    return cleaned[:120] or fallback
+    if not cleaned:
+        cleaned = WHITESPACE_RE.sub(" ", INVALID_PATH_CHARS_RE.sub(" ", fallback)).strip()
+    if not cleaned or cleaned in {".", ".."}:
+        raise ValueError("Obsidian export requires a valid filename or directory name.")
+    return cleaned[:120]
 
 
 def _titleize_relation(relation: str) -> str:

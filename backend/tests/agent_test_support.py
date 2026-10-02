@@ -11,7 +11,7 @@ def install_client(test, scenario="answer", signed=True):
     temp = tempfile.TemporaryDirectory(prefix="clew-api-test-")
     test.addCleanup(temp.cleanup)
     root = Path(temp.name)
-    settings = Settings(db_path=root/"state.sqlite3")
+    settings = Settings(db_path=root/"state.sqlite3", debug_log_dir=root/"logs")
     peer = FakeChatGPT(scenario)
     factory = patch("app.main.AgentRuntime", side_effect=lambda settings, repository: fake_runtime(settings, repository, peer, signed))
     factory.start()

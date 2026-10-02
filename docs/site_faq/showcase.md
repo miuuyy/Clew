@@ -59,9 +59,9 @@ Clew supports closure quizzes so completion can mean more than clicking "done".
 
 For lighter workflows, strict closure can be disabled and topics can be marked finished manually. The point is not to force school behavior — progress lives on the path, not on a separate checklist.
 
-## 7. 0.2.0 interface
+## 7. Desktop workspace
 
-0.2.0 adds:
+The desktop app includes:
 
 - dark and light themes
 - a cleaner shell

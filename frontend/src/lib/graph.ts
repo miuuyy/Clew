@@ -123,13 +123,23 @@ export function computeFocusData(
   }
 
   const parentsByChild = new Map<string, string[]>();
+  const edgesByChild = new Map<string, GraphEnvelope["edges"]>();
+  const edgesByParent = new Map<string, GraphEnvelope["edges"]>();
   const byId = new Map(graph.topics.map((topic) => [topic.id, topic]));
   for (const topic of graph.topics) {
     parentsByChild.set(topic.id, []);
   }
   for (const edge of graph.edges) {
     if (!isPrerequisiteEdge(edge.relation)) continue;
-    parentsByChild.set(edge.target_topic_id, [...(parentsByChild.get(edge.target_topic_id) ?? []), edge.source_topic_id]);
+    const parents = parentsByChild.get(edge.target_topic_id) ?? [];
+    parents.push(edge.source_topic_id);
+    parentsByChild.set(edge.target_topic_id, parents);
+    const incoming = edgesByChild.get(edge.target_topic_id) ?? [];
+    incoming.push(edge);
+    edgesByChild.set(edge.target_topic_id, incoming);
+    const outgoing = edgesByParent.get(edge.source_topic_id) ?? [];
+    outgoing.push(edge);
+    edgesByParent.set(edge.source_topic_id, outgoing);
   }
 
   const rootIds = computeRootTopicIds(graph);
@@ -140,9 +150,7 @@ export function computeFocusData(
     const parentIds = parentsByChild.get(topic.id) ?? [];
     if (parentIds.length === 0) continue;
     if (!parentIds.every((parentId) => isClosedTopic(byId.get(parentId)))) continue;
-    for (const edge of graph.edges) {
-      if (!isPrerequisiteEdge(edge.relation)) continue;
-      if (edge.target_topic_id !== topic.id) continue;
+    for (const edge of edgesByChild.get(topic.id) ?? []) {
       if (!isClosedTopic(byId.get(edge.source_topic_id))) continue;
       frontierEdgeIds.add(edge.id);
     }
@@ -191,34 +199,42 @@ export function computeFocusData(
       bfsQueue.push(nodeId);
     }
   }
+  // Keep breadth-first discovery order while computing longest prerequisite
+  // depth topologically. Shared ancestors are visited once, even in diamonds.
+  const discovery = new Set(bfsQueue);
   let head = 0;
   while (head < bfsQueue.length) {
     const current = bfsQueue[head++];
-    const currentDepth = depthOf.get(current) ?? 0;
-    // Walk only prerequisite children that remain inside the current path.
-    for (const edge of graph.edges) {
-      if (!isPrerequisiteEdge(edge.relation)) continue;
-      if (edge.source_topic_id === current && pathNodeIds.has(edge.target_topic_id)) {
-        const existing = depthOf.get(edge.target_topic_id);
-        if (existing === undefined || currentDepth + 1 > existing) {
-          depthOf.set(edge.target_topic_id, currentDepth + 1);
-          bfsQueue.push(edge.target_topic_id);
-        }
+    for (const edge of edgesByParent.get(current) ?? []) {
+      if (pathNodeIds.has(edge.target_topic_id) && !discovery.has(edge.target_topic_id)) {
+        discovery.add(edge.target_topic_id);
+        bfsQueue.push(edge.target_topic_id);
       }
     }
   }
-
-  const maxDepth = Math.max(...depthOf.values(), 0);
-  const pathLayers: Array<Array<{ id: string; title: string }>> = [];
-  for (let d = 0; d <= maxDepth; d++) {
-    const layer: Array<{ id: string; title: string }> = [];
-    for (const [nodeId, depth] of depthOf) {
-      if (depth === d) {
-        layer.push({ id: nodeId, title: byId.get(nodeId)?.title ?? nodeId });
-      }
-    }
-    if (layer.length > 0) pathLayers.push(layer);
+  const remainingParents = new Map<string, number>();
+  for (const id of pathNodeIds) {
+    remainingParents.set(id, (parentsByChild.get(id) ?? []).filter(parent => pathNodeIds.has(parent)).length);
   }
+  const ready = [...depthOf.keys()];
+  for (let index = 0; index < ready.length; index++) {
+    const current = ready[index];
+    for (const edge of edgesByParent.get(current) ?? []) {
+      const child = edge.target_topic_id;
+      if (!pathNodeIds.has(child)) continue;
+      depthOf.set(child, Math.max(depthOf.get(child) ?? 0, (depthOf.get(current) ?? 0) + 1));
+      const remaining = (remainingParents.get(child) ?? 0) - 1;
+      remainingParents.set(child, remaining);
+      if (remaining === 0) ready.push(child);
+    }
+  }
+  const layers: Array<Array<{ id: string; title: string }>> = [];
+  for (const id of bfsQueue) {
+    if ((remainingParents.get(id) ?? 0) !== 0) continue;
+    const depth = depthOf.get(id) ?? 0;
+    (layers[depth] ??= []).push({ id, title: byId.get(id)?.title ?? id });
+  }
+  const pathLayers = layers.filter(Boolean);
 
   return {
     rootIds,
@@ -275,7 +291,9 @@ export function computeClosureStatus(graph: GraphEnvelope | null, topicId: strin
   }
   for (const edge of graph.edges) {
     if (!isPrerequisiteEdge(edge.relation)) continue;
-    parentsByChild.set(edge.target_topic_id, [...(parentsByChild.get(edge.target_topic_id) ?? []), edge.source_topic_id]);
+    const parents = parentsByChild.get(edge.target_topic_id) ?? [];
+    parents.push(edge.source_topic_id);
+    parentsByChild.set(edge.target_topic_id, parents);
   }
 
   const prerequisiteIds: string[] = [];
@@ -293,10 +311,10 @@ export function computeClosureStatus(graph: GraphEnvelope | null, topicId: strin
     const state = topicById.get(id)?.state;
     return state !== "solid" && state !== "mastered";
   });
-  const latestAttempt =
-    [...(graph.quiz_attempts ?? [])]
-      .filter((attempt) => attempt.topic_id === topicId)
-      .sort((left, right) => right.created_at.localeCompare(left.created_at))[0] ?? null;
+  let latestAttempt: TopicClosureStatus["latest_attempt"] = null;
+  for (const attempt of graph.quiz_attempts ?? []) {
+    if (attempt.topic_id === topicId && (!latestAttempt || attempt.created_at.localeCompare(latestAttempt.created_at) > 0)) latestAttempt = attempt;
+  }
   return {
     topic_id: topicId,
     prerequisite_topic_ids: prerequisiteIds,

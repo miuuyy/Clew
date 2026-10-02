@@ -8,7 +8,7 @@ import { ObsidianImportDialog } from "./dialogs/ObsidianImportDialog";
 import { QuizDialog } from "./dialogs/QuizDialog";
 import { API_BASE } from "../lib/api";
 import type { AppCopy } from "../lib/appCopy";
-import { type apiFetch, type readErrorMessage } from "../lib/appUiHelpers";
+import { type apiFetch, type readErrorMessage } from "../lib/apiRequest";
 import type { ObsidianImportOptions, ObsidianImportPreview } from "../lib/obsidianImport";
 import type {
   CreateGraphRequest,

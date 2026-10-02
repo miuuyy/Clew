@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 type ModalAccessibilityOptions = {
   isOpen: boolean;
@@ -30,6 +30,9 @@ export function useModalAccessibility({
   onClose,
   initialFocusRef,
 }: ModalAccessibilityOptions): void {
+  // Updating a close callback must not restart focus management on every render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!isOpen || typeof document === "undefined") return;
 
@@ -59,7 +62,7 @@ export function useModalAccessibility({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -97,5 +100,5 @@ export function useModalAccessibility({
       document.body.style.overflow = previousOverflow;
       previousActiveElement?.focus();
     };
-  }, [initialFocusRef, isOpen, modalRef, onClose]);
+  }, [initialFocusRef, isOpen, modalRef]);
 }

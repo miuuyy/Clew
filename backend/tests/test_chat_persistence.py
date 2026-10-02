@@ -69,3 +69,8 @@ class ChatPersistenceTests(unittest.TestCase):
         messages = self.client.get(self.url).json()["messages"]
         self.assertEqual(messages[0]["content"], "Prior lesson")
         self.assertEqual(len(messages), 3)
+
+    def test_empty_explicit_model_is_rejected_without_using_default(self):
+        response = self.client.post(self.url+"/stream", json={"prompt": "hello", "model": ""})
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(self.repository.chat_thread(self.graph_id).messages, [])

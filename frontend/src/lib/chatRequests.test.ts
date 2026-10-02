@@ -37,4 +37,16 @@ describe("fetchChatSessions", () => {
       "session storage unavailable",
     );
   });
+  it("rejects non-list or incomplete successful responses", async () => {
+    for (const value of [{ error: "not a list" }, [null], [{ session_id: "s" }]]) {
+      const apiFetch = vi.fn().mockResolvedValue(jsonResponse(value));
+      await expect(fetchChatSessions(apiFetch, "/sessions", "Failed")).rejects.toThrow("session list is invalid");
+    }
+  });
+  it("passes cancellation to the request", async () => {
+    const controller = new AbortController();
+    const apiFetch = vi.fn().mockResolvedValue(jsonResponse([]));
+    await fetchChatSessions(apiFetch, "/sessions", "Failed", { signal: controller.signal });
+    expect(apiFetch).toHaveBeenCalledWith("/sessions", { signal: controller.signal });
+  });
 });

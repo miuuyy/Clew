@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "@phosphor-icons/react";
+import { useModalAccessibility } from "../../lib/useModalAccessibility";
 
 export type ModalSize = "sm" | "md" | "lg";
 
@@ -31,10 +32,13 @@ export function Modal({
   footer?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
+  const ownModalRef = React.useRef<HTMLDivElement | null>(null);
+  const ownCloseRef = React.useRef<HTMLButtonElement | null>(null);
+  useModalAccessibility({ isOpen: !modalRef, modalRef: ownModalRef, onClose, initialFocusRef: ownCloseRef });
   return (
     <div className="uiOverlay" onMouseDown={closeOnBackdrop ? (event) => { if (event.target === event.currentTarget) onClose(); } : undefined}>
       <div
-        ref={modalRef}
+        ref={modalRef ?? ownModalRef}
         className={`uiModal uiModal-${size}`}
         role="dialog"
         aria-modal="true"
@@ -48,7 +52,7 @@ export function Modal({
             {description ? <p id={`${id}-description`}>{description}</p> : null}
             {meta}
           </div>
-          <button ref={closeButtonRef} className="uiIconButton" onClick={onClose} type="button" aria-label={closeLabel}>
+          <button ref={closeButtonRef ?? ownCloseRef} className="uiIconButton" onClick={onClose} type="button" aria-label={closeLabel}>
             <X size={15} weight="bold" aria-hidden="true" />
           </button>
         </header>

@@ -445,13 +445,16 @@ class GraphRepository:
             )
         return self.snapshot(new_snapshot_id)
 
-    def record_quiz_attempt(self, graph_id: str, attempt: QuizAttempt, awarded_state: str | None) -> WorkspaceEnvelope:
+    def record_quiz_attempt(self, graph_id: str, attempt: QuizAttempt, awarded_state: str | None,
+                            *, base_graph_version: int, session_id: str) -> WorkspaceEnvelope:
         current = self.current()
         workspace = WorkspaceDocument.model_validate(deepcopy(current.workspace.model_dump()))
         graph_map = {graph.graph_id: graph for graph in workspace.graphs}
         graph = graph_map.get(graph_id)
         if graph is None:
             raise ValueError(f"graph {graph_id} not found")
+        if graph.version != base_graph_version:
+            raise RepositoryConflictError("The graph changed while grading this quiz. Submit it again against the current graph.")
 
         topic_map = {topic.id: topic for topic in graph.topics}
         topic = topic_map.get(attempt.topic_id)
@@ -475,6 +478,11 @@ class GraphRepository:
         workspace.graphs = list(graph_map.values())
 
         with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            consumed = conn.execute("DELETE FROM quiz_sessions WHERE session_id=? AND graph_id=? AND topic_id=?",
+                                    (session_id, graph_id, attempt.topic_id))
+            if consumed.rowcount != 1:
+                raise RepositoryConflictError("This quiz was already submitted or removed. Start a new test.")
             snapshot_id = self._insert_snapshot(
                 conn,
                 workspace,
@@ -647,6 +655,18 @@ class GraphRepository:
             raise ValueError("graph title is required")
 
         graph = StudyGraph.model_validate(deepcopy(package.graph.model_dump()))
+        entity_ids = {}
+        for kind, entities in (("topic", graph.topics), ("edge", graph.edges), ("zone", graph.zones)):
+            ids = {entity.id for entity in entities}
+            if len(ids) != len(entities) or any(not entity_id.strip() for entity_id in ids):
+                raise ValueError(f"Imported {kind} ids must be distinct and nonempty.")
+            entity_ids[kind] = ids
+        if any(edge.source_topic_id not in entity_ids["topic"] or edge.target_topic_id not in entity_ids["topic"] for edge in graph.edges):
+            raise ValueError("Imported edges reference unknown topics.")
+        if any(zone_id not in entity_ids["zone"] for topic in graph.topics for zone_id in topic.zones):
+            raise ValueError("Imported topics reference unknown zones.")
+        if any(topic_id not in entity_ids["topic"] for zone in graph.zones for topic_id in zone.topic_ids):
+            raise ValueError("Imported zones reference unknown topics.")
         graph.title = import_title
         graph.graph_id = self._unique_graph_id(import_title, existing_ids={item.graph_id for item in workspace.graphs})
         graph.generated_at = datetime.now(timezone.utc)
@@ -940,28 +960,24 @@ class GraphRepository:
         return merged
 
     def _synchronize_zone_memberships(self, topic_map: dict[str, Topic], zone_map: dict[str, Zone]) -> None:
-        topic_zone_ids = {topic_id: [] for topic_id in topic_map}
-        zone_topic_ids = {zone_id: [] for zone_id in zone_map}
+        topic_zone_ids = {topic_id: {} for topic_id in topic_map}
+        zone_topic_ids = {zone_id: {} for zone_id in zone_map}
 
         for topic_id, topic in topic_map.items():
             for zone_id in topic.zones:
                 if zone_id not in zone_map:
                     raise ValueError(f"topic {topic_id} references unknown zone {zone_id}")
-                if zone_id not in topic_zone_ids[topic_id]:
-                    topic_zone_ids[topic_id].append(zone_id)
-                if topic_id not in zone_topic_ids[zone_id]:
-                    zone_topic_ids[zone_id].append(topic_id)
+                topic_zone_ids[topic_id][zone_id] = None
+                zone_topic_ids[zone_id][topic_id] = None
 
         for zone_id, zone in zone_map.items():
             for topic_id in zone.topic_ids:
                 if topic_id not in topic_map:
                     raise ValueError(f"zone {zone_id} references unknown topic {topic_id}")
-                if topic_id not in zone_topic_ids[zone_id]:
-                    zone_topic_ids[zone_id].append(topic_id)
-                if zone_id not in topic_zone_ids[topic_id]:
-                    topic_zone_ids[topic_id].append(zone_id)
+                zone_topic_ids[zone_id][topic_id] = None
+                topic_zone_ids[topic_id][zone_id] = None
 
         for topic_id, topic in topic_map.items():
-            topic.zones = topic_zone_ids[topic_id]
+            topic.zones = list(topic_zone_ids[topic_id])
         for zone_id, zone in zone_map.items():
-            zone.topic_ids = zone_topic_ids[zone_id]
+            zone.topic_ids = list(zone_topic_ids[zone_id])

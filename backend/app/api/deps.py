@@ -41,7 +41,7 @@ def get_assessment_service() -> AssessmentService:
 
 
 def get_debug_logs(settings: Settings = Depends(get_settings)):
-    return get_debug_log_service(settings.root_dir)
+    return get_debug_log_service(settings.debug_log_dir)
 
 
 def ensure_debug_logs_enabled(repository: GraphRepository = Depends(get_repository)) -> None:

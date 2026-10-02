@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from dataclasses import dataclass, field
 from uuid import uuid4
 
 from app.agent.chatgpt_api import ChatGPTClient
-from app.agent.chatgpt_auth import CALLBACK_PATH, ChatGPTAuth, ChatGPTError
+from app.agent.chatgpt_auth import CALLBACK_PATH, ChatGPTAuth, ChatGPTError, KeyringCredentialStore
 from app.agent.context import BASE_INSTRUCTIONS, developer_instructions, turn_context
 from app.agent.contracts import CLOSURE_QUIZ_TOOLS, tool_specs
 from app.agent.store import AgentStore
@@ -58,8 +59,11 @@ class AgentRuntime:
         self.repository = repository
         self.store = AgentStore(repository)
         self.store.recover_interrupted()
+        credential_account = ("desktop-" + hashlib.sha256(str(settings.db_path.resolve()).encode("utf-8")).hexdigest()[:32]
+                              if settings.desktop_token else "connection")
         self.auth = auth or ChatGPTAuth(redirect_uri=f"http://127.0.0.1:{settings.api_port}{CALLBACK_PATH}",
-                                        registration_path=settings.db_path.parent / "chatgpt-registration.json")
+                                        registration_path=settings.db_path.parent / "chatgpt-registration.json",
+                                        store=KeyringCredentialStore(credential_account))
         self.client = client or ChatGPTClient(self.auth)
         self.runs: dict[str, AgentRun] = {}
         self.wake = asyncio.Event()
@@ -77,21 +81,28 @@ class AgentRuntime:
 
     async def account(self) -> dict:
         status = self.auth.status()
-        login = self.auth.pending
+        login = self.auth.pending or self.auth.completing
         result = {"connected": True, **status, "models": [],
-                  "login": {"loginId": login.login_id, "authUrl": login.auth_url} if login else None}
+                  "login": {"loginId": login.login_id, "authUrl": login.auth_url,
+                            "phase": "completing" if self.auth.completing is login else "pending"} if login else None}
         if status["authenticated"] and status["sharing"]:
             try:
                 result["models"] = await self.models()
             except ChatGPTError as exc:
+                result.update(self.auth.status())
                 result["error"] = str(exc)
+            else:
+                result.update(self.auth.status())
+                if not result["authenticated"] or not result["sharing"]:
+                    result["models"] = []
         return result
 
     async def start_login(self) -> dict:
         if self._active():
             raise agent_error("Stop active conversations before changing the ChatGPT account.")
         login = await self.auth.start_login()
-        return {"loginId": login.login_id, "authUrl": login.auth_url}
+        return {"loginId": login.login_id, "authUrl": login.auth_url,
+                "phase": "completing" if self.auth.completing is login else "pending"}
 
     async def logout(self) -> str | None:
         if self._active():
@@ -377,6 +388,7 @@ class AgentRuntime:
         self.set_state(run, status, error)
         self.emit(run, {"type": "turn_completed", "status": status, "error": error})
         run.done.set_result(None)
+        self.runs.pop(run.id, None)
 
     async def close(self) -> None:
         for run in list(self.runs.values()):

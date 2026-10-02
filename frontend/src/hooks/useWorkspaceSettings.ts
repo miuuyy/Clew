@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   MEMORY_MODE_OPTIONS,
@@ -61,14 +61,20 @@ export function useWorkspaceSettings({
     quizQuestionCount: 12,
     quizPassCount: 9,
   });
+  const previousConfigDrafts = useRef<SettingsDrafts | null>(null);
 
   useEffect(() => {
-    if (!config) return;
-    setDraftsState((current) => ({
-      ...deriveSettingsDrafts(config),
-      straightEdgeLines: current.straightEdgeLines,
-      themeMode: current.themeMode ?? initialThemeMode,
-    }));
+    if (!config) { previousConfigDrafts.current = null; return; }
+    const next = deriveSettingsDrafts(config);
+    const previous = previousConfigDrafts.current;
+    previousConfigDrafts.current = next;
+    setDraftsState((current) => {
+      const result = { ...next, straightEdgeLines: current.straightEdgeLines, themeMode: current.themeMode ?? initialThemeMode };
+      if (previous) for (const key of Object.keys(next) as (keyof SettingsDrafts)[]) {
+        if (current[key] !== previous[key]) Object.assign(result, { [key]: current[key] });
+      }
+      return result;
+    });
   }, [config, initialThemeMode]);
 
   const settingsDirty = useMemo(
@@ -76,7 +82,7 @@ export function useWorkspaceSettings({
       isSettingsDirty({
         config,
         drafts,
-            straightEdgeLinesEnabled,
+        straightEdgeLinesEnabled,
       }),
     [config, drafts, straightEdgeLinesEnabled],
   );

@@ -106,10 +106,16 @@ function advanceActivePhysicsFrame({
 
   if (physicsEnabled) {
     const nodeZoneId = new Map<string, string>();
+    const springZoneId = new Map<string, string>();
+    const nodeById = new Map(currentNodes.map(node => [node.id, node]));
+    const zoneById = new Map(zones.map(zone => [zone.id, zone]));
     const zoneSizeById = new Map<string, number>();
     for (const zone of zones) {
       zoneSizeById.set(zone.id, zone.topic_ids.length);
-      for (const topicId of zone.topic_ids) nodeZoneId.set(topicId, zone.id);
+      for (const topicId of zone.topic_ids) {
+        nodeZoneId.set(topicId, zone.id);
+        if (!springZoneId.has(topicId)) springZoneId.set(topicId, zone.id);
+      }
     }
 
     for (let i = 0; i < currentNodes.length; i += 1) {
@@ -174,12 +180,12 @@ function advanceActivePhysicsFrame({
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const sourceLevel = currentNodes.find((node) => node.id === edge.source_topic_id)?.level ?? 0;
-      const targetLevel = currentNodes.find((node) => node.id === edge.target_topic_id)?.level ?? 0;
+      const sourceLevel = nodeById.get(edge.source_topic_id)?.level ?? 0;
+      const targetLevel = nodeById.get(edge.target_topic_id)?.level ?? 0;
       const levelGap = Math.max(1, Math.abs(targetLevel - sourceLevel));
       const target = 260 + levelGap * 48;
-      const sourceZone = zones.find((zone) => zone.topic_ids.includes(edge.source_topic_id))?.id;
-      const targetZone = zones.find((zone) => zone.topic_ids.includes(edge.target_topic_id))?.id;
+      const sourceZone = springZoneId.get(edge.source_topic_id);
+      const targetZone = springZoneId.get(edge.target_topic_id);
       const crossZone = sourceZone && targetZone && sourceZone !== targetZone;
       let restLength = target;
       let edgeScale = 1;
@@ -206,7 +212,9 @@ function advanceActivePhysicsFrame({
 
     const outgoingByParent = new Map<string, string[]>();
     for (const edge of currentEdges) {
-      outgoingByParent.set(edge.source_topic_id, [...(outgoingByParent.get(edge.source_topic_id) ?? []), edge.target_topic_id]);
+      const children = outgoingByParent.get(edge.source_topic_id);
+      if (children) children.push(edge.target_topic_id);
+      else outgoingByParent.set(edge.source_topic_id, [edge.target_topic_id]);
     }
 
     for (const [parentId, childIds] of outgoingByParent) {
@@ -283,8 +291,8 @@ function advanceActivePhysicsFrame({
               : 50000 / (effectiveDist * effectiveDist + 1);
           const fx = (dx / dist) * zoneRepulsion;
           const fy = (dy / dist) * zoneRepulsion;
-          const za = zones.find((zone) => zone.id === zoneIds[i]);
-          const zb = zones.find((zone) => zone.id === zoneIds[j]);
+          const za = zoneById.get(zoneIds[i]);
+          const zb = zoneById.get(zoneIds[j]);
           if (!za || !zb) continue;
           for (const topicId of za.topic_ids) {
             const position = positions.get(topicId);
@@ -314,6 +322,8 @@ function advanceActivePhysicsFrame({
     }
   }
 
+  let maxLevel = 1;
+  for (const node of currentNodes) maxLevel = Math.max(maxLevel, node.level);
   for (const node of currentNodes) {
     const position = positions.get(node.id);
     if (!position) continue;
@@ -324,7 +334,7 @@ function advanceActivePhysicsFrame({
     }
     const pinned = pinnedPositions[node.id];
     const stable = anchors.get(node.id) ?? { x: width / 2, y: height / 2, angle: -Math.PI / 2, primaryRootId: node.id, primaryBranchId: node.id };
-    const radialScale = currentNodes.length > 0 ? node.level / Math.max(...currentNodes.map((item) => item.level), 1) : 0;
+    const radialScale = node.level / maxLevel;
     const seed = hashString(node.id);
     const phase = ((seed % 8192) / 8192) * Math.PI * 2;
     const litFrame = litFrames.get(node.id);
@@ -644,6 +654,15 @@ function GraphCanvasComponent({
     let frameCount = 0;
     let latestWidth = 0;
     let latestHeight = 0;
+    let anchorCache: { nodes: GraphNode[]; edges: Edge[]; width: number; height: number; value: Map<string, NodeAnchor> } | null = null;
+    function currentAnchors(width: number, height: number) {
+      const nodes = nodesDataRef.current;
+      const edges = edgesDataRef.current;
+      if (!anchorCache || anchorCache.nodes !== nodes || anchorCache.edges !== edges || anchorCache.width !== width || anchorCache.height !== height) {
+        anchorCache = { nodes, edges, width, height, value: buildAnchorMap(nodes, edges, width, height) };
+      }
+      return anchorCache.value;
+    }
 
     function toScreenPoint(position: NodePosition): { x: number; y: number } {
       const zoom = zoomRef.current;
@@ -762,7 +781,7 @@ function GraphCanvasComponent({
       const width = latestWidth;
       const height = latestHeight;
       if (width < 50 || height < 50) return;
-      const anchors = buildAnchorMap(nodesDataRef.current, edgesDataRef.current, width, height);
+      const anchors = currentAnchors(width, height);
       const manualPositions = manualPositionsRef.current;
 
       for (const node of nodesDataRef.current) {
@@ -782,8 +801,9 @@ function GraphCanvasComponent({
         }
       }
 
-      for (const id of Array.from(nodesRef.current.keys())) {
-        if (!nodesDataRef.current.find((node) => node.id === id)) {
+      const nodeIds = new Set(nodesDataRef.current.map((node) => node.id));
+      for (const id of nodesRef.current.keys()) {
+        if (!nodeIds.has(id)) {
           nodesRef.current.delete(id);
           positionCache.delete(cacheEntryKey(graphCacheKey, id));
         }
@@ -814,9 +834,8 @@ function GraphCanvasComponent({
       const visited = new Set(queue.map((item) => item.id));
       const stepFrames = cascadeStepFramesRef.current;
 
-      while (queue.length > 0) {
-        const current = queue.shift();
-        if (!current) break;
+      for (let cursor = 0; cursor < queue.length; cursor += 1) {
+        const current = queue[cursor];
         const nodeFrame = frameCount + current.depth * 2 * stepFrames;
         const existingNodeFrame = litFrameRef.current.get(current.id);
         if (existingNodeFrame === undefined || nodeFrame < existingNodeFrame) {
@@ -846,7 +865,7 @@ function GraphCanvasComponent({
       }
     }
 
-    function drawZoneBackgrounds(width: number, height: number, anchors: Map<string, NodeAnchor>): void {
+    function drawZoneBackgrounds(width: number, height: number): void {
       const positions = nodesRef.current;
       const idleMotionActive = !staticLayout && !idleFrozenRef.current;
       const structureAnimatingZones =
@@ -971,7 +990,7 @@ function GraphCanvasComponent({
       const currentNodes = nodesDataRef.current;
       const currentEdges = edgesDataRef.current;
       const positions = nodesRef.current;
-      const anchors = buildAnchorMap(currentNodes, currentEdges, width, height);
+      const anchors = currentAnchors(width, height);
       const zoneSignature = zonesDataRef.current
         .map((zone) => `${zone.id}:${zone.color}:${zone.intensity}:${[...zone.topic_ids].sort().join(",")}`)
         .sort()
@@ -1109,7 +1128,7 @@ function GraphCanvasComponent({
       ctx2.translate(-width / 2 + panOffsetRef.current.x, -height / 2 + panOffsetRef.current.y);
       const renderIdleFrozen = disableIdleAnimationsRef.current && idleFrozenRef.current;
 
-      drawZoneBackgrounds(width, height, anchors);
+      drawZoneBackgrounds(width, height);
 
       const selectedPrimaryZoneId = primaryZoneIdForTopic(zonesDataRef.current, selectedTopicIdRef.current);
       const selectedZoneIds = themeModeRef.current === "light"
@@ -1156,7 +1175,9 @@ function GraphCanvasComponent({
         const to = edgePositions.get(edge.target_topic_id);
         if (!from || !to) continue;
         const angle = Math.atan2(to.y - from.y, to.x - from.x);
-        outgoingBySource.set(edge.source_topic_id, [...(outgoingBySource.get(edge.source_topic_id) ?? []), { edge, angle }]);
+        const entries = outgoingBySource.get(edge.source_topic_id);
+        if (entries) entries.push({ edge, angle });
+        else outgoingBySource.set(edge.source_topic_id, [{ edge, angle }]);
       }
 
       for (const [sourceId, entries] of outgoingBySource) {
@@ -1248,6 +1269,15 @@ function GraphCanvasComponent({
         }
       }
 
+      const frontierSourcesByTarget = new Map<string, NodePosition[]>();
+      for (const edge of currentEdges) {
+        if (!frontierEdgeIdsRef.current.has(edge.id)) continue;
+        const position = edgePositions.get(edge.source_topic_id);
+        if (!position) continue;
+        const sources = frontierSourcesByTarget.get(edge.target_topic_id);
+        if (sources) sources.push(position);
+        else frontierSourcesByTarget.set(edge.target_topic_id, [position]);
+      }
       for (const node of currentNodes) {
         const position = renderPositions.get(node.id);
         if (!position) continue;
@@ -1266,10 +1296,7 @@ function GraphCanvasComponent({
         const highlightedZoneRgb = highlightedZone ? hexToRgb(highlightedZone.color) : null;
         const r = nodeRadius(node, selected, onPath, isRoot);
         const haloPulse = renderIdleFrozen ? 0.55 : 0.55 + Math.sin(frameCount * 0.04 + position.x * 0.008) * 0.07;
-        const frontierSources = currentEdges
-          .filter((edge) => frontierEdgeIdsRef.current.has(edge.id) && edge.target_topic_id === node.id)
-          .map((edge) => edgePositions.get(edge.source_topic_id))
-          .filter((point): point is NodePosition => Boolean(point));
+        const frontierSources = frontierSourcesByTarget.get(node.id) ?? [];
 
         if (brightness > 0.06 && (selected || onPath)) {
           if (themeModeRef.current === "light" && highlightedZoneRgb) {
@@ -1811,11 +1838,14 @@ export const GraphCanvas = React.memo(GraphCanvasComponent, (prev, next) => {
   if (prev.disablePhysics !== next.disablePhysics) return false;
   if (prev.viewportCenteredWheelZoom !== next.viewportCenteredWheelZoom) return false;
   if (prev.curvedEdgeLinesEnabled !== next.curvedEdgeLinesEnabled) return false;
+  if (prev.cascadeStepFrames !== next.cascadeStepFrames) return false;
+  if (prev.onSelectTopic !== next.onSelectTopic) return false;
+  if (prev.onSelectedTopicAnchorChange !== next.onSelectedTopicAnchorChange) return false;
+  if (prev.onNodePositionsChange !== next.onNodePositionsChange) return false;
   if (!setsEqual(prev.rootIds, next.rootIds)) return false;
   if (!setsEqual(prev.ancestorIds, next.ancestorIds)) return false;
   if (!setsEqual(prev.pathNodeIds, next.pathNodeIds)) return false;
   if (!setsEqual(prev.pathEdgeIds, next.pathEdgeIds)) return false;
   if (!setsEqual(prev.frontierEdgeIds ?? new Set<string>(), next.frontierEdgeIds ?? new Set<string>())) return false;
-  // Callback refs already absorb identity changes without re-rendering.
   return true;
 });

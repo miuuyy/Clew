@@ -41,6 +41,18 @@ Supported relations:
 - `extends`
 - `reviews`
 
+In YAML frontmatter, quote wiki-link strings. Unquoted `[[...]]::relation` is not valid YAML:
+
+```yaml
+---
+mapmind_relations:
+  - "[[Linear Algebra]]::requires"
+  - "[[Probability]]::supports"
+---
+```
+
+Malformed YAML and duplicate frontmatter keys are rejected; they are not repaired silently.
+
 The importer also understands legacy frontmatter fields such as `mapmind_relations` and `mapmind_edges`. Those names remain for compatibility with older graph packages.
 
 ## Import Options
@@ -71,7 +83,14 @@ The exporter writes a markdown folder containing:
 - optional progress state
 - folder placement based on primary zones when enabled
 
-Modern Chromium browsers support direct folder writing. If the browser does not support it, Clew will explain that the export requires folder write access.
+The desktop app opens a native directory picker and creates a new export folder
+inside the selected parent. Existing destinations, unsafe paths and symlinks are
+rejected. The complete folder is published atomically after all files are staged;
+cancelling the picker writes nothing. Choose another parent or rename an existing
+export before repeating it.
+
+The browser edition uses File System Access when available. If the browser does
+not support it, Clew explains that export requires folder write access.
 
 ## Compatibility Notes
 

@@ -9,18 +9,15 @@ from fastapi.testclient import TestClient
 from app.api import routes
 from app.main import app
 from app.services.repository import GraphRepository
+from agent_test_support import install_client
 
 
 class ApplyRouteTests(unittest.TestCase):
     def setUp(self) -> None:
-        tempdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tempdir.cleanup)
-        self.repository = GraphRepository(Path(tempdir.name) / "state.sqlite3")
+        self.client, self.repository, self.runtime = install_client(self)
 
     def test_apply_rejects_remove_operations_in_envelopes(self) -> None:
-        client = TestClient(app)
-        app.dependency_overrides[routes.get_repository] = lambda: self.repository
-        self.addCleanup(app.dependency_overrides.clear)
+        client = self.client
 
         response = client.post(
             "/api/v1/graphs/mathematics-demo/apply",

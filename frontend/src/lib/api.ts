@@ -3,6 +3,7 @@ function isLocalHost(hostname: string): boolean {
 }
 
 export function resolveApiBase(): string {
+  if (typeof window !== "undefined" && window.clewDesktop) return window.clewDesktop.apiBase;
   const configured = (import.meta.env.VITE_API_BASE as string | undefined)?.trim();
   if (configured) return configured.replace(/\/$/, "");
   if (typeof window === "undefined") return "http://127.0.0.1:8787";

@@ -2,12 +2,7 @@ import React from "react";
 import katex from "katex";
 
 import type { TopicAnchorPoint } from "../components/GraphCanvas";
-import { recordApiDebugLog } from "./debugLogs";
 import type { GraphEnvelope } from "./types";
-
-type ApiErrorPayload = {
-  detail?: string | { errors?: string[]; warnings?: string[] };
-};
 
 export type ManualLayoutPositions = Record<string, { x: number; y: number }>;
 
@@ -52,17 +47,6 @@ export function shouldCommitAnchorUpdate(
   return elapsedMs > 260;
 }
 
-export function userInitials(name: string | null | undefined): string {
-  if (!name) return "KG";
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (parts.length === 0) return "KG";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-}
-
 export function formatDateLabel(value: string | null | undefined): string {
   if (!value) return "n/a";
   const parsed = new Date(value);
@@ -88,22 +72,6 @@ export function readManualLayoutPositions(graph: GraphEnvelope | null): ManualLa
     positions[topicId] = { x, y };
   }
   return Object.keys(positions).length > 0 ? positions : null;
-}
-
-function sanitizeDisplayText(value: string): string {
-  const lines = value
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .filter((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return false;
-      if (/^"difficulty"\s*:/.test(trimmed)) return false;
-      if (/^"estimated_minutes"\s*:/.test(trimmed)) return false;
-      if (/^"confidence"\s*:/.test(trimmed)) return false;
-      if (/^[{}[\],]+$/.test(trimmed)) return false;
-      return true;
-    });
-  return lines.join("\n").trim();
 }
 
 const GREEK_WORD_SOURCE = String.raw`(?:alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega)`;
@@ -253,8 +221,7 @@ function renderInlineMathText(text: string, keyPrefix: string): React.ReactNode[
 }
 
 export function renderDisplayText(value: string): React.ReactNode {
-  const normalized = sanitizeDisplayText(value) || value;
-  const lines = normalized.split("\n");
+  const lines = value.split("\n");
   return lines.map((line, lineIndex) => {
     const parts = line.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g).filter(Boolean);
     return (
@@ -300,60 +267,6 @@ export function safeExternalUrl(raw: string | null | undefined): string | null {
   }
 }
 
-
-export async function readErrorMessage(response: Response, fallback: string): Promise<string> {
-  const payload = (await response.json().catch(() => null)) as ApiErrorPayload | null;
-  const detail = payload?.detail;
-  if (typeof detail === "string" && detail.trim()) return detail;
-  if (detail && typeof detail === "object") {
-    const errors = Array.isArray(detail.errors) ? detail.errors.filter(Boolean) : [];
-    const warnings = Array.isArray(detail.warnings) ? detail.warnings.filter(Boolean) : [];
-    const parts = [...errors, ...warnings];
-    if (parts.length > 0) return parts.join("; ");
-  }
-  return fallback;
-}
-
-export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const request = new Request(input, {
-    ...(init ?? {}),
-    credentials: "include",
-  });
-  const requestBody = typeof init?.body === "string" ? init.body : null;
-  try {
-    const response = await fetch(request);
-    const durationMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
-    const contentType = response.headers.get("content-type") ?? "";
-    const isStream =
-      contentType.includes("text/event-stream")
-      || contentType.includes("application/x-ndjson")
-      || contentType.includes("application/ndjson");
-    const responseBody = isStream ? "[stream response]" : await response.clone().text().catch(() => null);
-    await recordApiDebugLog({
-      url: request.url,
-      method: request.method,
-      statusCode: response.status,
-      durationMs,
-      ok: response.ok,
-      requestBody,
-      responseBody,
-    });
-    return response;
-  } catch (error) {
-    const durationMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
-    await recordApiDebugLog({
-      url: request.url,
-      method: request.method,
-      statusCode: null,
-      durationMs,
-      ok: false,
-      requestBody,
-      errorMessage: error instanceof Error ? error.message : "Network request failed",
-    });
-    throw error;
-  }
-}
 
 export function computePopoverPosition(
   anchor: TopicAnchorPoint | null,

@@ -1,0 +1,32 @@
+{
+  "name": "clew",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A graph-first learning workspace powered by your ChatGPT plan.",
+  "author": "Aleksandr Vechenkov",
+  "license": "MIT",
+  "main": "desktop/main.cjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miuuyy/Clew.git"
+  },
+  "homepage": "https://clew.my",
+  "scripts": {
+    "dev": "node desktop/scripts/dev.cjs",
+    "build": "npm --prefix frontend run typecheck && npm --prefix frontend run build && node desktop/scripts/build-backend.cjs",
+    "test:desktop": "node --test desktop/tests/*.test.cjs",
+    "check:version": "node desktop/scripts/check-version.cjs",
+    "package": "npm run build && electron-builder --config desktop/builder.cjs",
+    "package:dir": "npm run build && electron-builder --config desktop/builder.cjs --dir",
+    "smoke:package": "node desktop/scripts/smoke.cjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "yaml": "2.9.1"
+  },
+  "engines": {
+    "node": ">=22.22.2"
+  }
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/api";
-import { apiFetch } from "../lib/appUiHelpers";
+import { apiFetch } from "../lib/apiRequest";
 import type { ChatGPTAccount, ChatGPTLogin } from "../lib/types";
 
 export async function chatgptRequest<T>(path: string, body?: object): Promise<T> {
@@ -14,23 +14,36 @@ export async function chatgptRequest<T>(path: string, body?: object): Promise<T>
 
 export function useChatGPTAccount() {
   const [account, setAccount] = useState<ChatGPTAccount | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
-  const inFlight = useRef(false);
+  const inFlight = useRef<Promise<void> | null>(null);
+  const mutating = useRef(false);
+  const generation = useRef(0);
+
   const refresh = useCallback(async () => {
-    if (inFlight.current) return;
-    inFlight.current = true;
+    if (mutating.current) return;
+    if (inFlight.current) return inFlight.current;
+    const started = generation.current;
     setLoading(true);
-    try {
-      setAccount(await chatgptRequest<ChatGPTAccount>("account"));
-      setError(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not reach Clew.");
-    } finally {
-      setLoading(false);
-      inFlight.current = false;
-    }
+    const pending = (async () => {
+      try {
+        const result = await chatgptRequest<ChatGPTAccount>("account");
+        if (started !== generation.current) return;
+        setAccount(result);
+        setError(null);
+      } catch (cause) {
+        if (started === generation.current) {
+          setAccount(null);
+          setError(cause instanceof Error ? cause.message : "Could not reach Clew.");
+        }
+      } finally {
+        if (started === generation.current) setLoading(false);
+        inFlight.current = null;
+      }
+    })();
+    inFlight.current = pending;
+    return pending;
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
@@ -38,38 +51,53 @@ export function useChatGPTAccount() {
     const timer = window.setInterval(() => void refresh(), 1500);
     return () => window.clearInterval(timer);
   }, [account?.login?.loginId, refresh]);
-  const login = async () => {
+
+  async function mutate(operation: () => Promise<void>, failure: string) {
+    if (mutating.current) return;
+    mutating.current = true;
+    generation.current += 1;
     setError(null);
-    setWarning(null);
     setLoading(true);
-    // Open synchronously from the click so popup blockers do not swallow OAuth.
-    const popup = window.open("about:blank", "clew-chatgpt-login");
-    if (popup) popup.opener = null;
     try {
-      const result = await chatgptRequest<ChatGPTLogin>("login", {});
-      if (popup) popup.location.replace(result.authUrl);
-      setAccount((current) => current ? { ...current, login: result, error: null } : current);
-      await refresh();
+      await operation();
+      setAccount(await chatgptRequest<ChatGPTAccount>("account"));
     } catch (cause) {
-      popup?.close();
-      setError(cause instanceof Error ? cause.message : "Sign in failed.");
-    } finally { setLoading(false); }
+      setError(cause instanceof Error ? cause.message : failure);
+    } finally {
+      mutating.current = false;
+      setLoading(false);
+    }
+  }
+
+  const login = async () => {
+    if (mutating.current) return;
+    setWarning(null);
+    // The browser popup must open inside the click, before the OAuth request.
+    const popup = window.clewDesktop ? null : window.open("about:blank", "clew-chatgpt-login");
+    if (!window.clewDesktop && !popup) {
+      setError("Allow popups for Clew, then try signing in again.");
+      return;
+    }
+    if (popup) popup.opener = null;
+    await mutate(async () => {
+      try {
+        const result = await chatgptRequest<ChatGPTLogin>("login", {});
+        setAccount((current) => ({ authenticated: false, sharing: false, can_disconnect: false, connected: true, models: [], account: null,
+          ...current, login: result, error: null }));
+        if (window.clewDesktop) await window.clewDesktop.openExternal(result.authUrl);
+        else popup!.location.replace(result.authUrl);
+      } catch (cause) { popup?.close(); throw cause; }
+    }, "Sign in failed.");
   };
-  const logout = async () => {
-    setLoading(true);
-    try {
-      const result = await chatgptRequest<{ warning: string | null }>("logout", {});
-      setWarning(result.warning);
-      await refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Sign out failed."); }
-    finally { setLoading(false); }
-  };
-  const cancelLogin = async () => {
-    setLoading(true);
-    try { await chatgptRequest("login/cancel", {}); await refresh(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "ChatGPT request failed."); }
-    finally { setLoading(false); }
-  };
+  const logout = () => mutate(async () => {
+    const result = await chatgptRequest<{ warning: string | null }>("logout", {});
+    setAccount(null);
+    setWarning(result.warning);
+  }, "Sign out failed.");
+  const cancelLogin = () => mutate(async () => {
+    await chatgptRequest("login/cancel", {});
+    setAccount((current) => current ? { ...current, login: null } : null);
+  }, "Could not cancel sign-in.");
   return { account, loading, error, warning, refresh, login, logout, cancelLogin };
 }
 export type ChatGPTAccountController = ReturnType<typeof useChatGPTAccount>;

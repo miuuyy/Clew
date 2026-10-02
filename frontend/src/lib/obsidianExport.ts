@@ -5,23 +5,31 @@ type DirectoryPickerWindow = Window & typeof globalThis & {
 };
 
 export function supportsObsidianDirectoryExport(): boolean {
-  return typeof window !== "undefined" && typeof (window as DirectoryPickerWindow).showDirectoryPicker === "function";
+  return typeof window !== "undefined" && (!!window.clewDesktop || typeof (window as DirectoryPickerWindow).showDirectoryPicker === "function");
 }
 
 export async function writeObsidianExportPackageToDirectory(
   exportPackage: ObsidianGraphExportPackagePayload,
-): Promise<void> {
+): Promise<boolean> {
+  if (window.clewDesktop) {
+    return window.clewDesktop.exportObsidian(exportPackage);
+  }
   const directoryWindow = window as DirectoryPickerWindow;
   if (typeof directoryWindow.showDirectoryPicker !== "function") {
     throw new Error("Obsidian export requires a browser with folder write access support.");
   }
 
-  const rootHandle = await directoryWindow.showDirectoryPicker();
+  let rootHandle: FileSystemDirectoryHandle;
+  try { rootHandle = await directoryWindow.showDirectoryPicker(); }
+  catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") return false;
+    throw cause;
+  }
   const exportFolderHandle = await rootHandle.getDirectoryHandle(exportPackage.folder_name, { create: true });
 
   for (const file of exportPackage.files) {
     const parts = file.path.split("/").filter(Boolean);
-    if (parts.length === 0) continue;
+    if (parts.length === 0) throw new Error("The export contains an empty file path.");
 
     let directoryHandle = exportFolderHandle;
     for (const segment of parts.slice(0, -1)) {
@@ -36,4 +44,5 @@ export async function writeObsidianExportPackageToDirectory(
       await writable.close();
     }
   }
+  return true;
 }

@@ -38,6 +38,14 @@ See:
 
 ## Architecture in one screen
 
+### Desktop
+
+- Electron launcher and native installers
+- bundled Python backend on a private loopback port
+- stable secure `clew://app` renderer origin and scoped native export IPC
+- mandatory ChatGPT entry screen; optional support links
+- local application-data directory and OS credential store
+
 ### Frontend
 
 - graph canvas

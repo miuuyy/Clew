@@ -43,8 +43,8 @@ class Artifact(BaseModel):
 
 
 class QuizPolicy(BaseModel):
-    question_count: int = 12
-    pass_threshold: float = 0.75
+    question_count: int = Field(default=12, ge=6, le=12)
+    pass_threshold: float = Field(default=0.75, gt=0, le=1)
 
 
 MEMORY_MODE_PRESETS: dict[MemoryMode, dict[str, int | bool]] = {
@@ -110,7 +110,7 @@ class QuizQuestionSet(BaseModel):
 
 class QuizAnswer(BaseModel):
     question_id: str
-    choice_index: int
+    choice_index: int = Field(ge=0, strict=True)
 
 
 class TopicClosureStatus(BaseModel):
@@ -160,8 +160,8 @@ class QuizQuestionReview(BaseModel):
 
 
 class QuizStartRequest(BaseModel):
-    question_count: int | None = None
-    model: str | None = None
+    question_count: int | None = Field(default=None, ge=6, le=12)
+    model: str | None = Field(default=None, min_length=1)
 
 
 class QuizStartResponse(BaseModel):
@@ -403,7 +403,7 @@ class GraphChatRequest(BaseModel):
     client_message_id: str | None = None
     selected_topic_id: str | None = None
     session_id: str | None = None
-    model: str | None = None
+    model: str | None = Field(default=None, min_length=1)
 
 
 

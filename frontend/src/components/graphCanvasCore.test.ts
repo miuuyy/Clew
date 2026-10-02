@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAnchorMap, buildZoneContour, edgeRenderMotion, idleRenderOffset, nextIdleMotionState } from "./graphCanvasCore";
+import { buildAnchorMap, buildZoneContour, edgeRenderMotion, idleRenderOffset, nextIdleMotionState, zoneIdByTopicId } from "./graphCanvasCore";
+import type { Zone } from "../lib/types";
+
+describe("overlapping zones", () => {
+  it("prefers the smallest zone, then strongest intensity, retaining first-on-tie order", () => {
+    const zones = [
+      { id: "broad", topic_ids: ["a", "b", "c"], intensity: 1 },
+      { id: "small", topic_ids: ["a", "b"], intensity: .4 },
+      { id: "strong", topic_ids: ["a", "b"], intensity: .8 },
+      { id: "tie", topic_ids: ["a", "b"], intensity: .8 },
+      { id: "single", topic_ids: ["b"], intensity: .1 },
+    ] as Zone[];
+    expect([...zoneIdByTopicId(zones)]).toEqual([["a", "strong"], ["b", "single"], ["c", "broad"]]);
+  });
+});
 
 describe("buildAnchorMap", () => {
   it("does not recurse forever on cyclic graphs", () => {

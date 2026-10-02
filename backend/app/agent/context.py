@@ -59,8 +59,8 @@ def turn_context(graph: StudyGraph, config: WorkspaceConfig, topic_id: str | Non
         context["recent_quiz_attempts"] = [a.model_dump(mode="json") for a in graph.quiz_attempts[-15:]]
     if config.memory_include_frontier_context:
         closed = {t.id for t in graph.topics if t.state in {"solid", "mastered"}}
-        context["ready_topic_ids"] = [t.id for t in graph.topics if t.id not in closed and
-            all(e.source_topic_id in closed for e in graph.edges if e.relation == "requires" and e.target_topic_id == t.id)]
+        blocked = {e.target_topic_id for e in graph.edges if e.relation == "requires" and e.source_topic_id not in closed}
+        context["ready_topic_ids"] = [t.id for t in graph.topics if t.id not in closed and t.id not in blocked]
     return "Current Clew context (application data):\n" + json.dumps(context, ensure_ascii=False)
 
 

@@ -1,7 +1,8 @@
 import unittest
 from uuid import uuid4
 from app.agent.contracts import ProposalDraft, tool_specs
-from app.models.domain import ChatMessage, CreateGraphRequest, UpdateWorkspaceConfigRequest
+from app.models.domain import ChatMessage, CreateGraphRequest, Edge, GraphProposalEnvelope, StudyGraph, Topic, UpdateWorkspaceConfigRequest
+from app.services.proposal_normalizer import ProposalNormalizer
 from app.services.proposal_service import ProposalService
 from app.services.repository import ProposalConflictError, RepositoryConflictError
 from agent_test_support import install_client
@@ -118,3 +119,40 @@ class ProposalToolTests(unittest.TestCase):
         names = {tool["name"] for tool in specs}
         self.assertEqual(names, {"read_graph", "read_topic", "propose_ingest", "propose_expand", "ask_question", "present_quiz", "create_closure_quiz"})
         self.assertNotIn("answer", names)
+
+    def test_edge_replacement_validates_the_final_topology(self):
+        graph = StudyGraph(graph_id="chain", subject="test", title="Chain",
+            topics=[Topic(id=name, slug=name, title=name) for name in ("a", "b", "c")],
+            edges=[Edge(id="ab", source_topic_id="a", target_topic_id="b"),
+                   Edge(id="bc", source_topic_id="b", target_topic_id="c")])
+        envelope = GraphProposalEnvelope(graph_id=graph.graph_id, mode="expand_goal", operations=[{
+            "op_id": "replace", "op": "upsert_edge", "entity_kind": "edge",
+            "edge": {"id": "ab", "source_topic_id": "b", "target_topic_id": "c"}}])
+        plan = ProposalNormalizer().normalize(envelope, graph)
+        self.assertFalse(plan.validation.ok)
+        self.assertIn("disconnected", "; ".join(plan.validation.errors))
+
+    def test_apply_rejects_extra_payload_instead_of_counting_phantom_topic(self):
+        proposal = self.prepare().proposal_envelope.model_dump(mode="json")
+        proposal["operations"][0]["edge"] = {"id": "bad", "source_topic_id": "arithmetics", "target_topic_id": "phantom"}
+        before = self.repo.current().snapshot.id
+        response = self.client.post(self.url, json=proposal)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("exactly one payload", str(response.json()))
+        self.assertEqual(self.repo.current().snapshot.id, before)
+
+    def test_malformed_manual_resource_url_is_an_explicit_client_error(self):
+        url = f"/api/v1/workspace/graphs/{self.graph_id}/topics/arithmetics/resources"
+        for value in ("https://[", "["):
+            before = self.repo.current().snapshot.id
+            response = self.client.post(url, json={"url": value})
+            self.assertEqual(response.status_code, 400, response.text)
+            self.assertEqual(self.repo.current().snapshot.id, before)
+
+    def test_import_rejects_invalid_quiz_policy_before_awarding_state(self):
+        package = self.repo.export_graph_package(self.graph_id).model_dump(mode="json")
+        package["graph"]["topics"][0]["quiz_policy"]["pass_threshold"] = -1
+        before = self.repo.current().snapshot.id
+        response = self.client.post("/api/v1/workspace/graphs/import", json={"package": package})
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(self.repo.current().snapshot.id, before)

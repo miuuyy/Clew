@@ -789,6 +789,7 @@ export function Graph3DCanvas({
       rightMouseLook = false;
       controls.enabled = true;
       if (renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+      renderer.domElement.style.cursor = "grab";
     };
     const handleDoubleClick = (event: MouseEvent): void => {
       const instanceId = raycastNode(event);
@@ -814,8 +815,11 @@ export function Graph3DCanvas({
       }
     };
     const handleKeyUp = (event: KeyboardEvent): void => { pressedKeys.delete(event.code); };
+    const clearPressedKeys = (): void => { pressedKeys.clear(); };
     container.addEventListener("keydown", handleKeyDown);
     container.addEventListener("keyup", handleKeyUp);
+    container.addEventListener("blur", clearPressedKeys);
+    window.addEventListener("blur", clearPressedKeys);
 
     let previousFrameTime = performance.now();
     const animationStartedAt = previousFrameTime;
@@ -884,6 +888,8 @@ export function Graph3DCanvas({
       renderer.domElement.removeEventListener("dblclick", handleDoubleClick);
       container.removeEventListener("keydown", handleKeyDown);
       container.removeEventListener("keyup", handleKeyUp);
+      container.removeEventListener("blur", clearPressedKeys);
+      window.removeEventListener("blur", clearPressedKeys);
       controls.dispose();
       composer.dispose();
       volumeNoiseTexture.dispose();

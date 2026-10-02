@@ -29,10 +29,11 @@ describe("native chat events", () => {
     expect(state.status).toBe("failed");
   });
   it("parses split UTF-8 chunks and a final event without newline", async () => {
-    const source = new TextEncoder().encode(JSON.stringify({ type: "message", message: { ...message, content: "Привет" } }) + "\n" + JSON.stringify({ type: "turn_completed", status: "completed" }));
+    const identity = { session_id: "s", run_id: "run" };
+    const source = new TextEncoder().encode(JSON.stringify({ type: "message", message: { ...message, content: "Привет" }, ...identity, event_id: 1 }) + "\n" + JSON.stringify({ type: "turn_completed", status: "completed", ...identity, event_id: 2 }));
     const stream = new ReadableStream<Uint8Array>({ start(controller) { for (let i = 0; i < source.length; i += 3) controller.enqueue(source.slice(i, i + 3)); controller.close(); } });
     const events: GraphChatStreamEvent[] = [];
-    await consumeAgentEvents(new Response(stream), (event) => events.push(event));
+    await consumeAgentEvents(new Response(stream, { headers: { "Content-Type": "application/x-ndjson" } }), (event) => events.push(event));
     expect(events).toHaveLength(2);
     expect(events[0].type === "message" && events[0].message.content).toBe("Привет");
   });

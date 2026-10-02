@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -26,7 +29,9 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
 
       - name: Install backend
         run: |
@@ -37,6 +42,15 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Install desktop tooling
+        run: npm ci
+
+      - name: Locate Python for desktop native tests
+        run: python -c "import sys; print('CLEW_PYTHON=' + sys.executable)" >> "$GITHUB_ENV"
+
+      - name: Desktop contracts and versions
+        run: npm run check:version && npm run test:desktop
+
       - name: Frontend typecheck
         working-directory: frontend
         run: npm run typecheck
@@ -44,6 +58,10 @@ jobs:
       - name: Frontend tests
         working-directory: frontend
         run: npm run test
+
+      - name: Frontend localization
+        working-directory: frontend
+        run: npm run test:localization
 
       - name: Frontend build
         working-directory: frontend

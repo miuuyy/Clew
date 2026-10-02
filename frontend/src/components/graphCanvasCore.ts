@@ -430,39 +430,40 @@ function convexHull(points: Array<{ x: number; y: number }>): Array<{ x: number;
   return [...lower, ...upper];
 }
 
+function preferredZone(candidate: Zone, current: Zone | undefined): boolean {
+  return !current || candidate.topic_ids.length < current.topic_ids.length
+    || (candidate.topic_ids.length === current.topic_ids.length && candidate.intensity > current.intensity);
+}
+
 export function primaryZoneIdForTopic(zones: Zone[], topicId: string | null): string | null {
   if (!topicId) return null;
-  const matches = zones.filter((zone) => zone.topic_ids.includes(topicId));
-  if (matches.length === 0) return null;
-  matches.sort((left, right) => {
-    const bySize = left.topic_ids.length - right.topic_ids.length;
-    if (bySize !== 0) return bySize;
-    return right.intensity - left.intensity;
-  });
-  return matches[0]?.id ?? null;
+  let chosen: Zone | undefined;
+  for (const zone of zones) {
+    if (zone.topic_ids.includes(topicId) && preferredZone(zone, chosen)) chosen = zone;
+  }
+  return chosen?.id ?? null;
 }
 
 export function highlightedZoneIdsForSelection(zones: Zone[], selectedTopicId: string | null, pathNodeIds: Set<string>): Set<string> {
+  const byTopic = zoneIdByTopicId(zones);
   const ids = new Set<string>();
-  const selectedZoneId = primaryZoneIdForTopic(zones, selectedTopicId);
+  const selectedZoneId = selectedTopicId ? byTopic.get(selectedTopicId) : undefined;
   if (selectedZoneId) ids.add(selectedZoneId);
   for (const topicId of pathNodeIds) {
-    const zoneId = primaryZoneIdForTopic(zones, topicId);
+    const zoneId = byTopic.get(topicId);
     if (zoneId) ids.add(zoneId);
   }
   return ids;
 }
 
 export function zoneIdByTopicId(zones: Zone[]): Map<string, string> {
-  const map = new Map<string, string>();
-  const topicIds = new Set(zones.flatMap((zone) => zone.topic_ids));
-  for (const topicId of topicIds) {
-    const zoneId = primaryZoneIdForTopic(zones, topicId);
-    if (zoneId) {
-      map.set(topicId, zoneId);
+  const chosen = new Map<string, Zone>();
+  for (const zone of zones) {
+    for (const topicId of zone.topic_ids) {
+      if (preferredZone(zone, chosen.get(topicId))) chosen.set(topicId, zone);
     }
   }
-  return map;
+  return new Map([...chosen].map(([topicId, zone]) => [topicId, zone.id]));
 }
 
 export function cloneManualNodePositions(positions: ManualNodePositions): ManualNodePositions {
@@ -484,8 +485,12 @@ export function buildAnchorMap(nodes: GraphNode[], edges: Edge[], width: number,
     childrenByParent.set(node.id, []);
   }
   for (const edge of edges) {
-    parentsByChild.set(edge.target_topic_id, [...(parentsByChild.get(edge.target_topic_id) ?? []), edge.source_topic_id]);
-    childrenByParent.set(edge.source_topic_id, [...(childrenByParent.get(edge.source_topic_id) ?? []), edge.target_topic_id]);
+    const parents = parentsByChild.get(edge.target_topic_id) ?? [];
+    parents.push(edge.source_topic_id);
+    parentsByChild.set(edge.target_topic_id, parents);
+    const children = childrenByParent.get(edge.source_topic_id) ?? [];
+    children.push(edge.target_topic_id);
+    childrenByParent.set(edge.source_topic_id, children);
   }
 
   const explicitRoots = nodes.filter((node) => (parentsByChild.get(node.id) ?? []).length === 0).sort((a, b) => a.title.localeCompare(b.title));
@@ -581,6 +586,19 @@ export function buildAnchorMap(nodes: GraphNode[], edges: Edge[], width: number,
     });
   }
 
+  const siblingGroups = new Map<string, { size: number; indexById: Map<string, number> }>();
+  function siblingsFor(parents: string[]) {
+    const key = JSON.stringify(parents);
+    const cached = siblingGroups.get(key);
+    if (cached) return cached;
+    const ids = Array.from(new Set(parents.flatMap((pid) => childrenByParent.get(pid) ?? []))).sort(
+      (a, b) => (byId.get(a)?.title ?? a).localeCompare(byId.get(b)?.title ?? b),
+    );
+    const group = { size: ids.length, indexById: new Map(ids.map((id, index) => [id, index])) };
+    siblingGroups.set(key, group);
+    return group;
+  }
+
   function resolveAnchor(nodeId: string): NodeAnchor {
     const cached = anchors.get(nodeId);
     if (cached) return cached;
@@ -610,12 +628,10 @@ export function buildAnchorMap(nodes: GraphNode[], edges: Edge[], width: number,
       const parentAnchors = parents.map((pid) => resolveAnchor(pid));
       const parentAngle = averageAngles(parentAnchors.map((anchor) => anchor.angle));
       const branchAngle = branchAngles.get(primaryBranchId) ?? rootAngles.get(primaryRootId) ?? parentAngle;
-      const siblings = Array.from(new Set(parents.flatMap((pid) => childrenByParent.get(pid) ?? []))).sort(
-        (a, b) => (byId.get(a)?.title ?? a).localeCompare(byId.get(b)?.title ?? b),
-      );
-      const siblingIndex = Math.max(0, siblings.indexOf(node.id));
-      const spread = Math.max(0.15, 0.85 / Math.max(siblings.length, 1));
-      const siblingOffset = (siblingIndex - (siblings.length - 1) / 2) * spread;
+      const siblings = siblingsFor(parents);
+      const siblingIndex = siblings.indexById.get(node.id) ?? 0;
+      const spread = Math.max(0.15, 0.85 / Math.max(siblings.size, 1));
+      const siblingOffset = (siblingIndex - (siblings.size - 1) / 2) * spread;
       const branchPull = normalizeAngle(branchAngle - parentAngle) * 0.68;
       const jitter = (((seed >> 22) % 1000) / 1000 - 0.5) * 0.05;
       angle = node.level === 1 ? branchAngle + siblingOffset + jitter : parentAngle + branchPull + siblingOffset + jitter;

@@ -41,6 +41,12 @@ class ProposalValidator:
                 errors.append(f"{operation.op_id}: operation {operation.op} is not allowed in proposal envelopes")
                 continue
 
+            entity = operation.op.removeprefix("upsert_")
+            if (operation.entity_kind != entity or getattr(operation, entity) is None
+                    or sum(getattr(operation, kind) is not None for kind in ("topic", "edge", "zone")) != 1):
+                errors.append(f"{operation.op_id}: operation, entity_kind and exactly one payload must match")
+                continue
+
             if operation.op == "upsert_topic":
                 if operation.topic is None:
                     errors.append(f"{operation.op_id}: upsert_topic missing topic payload")
@@ -114,16 +120,14 @@ class ProposalValidator:
                 topic_ids.add(operation.topic.id)
                 adjacency.setdefault(operation.topic.id, set())
 
-        for edge in graph.edges:
+        edges_by_id = {edge.id: edge for edge in graph.edges}
+        for operation in proposal.operations:
+            if operation.op == "upsert_edge" and operation.edge is not None:
+                edges_by_id[operation.edge.id] = operation.edge
+        for edge in edges_by_id.values():
             if edge.source_topic_id in topic_ids and edge.target_topic_id in topic_ids:
                 adjacency.setdefault(edge.source_topic_id, set()).add(edge.target_topic_id)
                 adjacency.setdefault(edge.target_topic_id, set()).add(edge.source_topic_id)
-
-        for operation in proposal.operations:
-            if operation.edge is None:
-                continue
-            adjacency.setdefault(operation.edge.source_topic_id, set()).add(operation.edge.target_topic_id)
-            adjacency.setdefault(operation.edge.target_topic_id, set()).add(operation.edge.source_topic_id)
 
         if len(topic_ids) <= 1:
             return {

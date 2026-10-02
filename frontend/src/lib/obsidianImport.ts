@@ -1,6 +1,8 @@
+import { parseDocument } from "yaml";
 import type { Edge, GraphExportPackagePayload, Topic, Zone } from "./types";
 
 type FrontmatterValue = string | string[];
+class FrontmatterError extends Error {}
 
 export type ObsidianVaultEntry = {
   path: string;
@@ -106,7 +108,28 @@ export function buildObsidianImportPreview(
     };
   }
 
-  const parsedNotes = markdownEntries.map((entry) => parseNote(entry, options.autofillDescriptions, options.createArtifactsFromNotes));
+  const parsedNotes: ParsedNoteResult[] = [];
+  const seenPaths = new Set<string>();
+  const seenIds = new Set<string>();
+  for (const entry of markdownEntries) {
+    if (seenPaths.has(entry.path)) {
+      issues.push({ code: "duplicate_note_path", level: "error", message: `Duplicate note path: ${entry.path}.` });
+      continue;
+    }
+    seenPaths.add(entry.path);
+    try {
+      const parsed = parseNote(entry, options.autofillDescriptions, options.createArtifactsFromNotes);
+      if (seenIds.has(parsed.note.id)) {
+        issues.push({ code: "note_id_collision", level: "error", message: `Two note paths produce the same topic ID. Rename ${entry.path} before importing.` });
+        continue;
+      }
+      seenIds.add(parsed.note.id);
+      parsedNotes.push(parsed);
+    } catch (cause) {
+      if (!(cause instanceof FrontmatterError)) throw cause;
+      issues.push({ code: "invalid_frontmatter", level: "error", message: `${entry.path}: ${cause.message}` });
+    }
+  }
   const notes = parsedNotes.map((result) => result.note);
   issues.push(...parsedNotes.flatMap((result) => result.issues));
   const notesByPath = new Map<string, ParsedNote>();
@@ -116,7 +139,8 @@ export function buildObsidianImportPreview(
     if (!key) return;
     const existing = notesByBaseName.get(key) ?? [];
     if (existing.includes(note)) return;
-    notesByBaseName.set(key, [...existing, note]);
+    existing.push(note);
+    notesByBaseName.set(key, existing);
   };
 
   for (const note of notes) {
@@ -244,7 +268,9 @@ function buildZones(topics: Topic[], notes: ParsedNote[], vaultName: string): Zo
   for (const topic of topics) {
     const note = notesById.get(topic.id);
     if (!note || !note.folderPath) continue;
-    zonesByFolder.set(note.folderPath, [...(zonesByFolder.get(note.folderPath) ?? []), topic.id]);
+    const members = zonesByFolder.get(note.folderPath) ?? [];
+    members.push(topic.id);
+    zonesByFolder.set(note.folderPath, members);
   }
 
   return [...zonesByFolder.entries()].map(([folderPath, topicIds], index) => ({
@@ -375,60 +401,28 @@ function resolveInternalLink(
 }
 
 function parseFrontmatter(content: string): { body: string; frontmatter: Record<string, FrontmatterValue> } {
-  if (!content.startsWith("---\n")) {
-    return { body: content, frontmatter: {} };
+  const normalized = content.replace(/^\uFEFF/, "");
+  if (!/^---[ \t]*\r?\n/.test(normalized)) return { body: normalized, frontmatter: {} };
+  const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(normalized);
+  if (!match) throw new FrontmatterError("Frontmatter has no closing delimiter.");
+  const document = parseDocument(match[1], { uniqueKeys: true });
+  if (document.errors.length) throw new FrontmatterError(`Invalid YAML frontmatter: ${document.errors[0].message}`);
+  let parsed: unknown;
+  try { parsed = document.toJS({ maxAliasCount: 100 }); }
+  catch { throw new FrontmatterError("Frontmatter contains excessive YAML aliases."); }
+  if (parsed !== null && (typeof parsed !== "object" || Array.isArray(parsed))) {
+    throw new FrontmatterError("Frontmatter must be a YAML mapping.");
   }
-  const closingIndex = content.indexOf("\n---", 4);
-  if (closingIndex === -1) {
-    return { body: content, frontmatter: {} };
+  const frontmatter: Record<string, FrontmatterValue> = {};
+  for (const key of ["aliases", "tags", "mapmind_relations", "mapmind_edges"]) {
+    const value = (parsed as Record<string, unknown> | null)?.[key];
+    if (value == null) continue;
+    if (typeof value !== "string" && (!Array.isArray(value) || !value.every((item) => typeof item === "string"))) {
+      throw new FrontmatterError(`${key} must be a string or a list of strings.`);
+    }
+    frontmatter[key] = value as FrontmatterValue;
   }
-
-  const rawFrontmatter = content.slice(4, closingIndex).trim();
-  const body = content.slice(closingIndex + 4).replace(/^\n/, "");
-  return {
-    body,
-    frontmatter: parseSimpleYamlFrontmatter(rawFrontmatter),
-  };
-}
-
-function parseSimpleYamlFrontmatter(raw: string): Record<string, FrontmatterValue> {
-  const result: Record<string, FrontmatterValue> = {};
-  let activeListKey: string | null = null;
-
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const listItemMatch = trimmed.match(/^-\s+(.*)$/);
-    if (listItemMatch && activeListKey) {
-      const current = result[activeListKey];
-      const nextValue = cleanupFrontmatterScalar(listItemMatch[1]);
-      result[activeListKey] = Array.isArray(current) ? [...current, nextValue] : [nextValue];
-      continue;
-    }
-
-    activeListKey = null;
-    const separatorIndex = trimmed.indexOf(":");
-    if (separatorIndex === -1) continue;
-
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const rawValue = trimmed.slice(separatorIndex + 1).trim();
-    if (!rawValue) {
-      activeListKey = key;
-      result[key] = [];
-      continue;
-    }
-    if (rawValue.startsWith("[") && rawValue.endsWith("]")) {
-      result[key] = rawValue
-        .slice(1, -1)
-        .split(",")
-        .map((item) => cleanupFrontmatterScalar(item))
-        .filter(Boolean);
-      continue;
-    }
-    result[key] = cleanupFrontmatterScalar(rawValue);
-  }
-
-  return result;
+  return { body: normalized.slice(match[0].length), frontmatter };
 }
 
 function cleanupFrontmatterScalar(value: string): string {

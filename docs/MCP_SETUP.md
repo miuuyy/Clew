@@ -23,6 +23,12 @@ your workspace.
 
 ## Quick start
 
+The stdio MCP entry point below is a **source-install integration**. Desktop
+installers bundle the app backend, but do not install `clew-study-assist` on PATH
+or configure external assistants. Source MCP defaults to the checkout database;
+to inspect desktop graphs, explicitly set `KG_DB_PATH` to that installation's
+database from [Desktop data locations](DESKTOP.md#local-data).
+
 1. **Install Clew locally** (if you haven't already). The standard dev
    script installs the MCP binary at the same time:
 

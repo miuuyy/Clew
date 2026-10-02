@@ -1,13 +1,18 @@
 from __future__ import annotations
+from agent_test_support import install_client
 
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from fastapi.responses import JSONResponse
 
 from app.api import routes
-from app.main import app
+from app.main import app, create_app
+from app.core.config import Settings
+from fake_chatgpt import FakeChatGPT, fake_runtime
 from app.models.domain import UpdateWorkspaceConfigRequest
 from app.services.debug_log_service import DebugClientLogRequest, DebugLogService
 from app.services.repository import GraphRepository
@@ -63,14 +68,10 @@ class DebugLogServiceTests(unittest.TestCase):
 
 class DebugLogRouteTests(unittest.TestCase):
     def setUp(self) -> None:
-        tempdir = tempfile.TemporaryDirectory()
-        self.addCleanup(tempdir.cleanup)
-        self.repository = GraphRepository(Path(tempdir.name) / "state.sqlite3")
+        self.client, self.repository, self.runtime = install_client(self)
 
     def test_debug_log_routes_require_debug_mode(self) -> None:
-        client = TestClient(app, raise_server_exceptions=False)
-        app.dependency_overrides[routes.get_repository] = lambda: self.repository
-        self.addCleanup(app.dependency_overrides.clear)
+        client = self.client
 
         response = client.get("/api/v1/debug/logs")
 
@@ -82,9 +83,7 @@ class DebugLogRouteTests(unittest.TestCase):
             UpdateWorkspaceConfigRequest(debug_mode_enabled=True)
         )
 
-        client = TestClient(app)
-        app.dependency_overrides[routes.get_repository] = lambda: self.repository
-        self.addCleanup(app.dependency_overrides.clear)
+        client = self.client
 
         ingest_response = client.post(
             "/api/v1/debug/logs/client",
@@ -99,6 +98,33 @@ class DebugLogRouteTests(unittest.TestCase):
         snapshot_response = client.get("/api/v1/debug/logs")
         self.assertEqual(snapshot_response.status_code, 200)
         self.assertEqual(len(snapshot_response.json()["api"]), 1)
+
+    def test_explicit_log_directory_is_used_by_routes_and_server_errors(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        bundle = root / "bundle"
+        (bundle / "contracts").mkdir(parents=True)
+        with patch.dict("os.environ", {"KG_DEBUG_LOG_DIR": str(root / "user-data" / "logs")}):
+            settings = Settings(root_dir=bundle, db_path=root / "user-data" / "state.sqlite3")
+        factory = patch("app.main.AgentRuntime", side_effect=lambda settings, repository: fake_runtime(settings, repository, FakeChatGPT()))
+        factory.start()
+        self.addCleanup(factory.stop)
+        application = create_app(settings)
+        @application.get("/api/v1/test-error")
+        def fail():
+            return JSONResponse(status_code=500, content={"detail": "test error"})
+        with TestClient(application) as client:
+            application.state.agent_runtime.repository.update_workspace_config(UpdateWorkspaceConfigRequest(debug_mode_enabled=True))
+            client.post("/api/v1/debug/logs/client", json={"kind": "api", "title": "Test", "message": "ok"})
+            self.assertEqual(client.get("/api/v1/test-error").status_code, 500)
+            snapshot = client.get("/api/v1/debug/logs").json()
+        expected = settings.debug_log_dir / "logs.log"
+        self.assertEqual(snapshot["file_path"], str(expected))
+        self.assertEqual(len(snapshot["api"]), 1)
+        self.assertEqual(len(snapshot["server"]), 1)
+        self.assertTrue(expected.is_file())
+        self.assertEqual(list(bundle.iterdir()), [bundle / "contracts"])
 
 
 if __name__ == "__main__":

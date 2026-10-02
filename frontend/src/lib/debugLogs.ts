@@ -18,6 +18,7 @@ type DebugPayload = {
 };
 
 let debugEnabled = false;
+export function isDebugModeEnabled(): boolean { return debugEnabled; }
 let hooksInstalled = false;
 let unbindHooks: (() => void) | null = null;
 const SENSITIVE_KEY_PATTERN = /(api[_-]?key|token|secret|password|authorization)/i;
@@ -113,7 +114,7 @@ async function postDebugLog(payload: DebugPayload): Promise<void> {
     await fetch(`${API_BASE}/api/v1/debug/logs/client`, {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(window.clewDesktop ? { "X-Clew-Session": window.clewDesktop.sessionToken } : {}) },
       body: JSON.stringify(payload),
       keepalive: true,
     });

@@ -8,6 +8,7 @@ import type { ChatGPTAccountController } from "../hooks/useChatGPTAccount";
 import { MEMORY_MODE_OPTIONS, type MemoryMode, type SettingsDraftSetters, type SettingsDrafts } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphEnvelope, SnapshotRecord, WorkspaceConfig, WorkspaceEnvelope } from "../lib/types";
+import { useModalAccessibility } from "../lib/useModalAccessibility";
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
 type ModeOption<T extends string> = {
@@ -75,7 +76,6 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     enableClosureTests: enableClosureTestsDraft,
     debugModeEnabled: debugModeEnabledDraft,
     straightEdgeLines: straightEdgeLinesDraft,
-    themeMode: themeModeDraft,
     quizQuestionCount: quizQuestionCountDraft,
     quizPassCount: quizPassCountDraft,
   } = drafts;
@@ -96,16 +96,20 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     quizQuestionCount: setQuizQuestionCountDraft,
     quizPassCount: setQuizPassCountDraft,
   } = setDrafts;
+  const modalRef = React.useRef<HTMLDivElement | null>(null);
+  const closeRef = React.useRef<HTMLButtonElement | null>(null);
+  const close = React.useCallback(() => setSettingsOpen(false), [setSettingsOpen]);
+  useModalAccessibility({ isOpen: isSettingsOpen, modalRef, onClose: close, initialFocusRef: closeRef });
   if (!isSettingsOpen) {
     return null;
   }
 
   return (
     <div className="stOverlay">
-      <div className="stModal" role="dialog" aria-modal="true" aria-label={copy.settings.workspaceConfiguration}>
+      <div ref={modalRef} className="stModal" role="dialog" aria-modal="true" aria-label={copy.settings.workspaceConfiguration} tabIndex={-1}>
         <header className="stHeader">
           <h2>{copy.settings.workspaceConfiguration}</h2>
-          <button className="uiIconButton" onClick={() => setSettingsOpen(false)} type="button" aria-label={copy.settingsPanel.closeSettings}>
+          <button ref={closeRef} className="uiIconButton" onClick={close} type="button" aria-label={copy.settingsPanel.closeSettings}>
             <X size={15} weight="bold" aria-hidden="true" />
           </button>
         </header>

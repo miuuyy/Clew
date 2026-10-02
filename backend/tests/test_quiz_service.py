@@ -3,11 +3,12 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from app.core.config import Settings
 from app.models.domain import QuizQuestion
 from app.services.quiz_service import QuizService
-from app.services.repository import GraphRepository
+from app.services.repository import GraphRepository, RepositoryConflictError
 
 
 class QuizServiceTests(unittest.TestCase):
@@ -43,7 +44,9 @@ class QuizServiceTests(unittest.TestCase):
         answers = {question.id: question.correct_choice_index for question in session.questions}
         attempt, _, awarded_state, _ = self.quiz_service.grade_session(graph, session, answers)
 
-        repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded_state)
+        repository.save_quiz_session(session)
+        repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded_state,
+                                       base_graph_version=graph.version, session_id=session.session_id)
         updated = repository.graph(self.DEMO_GRAPH_ID)
         embeddings = next(topic for topic in updated.topics if topic.id == "embeddings")
 
@@ -67,7 +70,9 @@ class QuizServiceTests(unittest.TestCase):
         wrong_answers = {question.id: (question.correct_choice_index + 1) % len(question.choices) for question in session.questions}
         attempt, _, awarded_state, reviews = self.quiz_service.grade_session(graph, session, wrong_answers)
 
-        repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded_state)
+        repository.save_quiz_session(session)
+        repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded_state,
+                                       base_graph_version=graph.version, session_id=session.session_id)
         updated = repository.graph(self.DEMO_GRAPH_ID)
         arithmetics = next(topic for topic in updated.topics if topic.id == "arithmetics")
 
@@ -87,6 +92,44 @@ class QuizServiceTests(unittest.TestCase):
         questions[1].prompt = questions[0].prompt
         with self.assertRaisesRegex(ValueError, "distinct"):
             self.quiz_service.start_session(graph, "arithmetics", 6, questions=questions, generator="test-codex")
+
+    def test_failure_count_survives_replacement_of_latest_attempt(self):
+        repository = self._repository()
+        for expected in (1, 2, 3, 4):
+            graph = repository.graph(self.DEMO_GRAPH_ID)
+            session = self.quiz_service.start_session(graph, "arithmetics", 6, questions=self.questions(), generator="test")
+            repository.save_quiz_session(session)
+            attempt, _, awarded, _ = self.quiz_service.grade_session(graph, session, {})
+            repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded,
+                                           base_graph_version=graph.version, session_id=session.session_id)
+            self.assertEqual(repository.graph(self.DEMO_GRAPH_ID).quiz_attempts[0].fail_count, expected)
+
+    def test_quiz_consumption_and_snapshot_share_one_transaction(self):
+        repository = self._repository()
+        graph = repository.graph(self.DEMO_GRAPH_ID)
+        session = self.quiz_service.start_session(graph, "arithmetics", 6, questions=self.questions(), generator="test")
+        repository.save_quiz_session(session)
+        attempt, _, awarded, _ = self.quiz_service.grade_session(graph, session, {})
+        before = repository.current().snapshot.id
+        with patch.object(repository, "_insert_snapshot", side_effect=RuntimeError("write failed")):
+            with self.assertRaisesRegex(RuntimeError, "write failed"):
+                repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded,
+                                               base_graph_version=graph.version, session_id=session.session_id)
+        self.assertEqual(repository.quiz_session(session.session_id).session_id, session.session_id)
+        self.assertEqual(repository.current().snapshot.id, before)
+
+    def test_consumed_quiz_cannot_award_another_snapshot(self):
+        repository = self._repository()
+        graph = repository.graph(self.DEMO_GRAPH_ID)
+        session = self.quiz_service.start_session(graph, "arithmetics", 6, questions=self.questions(), generator="test")
+        repository.save_quiz_session(session)
+        attempt, _, awarded, _ = self.quiz_service.grade_session(graph, session, {})
+        first = repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded,
+                                               base_graph_version=graph.version, session_id=session.session_id)
+        with self.assertRaisesRegex(RepositoryConflictError, "already submitted"):
+            repository.record_quiz_attempt(self.DEMO_GRAPH_ID, attempt, awarded,
+                base_graph_version=repository.graph(self.DEMO_GRAPH_ID).version, session_id=session.session_id)
+        self.assertEqual(repository.current().snapshot.id, first.snapshot.id)
 
     def _repository(self) -> GraphRepository:
         tempdir = tempfile.TemporaryDirectory()

@@ -29,7 +29,7 @@ input[type="number"] {
   text-overflow: ellipsis;
 }
 
-/* Brand loader traces the Clew logo path and inherits color from the parent. */
+/* Brand loader traces the Clew logo path. Dark surfaces always use white. */
 
 @keyframes clewBrandLoaderTrace {
   0%   { stroke-dashoffset: 100; opacity: 1; }
@@ -43,13 +43,15 @@ input[type="number"] {
 /* Fullscreen launch screen covers root until React mounts and workspace data loads. */
 
 /* Chat viewport loader uses the same logo reveal at a smaller size. */
+.clewLogo { color: #fff; }
+:root[data-theme="light"] .clewLogo { color: #d97757; }
 .clewChatLoader {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
-  color: #d97757;
+  color: #fff;
   line-height: 0;
 }
 
@@ -58,8 +60,8 @@ input[type="number"] {
   height: 100%;
 }
 
-:root[data-theme="dark"] .clewChatLoader {
-  color: rgba(255, 255, 255, 0.62);
+:root[data-theme="light"] .clewChatLoader {
+  color: #d97757;
 }
 
 /* Shared mask-reveal classes for the launch loader and the in-chat loader. */

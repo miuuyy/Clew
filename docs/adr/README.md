@@ -21,6 +21,9 @@ ADR files in this repo are meant to capture:
 - [0005 - Codex owns the agent loop; Clew supplies native tools](0005-codex-native-agent-runtime.md) (superseded)
 - [0006 - Clew runs its agent loop on Sign in with ChatGPT](0006-sign-in-with-chatgpt-agent-runtime.md)
 
+- [0007 - Desktop distribution and required ChatGPT sign-in](0007-desktop-release-and-required-sign-in.md)
+- [0008 - Stable desktop origin and atomic native exports](0008-stable-desktop-origin-and-native-exports.md)
+
 ## Writing rule
 
 An ADR should exist when a decision:

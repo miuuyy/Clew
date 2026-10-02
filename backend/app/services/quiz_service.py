@@ -94,6 +94,10 @@ class QuizService:
         *,
         pass_threshold: float | None = None,
     ) -> tuple[QuizAttempt, TopicClosureStatus, str | None, list[QuizQuestionReview]]:
+        question_map = {question.id: question for question in session.questions}
+        if any(question_id not in question_map or type(index) is not int
+               or not 0 <= index < len(question_map[question_id].choices) for question_id, index in answers.items()):
+            raise ValueError("Quiz answers must reference this test's questions and valid choices.")
         correct_count = 0
         reviews: list[QuizQuestionReview] = []
         for question in session.questions:
@@ -117,7 +121,7 @@ class QuizService:
         closure_awarded = passed and closure.can_award_completion
         awarded_state = "solid" if closure_awarded else ("needs_review" if not passed else None)
         missed = [r.prompt for r in reviews if not r.was_correct]
-        previous_fails = sum(1 for a in graph.quiz_attempts if a.topic_id == session.topic_id and not a.passed)
+        previous_fails = max((a.fail_count for a in graph.quiz_attempts if a.topic_id == session.topic_id), default=0)
         attempt = QuizAttempt(
             id=f"attempt_{uuid4().hex[:12]}",
             topic_id=session.topic_id,

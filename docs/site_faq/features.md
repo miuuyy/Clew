@@ -42,7 +42,7 @@ The center is simple: **a thread through anything you're learning**. Everything 
 ## Local By Design
 
 - `SQLite workspace`: graphs, snapshots, chat state, quiz state, and config live in one file on your disk.
-- `OS credential store`: ChatGPT tokens stay in Keychain or Secret Service.
+- `OS credential store`: ChatGPT tokens stay in Keychain, Windows Credential Locker or Secret Service.
 - `Snapshots and rollback`: accepted graph changes remain recoverable.
 - `Debug logs`: optional local logging for frontend, API, and backend errors.
 

@@ -15,6 +15,25 @@ const baseOptions: ObsidianImportOptions = {
 };
 
 describe("buildObsidianImportPreview", () => {
+  it("preserves quoted YAML commas and recognizes Windows line endings", () => {
+    const preview = buildObsidianImportPreview([
+      { path: "a.md", content: "\uFEFF---\r\naliases: [\"First, second\"]\r\n---\r\nA note" },
+      { path: "b.md", content: "[[First, second]]" },
+    ], baseOptions);
+    expect(preview.package).not.toBeNull();
+    expect(preview.edgeCount).toBe(1);
+    expect(preview.package?.graph.topics[0].metadata?.aliases).toEqual(["First, second"]);
+  });
+  it.each(["aliases: [broken", "aliases: [1, 2]", "mapmind_edges: {}", "aliases: A\naliases: B"])("rejects invalid frontmatter: %s", (frontmatter) => {
+    const preview = buildObsidianImportPreview([{ path: "a.md", content: `---\n${frontmatter}\n---\nBody` }], baseOptions);
+    expect(preview.package).toBeNull();
+    expect(preview.issues).toContainEqual(expect.objectContaining({ code: "invalid_frontmatter", level: "error" }));
+  });
+  it("rejects duplicate normalized note paths without silently replacing content", () => {
+    const preview = buildObsidianImportPreview([{ path: "folder/a.md", content: "One" }, { path: "folder\\a.md", content: "Two" }], baseOptions);
+    expect(preview.package).toBeNull();
+    expect(preview.issues[0].code).toBe("duplicate_note_path");
+  });
   it("imports markdown notes with wikilinks and folder zones", () => {
     const preview = buildObsidianImportPreview(
       [
@@ -99,7 +118,7 @@ describe("buildObsidianImportPreview", () => {
             "---",
             "mapmind_relations:",
             "  - requires::[[foundation]]",
-            "  - [[practice]]::reviews",
+            '  - "[[practice]]::reviews"',
             "---",
             "",
             "Topic body",

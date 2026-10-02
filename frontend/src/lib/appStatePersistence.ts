@@ -56,8 +56,8 @@ export function readStoredBoolean(key: string, fallback: boolean): boolean {
 export function readStoredAssistantWidth(): number {
   try {
     const saved = localStorage.getItem(ASSISTANT_WIDTH_STORAGE_KEY);
-    if (!saved) return 390;
-    const width = Number.parseInt(saved, 10);
+    if (!saved?.trim()) return 390;
+    const width = Number(saved);
     if (Number.isFinite(width)) {
       const normalized = Math.max(0, Math.min(ASSISTANT_MAX_WIDTH, width));
       return normalized < ASSISTANT_MIN_WIDTH ? 0 : normalized;

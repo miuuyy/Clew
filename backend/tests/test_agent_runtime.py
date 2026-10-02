@@ -212,3 +212,28 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         thread = self.runtime.store.thread_payload(self.graph_id, sid)
         self.assertEqual(thread["agent_status"], "interrupted")
         self.assertEqual(thread["messages"][1]["question"]["status"], "interrupted")
+
+    async def test_completed_turns_release_memory_and_keep_durable_replay(self):
+        for _ in range(4):
+            sid, run = await self.start()
+            await self.complete(run)
+            self.assertEqual(self.runtime.runs, {})
+            events = [event async for event in self.runtime.events(sid, run.id)]
+            self.assertEqual(events[-1]["type"], "turn_completed")
+        self.assertEqual(len(self.repo.chat_thread(self.graph_id, sid).messages), 8)
+
+    async def test_catalog_completion_after_logout_does_not_unlock_account(self):
+        entered, release = asyncio.Event(), asyncio.Event()
+        async def models():
+            entered.set()
+            await release.wait()
+            return [{"model": "test-model"}]
+        self.runtime.models = models
+        account = asyncio.create_task(self.runtime.account())
+        await asyncio.wait_for(entered.wait(), 2)
+        await self.runtime.logout()
+        release.set()
+        result = await account
+        self.assertFalse(result["authenticated"])
+        self.assertFalse(result["can_disconnect"])
+        self.assertEqual(result["models"], [])

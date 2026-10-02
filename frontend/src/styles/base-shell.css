@@ -195,9 +195,6 @@ body {
   display: block;
   width: 108px;
   height: 96px;
-  background: currentColor;
-  -webkit-mask: url("/clew-mark.png") center / contain no-repeat;
-  mask: url("/clew-mark.png") center / contain no-repeat;
 }
 
 .sidebarAccountSection {

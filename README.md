@@ -1,33 +1,53 @@
 # Clew
 
-<p>
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-111111?style=flat-square"></a>
-  <a href="https://github.com/miuuyy/Clew/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/miuuyy/Clew/ci.yml?branch=main&style=flat-square&label=build"></a>
-  <img alt="Generative Roadmap" src="https://img.shields.io/badge/generative-roadmap-111111?style=flat-square">
-  <img alt="Agentic Workspace" src="https://img.shields.io/badge/agentic-workspace-111111?style=flat-square">
-  <img alt="Knowledge Graph" src="https://img.shields.io/badge/knowledge-graph-111111?style=flat-square">
-  <img alt="Obsidian integration" src="https://img.shields.io/badge/Obsidian-integration-111111?style=flat-square">
-</p>
+[Download](https://github.com/miuuyy/Clew/releases/latest) · [Docs](https://clew.my/docs) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)
 
-**Generate a learning map. Click any topic. Follow the thread.**
+**A learning graph, powered by your ChatGPT plan.**
 
-![Clew walkthrough](.github/readme-assets/walkthrough.gif)
+Clew turns a goal, syllabus, or folder of notes into a map of topics and prerequisites. Click a topic to see the path behind it. Study with an assistant, review its proposals, and keep your progress attached to the graph.
 
-Clew is a local, AI-assisted workspace for studying through dependency graphs. Start from a goal, a rough topic dump, or an Obsidian vault; Clew turns it into a map of topics, prerequisites, resources, artifacts, and progress.
+Your graphs live on your computer. AI changes require your approval, and accepted changes can be rolled back.
 
-The graph is the workspace. AI can draft, expand, audit, and reshape it, but changes stay visible, reviewable, and reversible.
+## Install
 
-Clew runs on your machine and uses your ChatGPT plan. Docs live at [clew.my](https://clew.my/docs).
+Download the build for your computer from [Releases](https://github.com/miuuyy/Clew/releases/latest).
 
-## Quick Look
+| Platform | Builds |
+| --- | --- |
+| Windows | x64 installer |
+| macOS 13+ | Apple Silicon and Intel, DMG or ZIP |
+| Linux | x64 and arm64, AppImage or Debian package; see platform requirements |
 
-- `Core idea`: a visible thread through hard subjects
-- `Main move`: click a topic and see the path that leads to it
-- `Graph generation`: build a map from a goal, notes, topic list, or Obsidian vault
-- `AI boundary`: AI proposes structure; you review and apply changes
-- `Local edition`: SQLite, Sign in with ChatGPT, import/export, existing read-only MCP
+Open Clew and select **Continue with ChatGPT**. A ChatGPT **Plus or Pro** plan and permission to use that plan are required. You do not need Python, Node, an API key, or the Codex CLI installed.
 
-## Quick Start
+GitHub stars and X follows are optional. They do not unlock features or change access.
+
+The 1.0.0 downloads are not Developer ID notarized or Authenticode signed. macOS builds have an ad-hoc signature. See [installation notes](docs/DESKTOP.md) for platform requirements and data locations.
+
+**Help → Check for Updates** opens the newer release's installer page. Updates are installed manually and retain local data.
+
+## Work through a subject
+
+1. Create a graph from your goal or import an Obsidian vault.
+2. Select a topic to inspect its prerequisites, resources, and notes.
+3. Ask the assistant to explain, quiz you, or expand the graph.
+4. Review a proposal and apply it when the structure makes sense.
+5. Finish a topic through the study workflow. Roll back a snapshot when needed.
+
+Clew includes two graph views, Midnight and Paper themes, completion quizzes, Markdown and graph export, and a read-only MCP server for other assistants. The ChatGPT web plugin is a separate future integration; it is not part of this release.
+
+## Privacy and control
+
+- Graphs, snapshots, and conversation history are stored in a local SQLite database.
+- ChatGPT credentials stay in the operating system's credential store.
+- AI requests send the conversation and scoped learning context to OpenAI. They use your existing plan allowance.
+- Set Clew's weekly allowance in **ChatGPT → Settings → Usage → App limits**.
+- The model proposes changes. Clew validates them; you choose whether to apply them.
+- Sign-out locks the workspace interface without deleting local data.
+
+## Development
+
+Requirements: Node 22.22.2+, Python 3.11+, and an OS credential store.
 
 ```bash
 git clone https://github.com/miuuyy/Clew.git
@@ -36,110 +56,35 @@ cp .env.example .env
 ./scripts/dev.sh
 ```
 
-Open **Settings → ChatGPT → Sign in with ChatGPT** and allow Clew to use your plan. AI features run on your ChatGPT **Plus or Pro** plan; no API key or CLI is needed. Tokens are kept in your OS credential store (Keychain on macOS). Set a weekly limit for Clew in ChatGPT **Settings → Usage → App limits**. The graph remains usable before signing in.
-
-Then open:
-
-- frontend: `http://127.0.0.1:5178`
-- backend: `http://127.0.0.1:8787`
-
-## Why Clew Exists
-
-Learning a big subject is not just about collecting resources. The hard part is structure.
-
-A chat answer can tell you what to read. Tools like [roadmap.sh](https://roadmap.sh) show a common route. But when your goal is specific, you need to see what actually unlocks what: which foundations matter now, which topics can wait, where you are blocked, and how far you are from the thing you want to build.
-
-Clew makes that structure visible.
-
-Instead of manually arranging a huge roadmap, you let AI draft the graph. Then you study through it: click topics, inspect prerequisite paths, attach resources, pass quizzes, mark progress, and keep the whole learning process tied to the map.
-
-## Features
-
-- `Click-to-path navigation`: select any topic and reveal the prerequisite chain behind it.
-- `Generative roadmaps`: create a dependency graph from a goal, topic dump, notes, or vault.
-- `Graph-first workspace`: topics, dependencies, zones, resources, artifacts, layout, and progress live on one surface.
-- `Reviewable AI changes`: ingest, expand, audit, reshape, apply, and roll back through snapshots.
-- `Study loop`: topic sessions, assistant help, inline quizzes, closure quizzes, and manual completion when strict gating is disabled.
-- `Obsidian bridge`: import a vault into Clew or export a graph back into an Obsidian-ready folder.
-- `Obsidian-to-Clew import skill`: packaged for Claude Code and Codex to audit a vault, flag blockers, and shape it into a valid Clew package.
-- `MCP context bridge`: let Claude, Cursor, or another MCP client read your Clew graphs and progress without copy-paste.
-- `Local control`: SQLite workspace, model/reasoning selection from your plan, graph context and persona settings.
-
-## Example Use Cases
-
-- Turn "I want to build a machine learning project" into the math, programming, and ML path that actually matters.
-- Click a hard topic and see the foundations you are missing.
-- Build a Python, cybersecurity, systems, math, or exam roadmap with visible prerequisites.
-- Convert a messy topic dump into a graph you can actually study through.
-- Import an Obsidian vault and check whether your notes form a usable learning structure.
-- Ask an external assistant about your current learning path through MCP.
-- Export a finished path back to Obsidian as readable notes.
-
-## Visuals
-
-![Clew workspace overview](.github/readme-assets/asset11.png)
-
-<table>
-  <tr>
-    <td width="33%">
-      <img alt="Clew topic view" src=".github/readme-assets/asset12-v2.png">
-    </td>
-    <td width="33%">
-      <img alt="Clew proposal flow" src=".github/readme-assets/asset13-v2.png">
-    </td>
-    <td width="33%">
-      <img alt="Clew path highlight" src=".github/readme-assets/asset14-v2.png">
-    </td>
-  </tr>
-</table>
-
-## Docs
-
-- [Docs site](https://clew.my/docs)
-- [Quick start](docs/site_faq/quick-start.md)
-- [Features](docs/site_faq/features.md)
-- [How to use](docs/site_faq/how-to-use.md)
-- [Why special](docs/site_faq/why-special.md)
-- [Obsidian and MCP integrations](docs/site_faq/integrations.md)
-- [Latest release](https://github.com/miuuyy/Clew/releases/latest)
-- [Connect to Claude Desktop / Claude Code / Cursor through MCP](docs/MCP_SETUP.md)
-- [Obsidian-to-Clew import skill](.claude/skills/obsidian-to-clew-import/SKILL.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Engineering docs index](docs/README.md)
-
-## Repository Map
-
-| Path | Role |
-| --- | --- |
-| `frontend/` | React workspace UI, graph canvas, themes, settings, dialogs, debug surfaces |
-| `backend/` | FastAPI app, repository, domain model, ChatGPT agent runtime, Clew tools, existing MCP server, tests |
-| `contracts/` | JSON contracts and transport surfaces used by graph mutation flows |
-| `docs/` | Engineering docs, ADRs, release notes, and site FAQ source |
-| `scripts/` | Local development helpers such as boot, stop, and reset |
-| `.claude/skills/obsidian-to-clew-import/` | Claude Code skill for shaping an Obsidian vault into a Clew import package |
-| `.agents/skills/obsidian-to-clew-import/` | Codex-compatible copy of the Obsidian-to-Clew import skill |
-
-## Development Checks
+Open `http://127.0.0.1:5178`. The browser development build uses the same ChatGPT entry screen. To run the Electron app, install its tooling and start it:
 
 ```bash
-cd frontend && npm run typecheck && npm run build
+npm ci
+npm run dev
+```
+
+For native Windows setup and release builds, see [Desktop development](docs/DESKTOP.md).
+
+```bash
+npm run check:version
+npm run test:desktop
+npm --prefix frontend run typecheck
+npm --prefix frontend run test
+npm --prefix frontend run test:localization
+npm --prefix frontend run build
 PYTHONPATH=backend ./.venv/bin/python -m unittest discover -s backend/tests -v
 ```
 
-Useful helpers:
+## Source map
 
-```bash
-./scripts/dev.sh
-./scripts/stop_dev.sh
-./scripts/reset_db.sh
-```
+| Directory | Owns |
+| --- | --- |
+| `desktop/` | Electron lifecycle, local backend packaging, native builds and release checks |
+| `frontend/src/` | Sign-in, graph workspace, proposal review and study UI |
+| `backend/app/agent/` | ChatGPT authentication, Responses requests and typed tools |
+| `backend/app/services/` | SQLite repository, snapshots, validation and grading |
+| `contracts/` | Graph operation and proposal contracts |
+| `docs/` | Engineering documentation |
+| `docs/site_faq/` | Product documentation source |
 
-## Open Source
-
-- [Contributing guide](CONTRIBUTING.md)
-- [MIT License](LICENSE)
-
-## Contact
-
-- Email: [aleksandr.hum.hackcode@gmail.com](mailto:aleksandr.hum.hackcode@gmail.com)
-- LinkedIn: [aleksandr-h-037b00377](https://www.linkedin.com/in/aleksandr-h-037b00377/)
+Read [Architecture](docs/ARCHITECTURE.md) and [Project Context](docs/agents/PROJECT_CONTEXT.md) before changing product behavior.

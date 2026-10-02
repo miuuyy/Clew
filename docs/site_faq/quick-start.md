@@ -10,38 +10,26 @@ It gives you a clear path to anything you want to learn, with AI doing the heavy
 
 ## What You Need
 
-- a ChatGPT **Plus** or **Pro** plan for the AI features
-- Python 3.11 or newer
-- Node.js 20 or newer
-- macOS or Linux (on Windows, use WSL)
-- an OS credential store: Keychain on macOS, Secret Service on Linux
+- Windows x64, macOS 13+ (Apple Silicon or Intel), or Linux (x64 or arm64)
+- a ChatGPT **Plus** or **Pro** plan
+- on Linux, a desktop session with Secret Service and D-Bus
 
-There is no account to create and no API key to copy.
+There is no Clew account to create, API key to copy, or Python/Node installation required.
 
 ## Install And Run
 
-```bash
-git clone https://github.com/miuuyy/Clew.git
-cd Clew
-cp .env.example .env
-./scripts/dev.sh
-```
+Download your platform's installer from [GitHub Releases](https://github.com/miuuyy/Clew/releases/latest). Open Clew and select **Continue with ChatGPT**. Finish sign-in in your browser and allow Clew to use your plan.
 
-The script creates a Python virtual environment, installs the frontend, and starts both servers:
-
-- workspace: `http://127.0.0.1:5178`
-- local API: `http://127.0.0.1:8787`
-
-Stop everything with `./scripts/stop_dev.sh`.
+macOS builds are ad-hoc signed without Apple notarization; Windows builds are unsigned. See the [installation notes](https://github.com/miuuyy/Clew/blob/main/docs/DESKTOP.md) for platform details. Developers can still run the source checkout.
 
 ## Sign In With ChatGPT
 
-Open **Settings → ChatGPT → Sign in with ChatGPT**. Your browser opens the OpenAI consent page; approve it and you land back in Clew.
-
-- Clew runs the agent on your ChatGPT plan. Usage counts against that plan.
-- Tokens are stored in your OS credential store, never in a plain file.
-- Set a weekly limit for Clew in ChatGPT **Settings → Usage → App limits**.
-- The graph works before you sign in. Only the assistant needs it.
+- Sign-in and plan usage permission are required to enter the app.
+- Usage counts against your existing ChatGPT plan.
+- Tokens stay in your OS credential store.
+- Set a weekly limit in **ChatGPT → Settings → Usage → App limits**.
+- GitHub stars and X follows are optional.
+- Signing out returns to onboarding; your local graphs remain saved.
 
 ## The First Good Session
 

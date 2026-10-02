@@ -9,7 +9,7 @@ export const ASSISTANT_COLLAPSE_THRESHOLD = 210;
 export const APP_NAME = "Clew";
 export const APP_TAGLINE = "AI-native workspace for structured learning";
 export const APP_FAVICON_LIGHT_SRC = "/clew-favicon-light-accent.png";
-export const APP_FAVICON_DARK_SRC = "/clew-favicon-dark.png";
+export const APP_FAVICON_DARK_SRC = "/clew-mark.svg";
 
 export type MemoryMode = "balanced" | "max" | "custom";
 

@@ -240,8 +240,8 @@ _services: dict[Path, DebugLogService] = {}
 _services_lock = threading.Lock()
 
 
-def get_debug_log_service(root_dir: Path) -> DebugLogService:
-    file_path = root_dir / "logs" / "logs.log"
+def get_debug_log_service(log_dir: Path) -> DebugLogService:
+    file_path = log_dir / "logs.log"
     with _services_lock:
         service = _services.get(file_path)
         if service is None:

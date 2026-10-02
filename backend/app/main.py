@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import hmac
 import time
 import traceback
 
@@ -15,6 +16,7 @@ from app.api.deps import get_repository
 from app.agent.runtime import AgentRuntime
 from app.core.config import Settings, get_settings
 from app.services.debug_log_service import get_debug_log_service
+from app.agent.chatgpt_auth import ChatGPTError
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -28,9 +30,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await runtime.close()
 
-    app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan, docs_url=None, redoc_url=None)
     app.dependency_overrides[get_settings] = lambda: settings
-    debug_logs = get_debug_log_service(settings.root_dir)
+    debug_logs = get_debug_log_service(settings.debug_log_dir)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],
@@ -38,6 +40,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def local_access(request: Request, call_next):
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        if request.url.path.startswith("/api/"):
+            if settings.desktop_token and not hmac.compare_digest(
+                request.headers.get("x-clew-session", "").encode("utf-8"), settings.desktop_token.encode("utf-8")
+            ):
+                return JSONResponse(status_code=403, content={"detail": "This request is not from the Clew desktop app."})
+            if not request.url.path.startswith("/api/v1/chatgpt/"):
+                try:
+                    await request.app.state.agent_runtime.auth.access_token()
+                except ChatGPTError as exc:
+                    return JSONResponse(status_code=503 if exc.retryable else 401,
+                                        content={"detail": str(exc), "code": exc.code})
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        if settings.desktop_token and not request.url.path.startswith("/auth/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; "
+                "worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+            )
+        if request.url.path.startswith(("/api/", "/auth/")):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.exception_handler(RepositoryConflictError)
     async def conflict_error(request: Request, exc: RepositoryConflictError):

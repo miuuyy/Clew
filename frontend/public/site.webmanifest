@@ -8,14 +8,9 @@
   "theme_color": "#050505",
   "icons": [
     {
-      "src": "/clew-favicon-light-accent.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/clew-favicon-light-accent.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/clew-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

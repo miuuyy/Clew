@@ -1,8 +1,8 @@
 import type { AgentControls } from "./assistant/AgentInteraction";
 import React from "react";
-import { BookBookmark, BugBeetle, CaretDown, CaretLeft, CaretRight, ChatCircleDots, Check, CrosshairSimple, DownloadSimple, GearSix, List, PencilSimple, Plus, SquaresFour, X } from "@phosphor-icons/react";
+import { BookBookmark, BugBeetle, CaretDown, CaretLeft, CaretRight, ChatCircleDots, CrosshairSimple, DownloadSimple, GearSix, PencilSimple, Plus, SquaresFour, X } from "@phosphor-icons/react";
 
-import { APP_NAME, ASSISTANT_MIN_WIDTH, type AuthSessionPayload, type GraphChatState, type ThemeMode, type WorkspaceSurfacePayload } from "../lib/appContracts";
+import { APP_NAME, ASSISTANT_MIN_WIDTH, type GraphChatState, type ThemeMode, type WorkspaceSurfacePayload } from "../lib/appContracts";
 import { API_BASE } from "../lib/api";
 import {
   LIGHT_DESKTOP_LAYOUT_STORAGE_KEY,
@@ -17,7 +17,8 @@ import {
   type FloatingWindowPosition,
   type StoredLightDesktopLayout,
 } from "../lib/floatingDesktopLayout";
-import { renderDisplayText, safeExternalUrl, userInitials, type ManualLayoutPositions, type PopoverPosition, type apiFetch } from "../lib/appUiHelpers";
+import { readErrorMessage, type apiFetch } from "../lib/apiRequest";
+import { renderDisplayText, safeExternalUrl, type ManualLayoutPositions, type PopoverPosition } from "../lib/appUiHelpers";
 import type { AppCopy } from "../lib/appCopy";
 import { formatMinutes, formatTopicState, getTopicStateTone } from "../lib/graph";
 import { useModalAccessibility } from "../lib/useModalAccessibility";
@@ -27,8 +28,8 @@ import { AssistantModelMenuTrigger, LightChatWindow, LightWorkspaceWindow, Topic
 import { AssistantComposer } from "./assistant/AssistantComposer";
 import { AssistantSessionList } from "./assistant/AssistantSessionList";
 import { AssistantThread } from "./assistant/AssistantThread";
-import { ClewLoader } from "./ClewLoader";
 import { TopStatsOverlay } from "./TopStatsOverlay";
+import { ClewLogo } from "./ClewLogo";
 import type { GraphViewMode } from "./WorkspaceShellOverlayControls";
 import type {
   Artifact,
@@ -140,7 +141,6 @@ type WorkspaceChromeProps = {
   overlayLeftOffset: number;
   overlayRightOffset: number;
   floatingStatsRef: React.RefObject<HTMLDivElement | null>;
-  sessionUser: AuthSessionPayload["user"];
   isSettingsOpen: boolean;
   debugModeEnabled: boolean;
   themeMode: ThemeMode;
@@ -295,7 +295,6 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
     overlayLeftOffset,
     overlayRightOffset,
     floatingStatsRef,
-    sessionUser,
     isSettingsOpen,
     debugModeEnabled,
     themeMode,
@@ -833,10 +832,12 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic_id: selectedTopicId, title: selectedTopic.title }),
       });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error(await readErrorMessage(response, copy.errors.loadChatSessions));
       const session = await response.json();
       setActiveSessionId(session.session_id);
       void loadSessions();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : copy.errors.loadChatSessions);
     } finally {
       createTopicSessionPendingRef.current = false;
     }
@@ -894,7 +895,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
       <aside className={`leftSidebar ${sidebarVisible ? "leftSidebarVisible" : "leftSidebarCollapsed"} ${leftSidebarClosing ? "leftSidebarClosing" : ""}`}>
         <div className="sidebarHeader">
           <div className="sidebarBrand" aria-label={`${APP_NAME} brand`}>
-            <span className="sidebarBrandMark" aria-hidden="true" />
+            <ClewLogo className="sidebarBrandMark" size={96} />
           </div>
           <button className="sidebarToggleBtn" onClick={closeSidebar} title={copy.sidebar.closeSidebar}>
             <CaretLeft size={16} weight="bold" />
@@ -1021,7 +1022,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
           </button>
           <a
             className="sidebarAccountTrigger sidebarAccountLink"
-            href="https://clew.my/how-to-use"
+            href="https://clew.my/docs"
             target="_blank"
             rel="noreferrer"
           >
@@ -1559,7 +1560,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                 className="lightDock lightFloatingWindowEnter"
                 style={{ left: `${dockPosition.x}px`, top: `${dockPosition.y}px` }}
               >
-                <div className="lightDockGrip" onPointerDown={(event) => beginFloatingDrag("dock", event)} />
+                <div className="lightDockGrip" onPointerDown={(event) => beginFloatingDrag("dock", event)}><ClewLogo size={24} /></div>
                 <button
                   className={`lightDockButton ${lightWorkspacePanelOpen ? "lightDockButtonActive" : ""}`}
                   onClick={toggleExperimentalWorkspaceWindow}
@@ -1579,7 +1580,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                 <button className={`lightDockButton ${isSettingsOpen ? "lightDockButtonActive" : ""}`} onClick={openConfigurationSettings} title={copy.shell.configuration} type="button">
                   <GearSix size={21} weight={getDockIconWeight(isSettingsOpen)} />
                 </button>
-                <a className="lightDockButton lightDockButtonLink" href="https://clew.my/how-to-use" rel="noreferrer" target="_blank" title={copy.sidebar.documentation}>
+                <a className="lightDockButton lightDockButtonLink" href="https://clew.my/docs" rel="noreferrer" target="_blank" title={copy.sidebar.documentation}>
                   <BookBookmark size={21} weight={getDockIconWeight(false)} />
                 </a>
                 {debugModeEnabled ? (

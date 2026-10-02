@@ -2,7 +2,7 @@
 
 Thanks for wanting to contribute.
 
-Clew is a graph-first learning workspace, so good contributions usually make the product clearer, calmer, and more trustworthy for real study. The best changes strengthen the graph surface, provider seam, study flow, or repository clarity without turning the project into generic dashboard software.
+Clew is a graph-first learning workspace, so good contributions usually make the product clearer, calmer, and more trustworthy for real study. The best changes strengthen the graph surface, ChatGPT connection, study flow, or repository clarity without turning the project into generic dashboard software.
 
 ## Before you start
 
@@ -20,7 +20,7 @@ Strong contribution areas include:
 
 - graph workspace UX
 - proposal review and rollback flows
-- provider integrations
+- ChatGPT connection and plan usage
 - import and export improvements
 - quiz and closure quality
 - architecture cleanup that preserves product boundaries
@@ -50,10 +50,14 @@ Open:
 - frontend: `http://127.0.0.1:5178`
 - backend: `http://127.0.0.1:8787`
 
-You only need one provider key:
+A ChatGPT Plus or Pro plan and OS credential store are required for live authentication. Tests use explicit isolated peers and do not require your account. See [Desktop](docs/DESKTOP.md) for native Windows development and packaging.
 
-- `KG_GEMINI_API_KEY`
-- or `KG_OPENAI_API_KEY`
+Desktop changes also require `npm run test:desktop` and a native packaged smoke
+on the changed target. Build each package on its matching OS/architecture;
+cross-packaging a native Python backend is rejected. See
+[release validation](docs/DESKTOP_RELEASE_VALIDATION.md) for the launch contract,
+Linux build tools and the separate live-account checks. Tag builds prepare a
+draft release; publication belongs to the maintainer.
 
 ## Development workflow
 
@@ -64,7 +68,7 @@ Use a descriptive branch name:
 ```bash
 git checkout -b fix/graph-overlay-layout
 git checkout -b docs/rewrite-readme
-git checkout -b feat/custom-provider
+git checkout -b feat/graph-import
 ```
 
 ### 2. Make the change
@@ -81,7 +85,10 @@ If you touch agent or proposal behavior, keep these repository boundaries in min
 ### 3. Run checks
 
 ```bash
-cd frontend && npm run typecheck && npm run build
+npm ci
+npm run check:version
+npm run test:desktop
+cd frontend && npm run typecheck && npm run test && npm run test:localization && npm run build
 cd ..
 PYTHONPATH=backend ./.venv/bin/python -m unittest discover -s backend/tests -v
 ```

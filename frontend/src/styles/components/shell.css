@@ -44,14 +44,6 @@
 
 :root[data-theme="light"] .lightDockGrip { color: var(--ui-accent); }
 
-.lightDockGrip::before {
-  content: "";
-  width: 24px;
-  height: 24px;
-  background: currentColor;
-  -webkit-mask: url("/clew-mark.png") center / contain no-repeat;
-  mask: url("/clew-mark.png") center / contain no-repeat;
-}
 
 .lightDockGrip::after {
   content: "";

@@ -82,7 +82,7 @@ MCP exposes the local graph as read-only context for external assistants.
 
 Both integrations follow the same product rule: they support the graph, they do not replace it.
 
-## 7. Everything Stays On Your Machine
+## 7. Local Storage And AI Requests
 
 The open-source edition uses:
 
@@ -93,6 +93,9 @@ The open-source edition uses:
 - local graph packages
 
 There is no Clew account and no Clew server.
+
+Graphs and conversations are stored locally. When you use AI, scoped learning
+context and the conversation are sent to OpenAI under your ChatGPT plan.
 
 In one sentence:
 

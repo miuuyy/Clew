@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags: ['v1.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: x64
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+          - runner: ubuntu-22.04
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix frontend ci
+          python -m pip install -e backend -r desktop/requirements.txt
+      - name: Locate Python
+        shell: bash
+        run: python -c "import sys; print('CLEW_PYTHON=' + sys.executable)" >> "$GITHUB_ENV"
+      - name: Verify
+        shell: bash
+        run: |
+          npm run check:version
+          npm run test:desktop
+          npm --prefix frontend run test
+          npm --prefix frontend run test:localization
+          PYTHONPATH=backend python -m unittest discover -s backend/tests -v
+          npm audit --audit-level=high
+          npm --prefix frontend audit --audit-level=high
+      - name: Install native Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ruby ruby-dev meson ninja-build pkg-config binutils libglib2.0-dev libgdk-pixbuf-2.0-dev xvfb libgtk-3-0 libnss3 libsecret-1-0 libxss1 libxtst6 libnotify4
+          sudo gem install fpm -v 1.17.0 --no-document
+      - name: Prepare native Linux libraries and packaging tools
+        if: runner.os == 'Linux'
+        run: node desktop/scripts/prepare-linux.cjs
+      - name: Package
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run package -- --${{ matrix.arch }} --publish never
+      - name: Verify Linux AppImage ABI and launcher
+        if: runner.os == 'Linux'
+        run: node desktop/scripts/verify-linux.cjs
+      - name: Install and smoke native Debian package
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          package="desktop/artifacts/Clew-$(node -p 'require("./package.json").version')-linux-${{ matrix.arch }}.deb"
+          sudo apt-get install -y "./$package"
+          executable="$(dpkg-deb --contents "$package" | awk '$NF ~ /\/clew$/ { print $NF }')"
+          test -n "$executable"
+          executable="/${executable#./}"
+          test -x "$executable"
+          CLEW_SMOKE_EXECUTABLE="$executable" xvfb-run -a npm run smoke:package
+      - name: Smoke AppImage launcher where user namespaces are available
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          if unshare -Ur true 2>/dev/null; then
+            artifact="$(find "$PWD/desktop/artifacts" -maxdepth 1 -name '*-linux-${{ matrix.arch }}.AppImage' -print -quit)"
+            test -n "$artifact"
+            stage="$(mktemp -d)"
+            trap 'rm -rf "$stage"' EXIT
+            (cd "$stage" && "$artifact" --appimage-extract >/dev/null)
+            CLEW_SMOKE_EXECUTABLE="$stage/squashfs-root/AppRun" xvfb-run -a npm run smoke:package
+          else
+            echo 'This runner restricts user namespaces; installed Debian smoke and AppImage ABI validation are the Linux gates.'
+          fi
+      - name: Smoke Windows and macOS packages
+        if: runner.os != 'Linux'
+        run: npm run smoke:package
+      - name: Verify macOS bundle signature
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          bundle="$(find desktop/artifacts -maxdepth 2 -name Clew.app -print -quit)"
+          test -n "$bundle"
+          codesign --verify --deep --strict "$bundle"
+          archive="$(find desktop/artifacts -maxdepth 1 -name '*-mac-${{ matrix.arch }}.zip' -print -quit)"
+          test -n "$archive"
+          stage="$(mktemp -d)"
+          trap 'rm -rf "$stage"' EXIT
+          ditto -x -k "$archive" "$stage"
+          codesign --verify --deep --strict "$stage/Clew.app"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clew-${{ runner.os }}-${{ matrix.arch }}
+          path: |
+            desktop/artifacts/*.dmg
+            desktop/artifacts/*.zip
+            desktop/artifacts/*.exe
+            desktop/artifacts/*.AppImage
+            desktop/artifacts/*.deb
+            desktop/artifacts/*.yml
+            desktop/artifacts/*.blockmap
+            desktop/artifacts/smoke-*.json
+            desktop/artifacts/smoke-*.png
+          if-no-files-found: error
+
+  prepare-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node desktop/scripts/collect-release.cjs downloaded-artifacts release-assets --complete
+      - name: Verify release version and artifacts
+        run: |
+          test "$GITHUB_REF_NAME" = "v$(jq -r .version package.json)"
+          test -n "$(find release-assets -name '*.exe' -print -quit)"
+          test -n "$(find release-assets -name '*mac-arm64.dmg' -print -quit)"
+          test -n "$(find release-assets -name '*mac-x64.dmg' -print -quit)"
+          test -n "$(find release-assets -name '*linux-x64.AppImage' -print -quit)"
+          test -n "$(find release-assets -name '*linux-arm64.AppImage' -print -quit)"
+          cp LICENSE release-assets/LICENSE
+          cp docs/releases/1.0.0.md release-assets/RELEASE_NOTES.md
+          cd release-assets
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: Prepare draft for owner publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/* --repo "$GITHUB_REPOSITORY" \
+            --title "Clew ${GITHUB_REF_NAME#v}" --notes-file docs/releases/1.0.0.md --draft

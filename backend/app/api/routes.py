@@ -362,11 +362,16 @@ def submit_topic_quiz(
         raise HTTPException(status_code=400, detail="quiz session does not match graph/topic route")
 
     answers = {answer.question_id: answer.choice_index for answer in request.answers}
-    attempt, _, awarded_state, reviews = quiz_service.grade_session(graph, session, answers)
-    workspace = repository.record_quiz_attempt(graph_id, attempt, awarded_state)
+    if len(answers) != len(request.answers):
+        raise HTTPException(status_code=400, detail="A quiz question may only be answered once.")
+    try:
+        attempt, _, awarded_state, reviews = quiz_service.grade_session(graph, session, answers)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    workspace = repository.record_quiz_attempt(graph_id, attempt, awarded_state,
+                                              base_graph_version=graph.version, session_id=session.session_id)
     updated_graph = next(item for item in workspace.workspace.graphs if item.graph_id == graph_id)
     closure_status = quiz_service.build_closure_status(updated_graph, topic_id)
-    repository.delete_quiz_session(request.session_id)
     repository.append_event(
         "graph.quiz.submitted",
         {
