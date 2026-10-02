@@ -4,7 +4,7 @@ Validated on 2 October 2026. The existing graph workspace is preserved; the desk
 
 ## Local evidence
 
-- 142 backend tests, 119 frontend tests and 17 desktop contract tests pass. TypeScript, localization, versions, workflow syntax and dependency audits pass.
+- 142 backend tests, 119 frontend tests and 20 desktop contract tests pass. TypeScript, localization, versions, workflow syntax and dependency audits pass.
 - The macOS arm64 package launches twice with isolated data. Secure `clew://app` origin, private API access, storage persistence, native atomic export, sandbox and graceful backend shutdown pass.
 - The actual SVG loads and stays white on black onboarding, including when a light workspace preference was saved. Native icons derive from the same SVG.
 - Real ChatGPT authorization, a five-model catalog and a completed assistant reply were verified with the public mathematics demo. Its graph snapshot stayed unchanged.

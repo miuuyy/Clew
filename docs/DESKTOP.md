@@ -81,6 +81,11 @@ npm run smoke:package
 
 Build on the matching OS and architecture: PyInstaller embeds a native Python runtime. Cross-compiling only the Electron window does not produce a usable backend. Set `CLEW_PYTHON` when using an environment other than `.venv`.
 
+macOS packaging requires cryptography with statically linked OpenSSL. Apple
+Silicon wheels provide this; Intel builds may need compilation with Xcode tools,
+Rust and `OPENSSL_STATIC=1`. The build rejects dynamic OpenSSL bindings before
+freezing. Follow the [macOS source-build instructions](DESKTOP_RELEASE_VALIDATION.md#macos-cryptography).
+
 The release workflow builds Windows x64, macOS arm64/x64, and Linux x64/arm64.
 Each job checks the native package, onboarding, stable storage, renderer isolation,
 API boundary, export helper and shutdown. macOS signatures are verified. Linux

@@ -11,6 +11,10 @@ const architectures = { arm64: ['arm64', 'aarch64'], x64: ['x86_64', 'amd64'] };
 if (!architectures[process.arch]?.includes(pythonArch) || (process.platform === 'win32' && process.arch !== 'x64')) {
   throw new Error(`Build with native Python and Node on a supported target: Node=${process.platform}/${process.arch}, Python=${pythonArch}.`);
 }
+if (process.platform === 'darwin') {
+  const extensions = require('./check-cryptography.cjs').verifyMacCryptography(python);
+  console.log(`macOS cryptography preflight: ${extensions.length} native extension(s), no dynamic OpenSSL bindings.`);
+}
 fs.rmSync(path.join(root, 'desktop/build/licenses'), { recursive: true, force: true });
 execFileSync(python, [path.join(root, 'desktop/scripts/notices.py'), path.join(root, 'desktop/build/licenses')], { cwd: root, stdio: 'inherit' });
 execFileSync(process.execPath, [path.join(root, 'desktop/scripts/notices.cjs'), path.join(root, 'desktop/build/licenses')], { cwd: root, stdio: 'inherit' });

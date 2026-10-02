@@ -83,6 +83,43 @@ five successful final smoke receipts/screenshots. It stages the output only
 after validation. SHA256SUMS covers the resulting release assets. Tag runs
 prepare a draft; the owner publishes it after integration and live validation.
 
+## macOS cryptography
+
+Cryptography's native extensions must contain their own static OpenSSL. The
+Apple Silicon wheel already does. Cryptography 50.0.2 has no Intel macOS wheel,
+so pip compiles it from source there. A default Homebrew build links dynamically
+to Homebrew OpenSSL. Python's `_ssl` may use a different OpenSSL with the same
+`libssl.3.dylib`/`libcrypto.3.dylib` filenames; PyInstaller's destination-name
+deduplication cannot preserve both. Static cryptography keeps those two
+dependencies separate. Python's own dynamic SSL libraries remain bundled.
+
+Build Intel cryptography following its [upstream static-build instructions](https://cryptography.io/en/latest/installation/#building-cryptography-on-macos).
+Install Xcode command-line tools, a supported Rust toolchain and native Homebrew
+`openssl@3`. Set `OPENSSL_STATIC=1` and `MACOSX_DEPLOYMENT_TARGET=13.0` before the
+dependency install. `OPENSSL_DIR="$(brew --prefix openssl@3)"` explicitly selects
+the native Homebrew prefix. Use `--no-cache-dir --no-binary=cryptography` to avoid
+reusing a previously compiled dynamic wheel.
+
+For an existing `.venv`, rebuild exactly its installed cryptography version:
+
+```bash
+crypto_version=$(./.venv/bin/python -c 'import importlib.metadata; print(importlib.metadata.version("cryptography"))')
+env OPENSSL_STATIC=1 MACOSX_DEPLOYMENT_TARGET=13.0 \
+  OPENSSL_DIR="$(brew --prefix openssl@3)" \
+  ./.venv/bin/python -m pip install --force-reinstall --no-deps \
+  --no-cache-dir --no-binary=cryptography "cryptography==$crypto_version"
+npm run package
+npm run smoke:package
+```
+
+`build-backend.cjs` inspects every installed cryptography native extension with
+`/usr/bin/otool -L` before PyInstaller runs. Missing/uninspectable extensions or
+any dynamic `libssl`/`libcrypto` dependency fail the build with an explicit error.
+Changing an environment variable after installation does not relink a binary.
+The gate neither reinstalls packages nor changes runtime security. A passing
+preflight still requires the packaged startup smoke and signature checks on a
+native Intel host; Apple Silicon execution does not prove Intel startup.
+
 ## Linux native tools
 
 CI baselines are Ubuntu 22.04 x64 and Ubuntu 24.04 arm64. Debian installation is
