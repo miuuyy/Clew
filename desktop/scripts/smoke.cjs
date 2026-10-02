@@ -14,11 +14,15 @@ fs.mkdirSync(folder, { recursive: true });
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'clew-package-smoke-'));
 const report = path.join(folder, `smoke-${process.platform}-${process.arch}.json`);
 const value = crypto.randomBytes(16).toString('hex');
+const environment = { ...process.env };
+for (const key of Object.keys(environment)) {
+  if (key.toUpperCase() === 'ELECTRON_RUN_AS_NODE') delete environment[key];
+}
 try {
   for (const phase of ['write', 'read']) {
     fs.rmSync(report, { force: true });
     const result = spawnSync(executable, [], { timeout: 60000, stdio: 'inherit',
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '', CLEW_SMOKE_REPORT: report, CLEW_SMOKE_DATA_DIR: dataDir,
+      env: { ...environment, CLEW_SMOKE_REPORT: report, CLEW_SMOKE_DATA_DIR: dataDir,
         CLEW_SMOKE_STORAGE_PHASE: phase, CLEW_SMOKE_STORAGE_VALUE: value } });
     if (result.error) throw result.error;
     if (result.status !== 0 || !fs.existsSync(report)) throw new Error(`Packaged app smoke failed (${result.status}). Diagnostics: ${dataDir}`);
