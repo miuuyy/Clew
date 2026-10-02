@@ -52,7 +52,7 @@ async function collectRelease(source, destination, { complete = false, version =
         if (files.has(item.url)) throw new Error(`Duplicate update asset: ${item.url}`);
         const os = name === 'latest-mac.yml' ? 'mac' : name === 'latest.yml' ? 'win' : 'linux';
         const arch = name === 'latest-linux-arm64.yml' ? ['arm64'] : name === 'latest-mac.yml' ? ['arm64', 'x64'] : ['x64'];
-        const extensions = os === 'mac' ? ['zip', 'dmg'] : os === 'win' ? ['exe'] : ['AppImage'];
+        const extensions = os === 'mac' ? ['zip', 'dmg'] : os === 'win' ? ['exe'] : ['AppImage', 'deb'];
         const names = arch.flatMap(a => extensions.map(ext => `Clew-${version}-${os}-${a}.${ext}`));
         if (!names.includes(item.url)) throw new Error(`Wrong platform asset in ${name}: ${item.url}`);
         if (fs.statSync(asset).size !== item.size || await sha512(asset) !== item.sha512) throw new Error(`Update asset checksum or size mismatch: ${item.url}`);

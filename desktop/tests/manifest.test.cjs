@@ -51,3 +51,32 @@ test('release merge rejects corrupted assets, traversal and missing targets befo
     await assert.rejects(collectRelease(source, path.join(root, 'out')), /Duplicate/);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test('Linux manifests retain verified AppImage and Debian downloads for each architecture', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'clew-linux-manifest-'));
+  try {
+    const source = path.join(root, 'source');
+    for (const arch of ['x64', 'arm64']) {
+      const folder = path.join(source, arch);
+      fs.mkdirSync(folder, { recursive: true });
+      const files = ['AppImage', 'deb'].map(extension => {
+        const url = `Clew-1.0.0-linux-${arch}.${extension}`;
+        const body = `${arch}-${extension}`;
+        fs.writeFileSync(path.join(folder, url), body);
+        return { url, size: Buffer.byteLength(body), sha512: crypto.createHash('sha512').update(body).digest('base64') };
+      });
+      fs.writeFileSync(path.join(folder, arch === 'x64' ? 'latest-linux.yml' : 'latest-linux-arm64.yml'),
+        stringify({ version: '1.0.0', files, path: files[0].url, sha512: files[0].sha512 }));
+    }
+    const output = path.join(root, 'output');
+    await collectRelease(source, output);
+    for (const arch of ['x64', 'arm64']) {
+      const manifest = parse(fs.readFileSync(path.join(output, arch === 'x64' ? 'latest-linux.yml' : 'latest-linux-arm64.yml'), 'utf8'));
+      assert.deepEqual(manifest.files.map(file => file.url), [`Clew-1.0.0-linux-${arch}.AppImage`, `Clew-1.0.0-linux-${arch}.deb`]);
+      assert.equal(manifest.path, manifest.files[0].url);
+    }
+    fs.writeFileSync(path.join(source, 'arm64', 'Clew-1.0.0-linux-arm64.deb'), 'corrupt');
+    await assert.rejects(collectRelease(source, path.join(root, 'rejected')), /checksum or size mismatch/);
+    assert.equal(fs.existsSync(path.join(root, 'rejected')), false);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
