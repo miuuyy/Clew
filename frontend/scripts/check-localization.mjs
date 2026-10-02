@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const COPY_TARGET = {
@@ -101,7 +102,7 @@ function validateCopy(projectRoot, descriptor) {
   return errors.map((message) => `${descriptor.file}: ${message}`);
 }
 
-const projectRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const failures = validateCopy(projectRoot, COPY_TARGET);
 
 if (failures.length > 0) {

@@ -59,7 +59,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential ruby ruby-dev meson ninja-build pkg-config binutils libglib2.0-dev libgdk-pixbuf-2.0-dev xvfb libgtk-3-0 libnss3 libsecret-1-0 libxss1 libxtst6 libnotify4
+          sudo apt-get install -y build-essential ruby ruby-dev ninja-build pkg-config binutils libglib2.0-dev libgdk-pixbuf-2.0-dev xvfb libgtk-3-0 libnss3 libsecret-1-0 libxss1 libxtst6 libnotify4
           sudo gem install fpm -v 1.17.0 --no-document
       - name: Prepare native Linux libraries and packaging tools
         if: runner.os == 'Linux'
