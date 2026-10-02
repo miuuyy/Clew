@@ -23,7 +23,7 @@ module.exports = {
   win: { icon: 'desktop/assets/icon.png', target: ['nsis'] },
   nsis: { oneClick: false, perMachine: false, allowElevation: false, allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true, createStartMenuShortcut: true, deleteAppDataOnUninstall: false },
-  linux: { category: 'Education', icon: 'desktop/assets/icon.png', executableName: 'clew', target: ['AppImage', 'deb'],
+  linux: { category: 'Education', icon: 'desktop/assets/icon.png', executableName: 'clew', syncDesktopName: true, target: ['AppImage', 'deb'],
     // Builder's ${arch} expands to x86_64 for AppImage and amd64 for Debian.
     // Native-host validation lets every format use the same public x64/arm64 name.
     artifactName: `Clew-\${version}-linux-${process.arch}.\${ext}`,

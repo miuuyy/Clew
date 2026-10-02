@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "A graph-first learning workspace powered by your ChatGPT plan.",
-  "author": "Aleksandr Vechenkov",
+  "author": { "name": "Aleksandr Vechenkov", "email": "147659719+miuuyy@users.noreply.github.com" },
+  "desktopName": "clew",
   "license": "MIT",
   "main": "desktop/main.cjs",
   "repository": {
