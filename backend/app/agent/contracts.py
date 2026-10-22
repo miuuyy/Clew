@@ -20,9 +20,9 @@ class ProposalResourceDraft(ToolInput):
 
 
 class ProposalTopicDraft(ToolInput):
-    id: str
+    id: str = Field(description="Stable topic ID. Reuse an existing ID for an edit; choose a new ID for a new topic.")
     title: str
-    slug: str
+    slug: str = Field(description="Short URL-style topic name, for example linear-algebra.")
     description: str = ""
     difficulty: float = 0.0
     estimated_minutes: int = 0
@@ -34,8 +34,8 @@ class ProposalTopicDraft(ToolInput):
 
 class ProposalEdgeDraft(ToolInput):
     id: str
-    source_topic_id: str
-    target_topic_id: str
+    source_topic_id: str = Field(description="For requires, the prerequisite topic ID.")
+    target_topic_id: str = Field(description="For requires, the topic that needs the prerequisite.")
     relation: EdgeRelation = "requires"
     rationale: str = ""
     weight: float = 1.0
@@ -44,11 +44,16 @@ class ProposalEdgeDraft(ToolInput):
 class ProposalZoneDraft(ToolInput):
     id: str
     title: str
-    kind: str
+    kind: str = Field(description="A descriptive region type such as module, foundation or project. Free text, not an enum.")
     topic_ids: list[str] = Field(default_factory=list)
 
 
 class GraphOperationDraft(ToolInput):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, json_schema_extra={"examples": [
+        {"op_id": "add-algebra", "op": "upsert_topic", "entity_kind": "topic", "topic": {"id": "algebra", "title": "Algebra", "slug": "algebra"}},
+        {"op_id": "connect", "op": "upsert_edge", "entity_kind": "edge", "edge": {"id": "algebra-to-matrices", "source_topic_id": "algebra", "target_topic_id": "matrices", "relation": "requires"}},
+        {"op_id": "group", "op": "upsert_zone", "entity_kind": "zone", "zone": {"id": "foundations", "title": "Foundations", "kind": "module", "topic_ids": ["algebra", "matrices"]}},
+    ]})
     op_id: str = Field(min_length=1)
     op: Literal["upsert_topic", "upsert_edge", "upsert_zone"]
     entity_kind: Literal["topic", "edge", "zone"]
@@ -78,7 +83,7 @@ class ProposalDraft(ToolInput):
     assumptions: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     open_questions: list[ProposalOpenQuestion] = Field(default_factory=list)
-    operations: list[GraphOperationDraft] = Field(default_factory=list)
+    operations: list[GraphOperationDraft] = Field(default_factory=list, description="Graph edits. Each operation has one matching payload: upsert_topic/topic/topic, upsert_edge/edge/edge, or upsert_zone/zone/zone. Use draft fields only, not stored-topic artifacts or metadata.")
 
 
 class InlineQuizDraft(ToolInput):

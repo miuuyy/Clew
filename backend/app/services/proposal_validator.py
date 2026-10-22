@@ -107,10 +107,6 @@ class ProposalValidator:
                     errors.append(
                         f"{operation.op_id}: zone {operation.zone.id} references unknown topics: {', '.join(sorted(unknown_zone_topic_ids))}"
                     )
-                if len(operation.zone.topic_ids) < 2 and operation.zone.id not in existing_zone_ids:
-                    warnings.append(
-                        "Some proposed zones only cover one topic; zones should usually represent larger learning regions."
-                    )
                 continue
 
         if not errors:

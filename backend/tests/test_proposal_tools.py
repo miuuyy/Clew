@@ -94,6 +94,14 @@ class ProposalToolTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown zones"):
             self.prepare(self.draft(zones=["nonexistent-zone"]))
 
+    def test_single_topic_zone_is_valid_without_editorial_warning(self):
+        draft = ProposalDraft.model_validate({"base_graph_version": self.repo.graph(self.graph_id).version,
+            "summary": "Group a topic", "operations": [{"op_id": "zone", "op": "upsert_zone", "entity_kind": "zone",
+            "zone": {"id": "arithmetic-foundation", "title": "Arithmetic", "kind": "module", "topic_ids": ["arithmetics"]}}]})
+        proposal = self.prepare(draft)
+        self.assertTrue(proposal.apply_plan.validation.ok)
+        self.assertEqual(proposal.apply_plan.validation.warnings, [])
+
     def test_model_cannot_award_completion_to_new_topic(self):
         with self.assertRaisesRegex(ValueError, "not_started"):
             self.prepare(self.draft(id="new-topic", state="mastered"))
