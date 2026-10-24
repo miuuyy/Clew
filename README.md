@@ -2,15 +2,13 @@
 
 [Try in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6ac57ed8716c8191a3405a8cea2a0d7e) · [Download desktop](https://github.com/miuuyy/Clew/releases/latest) · [Docs](https://clew.my/docs) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)
 
-**Generate a learning map. Click any topic. Follow the thread.**
+**An AI learning harness built around an interactive knowledge graph.**
 
 [![Clew in ChatGPT: a learning graph taking shape, topic navigation, and starting a practice test](.github/readme-assets/chatgpt-demo.gif)](https://github.com/miuuyy/Clew/raw/refs/heads/main/.github/readme-assets/chatgpt-demo.mp4)
 
 [Watch the 45-second demo](https://github.com/miuuyy/Clew/raw/refs/heads/main/.github/readme-assets/chatgpt-demo.mp4) · Recorded in the ChatGPT plugin.
 
-Start with what you know and what you want to learn. Clew turns that context into a graph of topics and prerequisites, so you can see what to study next and what stands between you and your goal.
-
-Explore the map with AI, discuss a topic, find resources, and test what you have learned. When your goal changes, ask the assistant to extend or reshape your path. You review its proposed changes before applying them and can return to an earlier version.
+Tell Clew what you already know and what you want to learn. It builds a map of topics and prerequisites, then helps you study along the way. Use it in ChatGPT or in the open-source desktop app.
 
 ## Try Clew
 
@@ -20,24 +18,18 @@ Install the plugin, connect Clew, and tell ChatGPT what you want to learn. For e
 
 > I know basic algebra and want to build my first machine learning project. Create a learning path in Clew, including the foundations I am missing.
 
-Your learning graph opens alongside the conversation. Select topics to explore their prerequisites and resources, discuss your next steps, and review suggested changes in place. Sign in to save your paths in a private workspace hosted by Clew.
+Your learning graph opens alongside the conversation. Sign in to save your paths in a private workspace hosted by Clew.
 
-Prefer a workspace on your own computer? The open-source desktop app stores your graphs locally and includes Obsidian import/export and a read-only MCP server for other assistants. Installation details are below.
+Prefer a workspace on your own computer? The open-source desktop app stores your graphs locally. Installation details are below.
 
-## Why a graph?
+## How it works
 
-A list of resources tells you what you could read. A learning path should also show why a topic matters and what it unlocks.
+1. **Set your starting point and goal.** Tell the assistant what you know and what you want to learn, or bring your own notes.
+2. **Build your map.** Review proposed topics and prerequisites, then apply them. Select any topic to see what you need to learn first and what it unlocks.
+3. **Study and practice.** Discuss topics with AI, find resources, take quizzes, and keep notes and progress attached to your map.
+4. **Adjust as you go.** Ask the assistant to extend or reshape your path. You review each proposed change and can restore an earlier snapshot.
 
-If you want to build a machine learning project, you may need a little Python, some algebra, and a way to evaluate your results. Clew makes those connections visible. Click a topic, follow its prerequisites, and keep your notes and progress attached to the path as you study.
-
-## What you can do
-
-- **Build a path around your goal.** Generate connected topics from what you already know and what you want to learn.
-- **Follow the prerequisites.** Inspect the foundations behind a topic and see what remains before you can move on.
-- **Study with AI.** Discuss topics, find learning resources, and ask questions in the context of your graph.
-- **Check your understanding.** Practice with quizzes and keep track of your progress.
-- **Keep control of your map.** Review AI proposals before applying them and restore earlier snapshots.
-- **Bring your own notes on desktop.** Import an Obsidian vault, export Markdown or a graph, and share read-only context with other assistants through MCP.
+On desktop, you can also import an Obsidian vault, export Markdown or a graph, and share read-only learning context with other assistants through MCP.
 
 ## Install the desktop app
 
@@ -57,15 +49,7 @@ The 1.0.0 downloads are not Developer ID notarized or Authenticode signed. macOS
 
 **Help → Check for Updates** opens the newer release's installer page. Updates are installed manually and retain local data.
 
-### Work through a subject
-
-1. Create a graph from your goal or import an Obsidian vault.
-2. Select a topic to inspect its prerequisites, resources, and notes.
-3. Ask the assistant to explain, quiz you, or expand the graph.
-4. Review a proposal and apply it when the structure makes sense.
-5. Finish a topic through the study workflow. Roll back a snapshot when needed.
-
-The desktop app includes two graph views, Midnight and Paper themes, completion quizzes, Markdown and graph export, and a read-only MCP server for other assistants.
+The desktop app includes two graph views, Midnight and Paper themes, and completion quizzes.
 
 ### Desktop privacy and control
 
