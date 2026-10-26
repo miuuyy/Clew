@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from typing import TYPE_CHECKING
 
@@ -75,23 +74,15 @@ async def execute_tool(runtime: AgentRuntime, run: AgentRun, tool: str, call_id:
                       "message": "The proposal is ready in Clew. The user must accept it before the graph changes."}
         elif tool in {"ask_question", "present_quiz"}:
             interaction_id = f"question-{call_id}"
-            future = asyncio.get_running_loop().create_future()
-            run.interactions[interaction_id] = future
             if isinstance(parsed, QuestionDraft):
                 message.question = AgentQuestion(interaction_id=interaction_id, question=parsed.question, choices=parsed.choices)
             else:
                 assert isinstance(parsed, InlineQuizDraft)
                 message.inline_quiz = InlineChatQuiz(interaction_id=interaction_id, question=parsed.question,
                                                      choices=parsed.choices, correct_index=parsed.correct_index)
-            runtime.publish_message(run, message)
-            runtime.set_state(run, "waiting")
-            try:
-                result = await future
-                # The answer handler persisted the answered card. Keep that canonical version.
-                if run.session_id:
-                    message = next(m for m in runtime.repository.chat_thread(run.graph_id, run.session_id).messages if m.id == message.id)
-            finally:
-                run.interactions.pop(interaction_id, None)
+            run.awaiting_answer = True
+            result = {"status": "awaiting_answer", "interaction_id": interaction_id,
+                      "message": "The card is ready. Clew will send the learner's answer in a separate turn."}
         elif tool == "create_closure_quiz":
             assert isinstance(parsed, ClosureQuizDraft)
             if run.quiz_topic_id and parsed.topic_id != run.quiz_topic_id:

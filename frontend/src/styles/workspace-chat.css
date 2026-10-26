@@ -117,6 +117,13 @@ input[type="number"] {
   color: inherit;
 }
 
+.richKatexDisplay {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .richKatex .katex {
   color: inherit;
   font-size: 1.04em;

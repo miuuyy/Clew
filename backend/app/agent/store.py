@@ -42,9 +42,6 @@ class AgentStore:
                     message = json.loads(row["payload_json"])
                     if message.get("agent_status") == "streaming":
                         message["agent_status"] = "interrupted"
-                    for field in ("question", "inline_quiz"):
-                        if message.get(field) and message[field].get("status") == "pending":
-                            message[field]["status"] = "interrupted"
                     if message.get("activity") and message["activity"].get("status") == "running":
                         message["activity"]["status"] = "failed"
                     conn.execute("UPDATE chat_messages SET payload_json=? WHERE message_id=?", (json.dumps(message), row["message_id"]))

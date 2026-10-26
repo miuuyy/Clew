@@ -154,10 +154,10 @@ function shouldRenderWholePartAsMath(value: string): boolean {
   return new RegExp(String.raw`^[A-Za-z0-9${GREEK_CHAR_SOURCE}\\{}()[\]\s+\-*/^_=.,'∞√]+$`).test(trimmed);
 }
 
-function renderKatexExpression(expression: string, key: string): React.ReactNode {
+function renderKatexExpression(expression: string, key: string, displayMode = false): React.ReactNode {
   const normalized = normalizeKatexExpression(expression);
   const html = katex.renderToString(normalized, {
-    displayMode: false,
+    displayMode,
     errorColor: "#fca5a5",
     output: "html",
     strict: "ignore",
@@ -167,7 +167,7 @@ function renderKatexExpression(expression: string, key: string): React.ReactNode
   return (
     <span
       key={key}
-      className="richKatex"
+      className={displayMode ? "richKatex richKatexDisplay" : "richKatex"}
       aria-label={normalized}
       dangerouslySetInnerHTML={{ __html: html }}
     />
@@ -211,7 +211,7 @@ function renderInlineMathText(text: string, keyPrefix: string): React.ReactNode[
     if (index > cursor) {
       nodes.push(...renderUndelimitedMathText(text.slice(cursor, index), `${keyPrefix}-plain-${cursor}`));
     }
-    nodes.push(renderKatexExpression(stripMathDelimiters(token), `${keyPrefix}-delimited-${index}`));
+    nodes.push(renderKatexExpression(stripMathDelimiters(token), `${keyPrefix}-delimited-${index}`, token.startsWith("$$") || token.startsWith("\\[")));
     cursor = index + token.length;
   }
   if (cursor < text.length) {
@@ -221,6 +221,23 @@ function renderInlineMathText(text: string, keyPrefix: string): React.ReactNode[
 }
 
 export function renderDisplayText(value: string): React.ReactNode {
+  // Delimiters must be parsed before line breaks or emphasis can split a formula.
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const match of value.matchAll(LATEX_DELIMITED_MATH_RE)) {
+    const token = match[0];
+    const displayMode = token.startsWith("$$") || token.startsWith("\\[");
+    if (!displayMode && !token.includes("\n")) continue;
+    const index = match.index ?? 0;
+    if (index > cursor) nodes.push(<React.Fragment key={`plain-${cursor}`}>{renderPlainDisplayText(value.slice(cursor, index))}</React.Fragment>);
+    nodes.push(renderKatexExpression(stripMathDelimiters(token), `math-${index}`, displayMode));
+    cursor = index + token.length;
+  }
+  if (cursor < value.length) nodes.push(<React.Fragment key={`plain-${cursor}`}>{renderPlainDisplayText(value.slice(cursor))}</React.Fragment>);
+  return nodes.length ? nodes : renderPlainDisplayText(value);
+}
+
+function renderPlainDisplayText(value: string): React.ReactNode {
   const lines = value.split("\n");
   return lines.map((line, lineIndex) => {
     const parts = line.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g).filter(Boolean);

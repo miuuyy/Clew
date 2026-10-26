@@ -25,6 +25,7 @@ class AnswerRequest(BaseModel):
     interaction_id: str
     answer: str | None = Field(default=None, max_length=12000)
     choice_index: int | None = Field(default=None, ge=0)
+    model: str | None = Field(default=None, min_length=1)
 
 
 class SessionRequest(BaseModel):
@@ -113,7 +114,7 @@ async def chat_events(graph_id: str, session_id: str, after: int = Query(default
 async def answer_question(graph_id: str, body: AnswerRequest, runtime=Depends(get_agent_runtime)) -> dict:
     resolve_thread(runtime, graph_id, body.session_id)
     try:
-        return await runtime.answer(graph_id, body.session_id, body.interaction_id, answer=body.answer, choice_index=body.choice_index)
+        return await runtime.answer(graph_id, body.session_id, body.interaction_id, answer=body.answer, choice_index=body.choice_index, model=body.model)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

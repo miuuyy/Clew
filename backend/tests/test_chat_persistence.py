@@ -28,6 +28,32 @@ class ChatPersistenceTests(unittest.TestCase):
         replay = self.client.get(self.url+f"/events?session_id={thread['session_id']}&after={thread['last_event_id']}")
         self.assertEqual(replay.text, "")
 
+    def test_quiz_card_finishes_stream_and_answer_opens_a_new_replayable_reply(self):
+        client, repository, runtime = install_client(self, scenario="inline")
+        response = client.post(self.url+"/stream", json={"prompt": "Give me a quiz"})
+        self.assertEqual(response.status_code, 200)
+        events = [json.loads(line) for line in response.text.splitlines()]
+        self.assertEqual(events[-1]["type"], "turn_completed")
+        self.assertEqual(events[-1]["status"], "completed")
+        thread = client.get(self.url).json()
+        card = thread["messages"][1]
+        self.assertEqual(card["inline_quiz"]["status"], "pending")
+        self.assertEqual(runtime.runs, {})
+        body = {"session_id": thread["session_id"], "interaction_id": card["inline_quiz"]["interaction_id"], "choice_index": 1, "model": "second-model"}
+        answer = client.post(self.url+"/answer", json=body)
+        self.assertEqual(answer.status_code, 200)
+        self.assertNotEqual(answer.json()["run_id"], thread["run_id"])
+        replay = client.get(self.url+f"/events?session_id={thread['session_id']}&after={thread['last_event_id']}")
+        resumed = [json.loads(line) for line in replay.text.splitlines()]
+        self.assertEqual(resumed[-1]["type"], "turn_completed")
+        self.assertEqual(resumed[-1]["status"], "completed")
+        final = client.get(self.url).json()
+        self.assertEqual(final["messages"][1]["inline_quiz"]["status"], "answered")
+        self.assertEqual(final["messages"][-1]["model"], "second-model")
+        self.assertIn('"correct": true', final["messages"][-1]["content"])
+        self.assertEqual(len([m for m in final["messages"] if m["role"] == "user"]), 1)
+        self.assertEqual(client.post(self.url+"/answer", json=body).status_code, 409)
+
     def test_session_count_groups_native_replies_and_keeps_legacy_messages(self):
         for message in [ChatMessage(role="assistant", content="Prior lesson"),
                         ChatMessage(role="user", content="Continue"),

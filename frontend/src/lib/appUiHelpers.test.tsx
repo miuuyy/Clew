@@ -12,6 +12,23 @@ function visibleMarkup(value: string): string {
 }
 
 describe("renderDisplayText", () => {
+  it("renders a complete multiline display formula before splitting prose into lines", () => {
+    const formula = String.raw`\boxed{\displaystyle
+\frac{\sum_{k=1}^{4} k^2}{\sum_{k=1}^{4} k}
+= \frac{1^2+2^2+3^2+4^2}{1+2+3+4}
+=\,?
+}`;
+    for (const [open, close] of [["$$", "$$"], ["\\[", "\\]"]]) {
+      const html = visibleMarkup(`**Evaluate this expression:**\n\n${open}\n${formula}\n${close}`);
+      expect(html).toContain("<strong");
+      expect(html).toContain("richKatexDisplay");
+      expect(html).toContain("katex-display");
+      expect(html.match(/class="katex"/g)).toHaveLength(1);
+      expect(html).not.toContain("katex-error");
+      expect(html).not.toContain("$$");
+      expect(html).not.toContain(String.raw`\boxed`);
+    }
+  });
   it("preserves JSON keys, braces and blank lines in quiz content", () => {
     const html = visibleMarkup('{\n"difficulty": 3,\n\n"confidence": 0.8,\n"kind": "example"\n}');
     expect(html).toContain("difficulty");
@@ -19,6 +36,13 @@ describe("renderDisplayText", () => {
     expect(html).toContain("{");
     expect(html).toContain("}");
     expect(html).toContain("<br/><br/>");
+  });
+  it("preserves emphasis around inline math before and after a display formula", () => {
+    const html = visibleMarkup('**Compute $x^2$ first**\n$$\nx^2=4\n$$\n**Then $x=2$**');
+    expect(html.match(/<strong /g)).toHaveLength(2);
+    expect(html).not.toContain("**");
+    expect(html).not.toContain("$x");
+    expect(html).not.toContain("katex-error");
   });
   it("renders explicit LaTeX fractions and functions through KaTeX", () => {
     const html = visibleMarkup(String.raw`F(x) = \frac{1}{3e}^{3x} + \frac{5}{3}`);

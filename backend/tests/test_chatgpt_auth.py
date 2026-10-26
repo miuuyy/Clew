@@ -132,13 +132,49 @@ class ChatGPTAuthTests(unittest.IsolatedAsyncioTestCase):
             await auth.access_token()
         self.assertFalse(auth.status()["authenticated"])
 
-    async def test_logout_removes_tokens_keeps_registration_and_revokes(self):
+    async def test_logout_removes_account_binding_and_revokes(self):
         auth = await self.auth(signed_in())
+        auth._save_registration(ext_agent_host_id="urn:uuid:installation-1")
         self.assertIsNone(await auth.logout())
         self.assertEqual(self.peer.revoked, ["refresh-1"])
         self.assertIsNone(auth.store.read())
-        self.assertEqual(auth.registration()["client_id"], CLIENT_ID)
+        self.assertEqual(auth.registration()["ext_agent_host_id"], "urn:uuid:installation-1")
+        for key in ("client_id", "subject", "email", "name"):
+            self.assertIsNone(auth.registration()[key])
         self.assertFalse(auth.status()["authenticated"])
+
+    async def test_signed_out_login_discards_previous_workspace_binding(self):
+        auth = await self.auth(signed_in())
+        auth._save_registration(ext_agent_host_id="urn:uuid:installation-1")
+        # Old installs retained account registration after credentials were removed.
+        auth.store.delete()
+        login = await auth.start_login()
+        query = parse_qs(urlparse(login.auth_url).query)
+        self.assertEqual(query["client_id"], ["dynamic_agent_client"])
+        self.assertEqual(query["agent_name_hint"], ["Clew"])
+        self.assertEqual(query["ext_agent_host_id"], ["urn:uuid:installation-1"])
+        self.assertNotIn("login_hint", query)
+        self.assertIsNone(login.subject)
+
+    async def test_logout_allows_sign_in_with_another_account_and_client(self):
+        auth = await self.auth(signed_in())
+        await auth.logout()
+        login = await auth.start_login()
+        new_client = "client-other-workspace"
+
+        async def handler(request):
+            response = await self.peer(request)
+            if request.url.path == "/oauth/token":
+                data = response.json()
+                data["id_token"] = id_token(login.nonce, subject="user-2", audience=new_client)
+                return httpx.Response(200, json=data)
+            return response
+
+        await self.transport(auth, handler)
+        await auth.complete_login({"state": [login.state], "code": ["code-2"], "client_id": [new_client]})
+        self.assertTrue(auth.status()["sharing"])
+        self.assertEqual(auth.connection()["subject"], "user-2")
+        self.assertEqual(auth.connection()["client_id"], new_client)
 
     async def test_logout_clears_corrupt_keyring_without_parsing_tokens(self):
         import keyring

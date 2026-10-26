@@ -35,6 +35,32 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); });
 
 describe("graph chat lifecycle", () => {
+  it("finishes the card reply and automatically follows the new turn started by its answer", async () => {
+    const card: ChatMessage = { ...message("card", ""), inline_quiz: { interaction_id: "q", question: "2 + 2?", choices: ["3", "4", "5", "6"], correct_index: 1, status: "pending" } };
+    const answered: ChatMessage = { ...card, inline_quiz: { ...card.inline_quiz!, status: "answered", answered_index: 1 } };
+    let accepted = false;
+    request.mockImplementation(async (url) => {
+      if (String(url).endsWith("/sessions")) return json([]);
+      if (String(url).endsWith("/answer")) { accepted = true; return json({ message: answered, run_id: "explanation" }); }
+      if (String(url).includes("/events?")) return events([
+        { type: "message", message: message("explanation", "Correct, 2 + 2 is 4."), event_id: 4, session_id: "s", run_id: "explanation" },
+        { type: "turn_completed", status: "completed", event_id: 5, session_id: "s", run_id: "explanation" },
+      ]);
+      return json(thread({ messages: [accepted ? answered : card], agent_status: accepted ? "running" : "completed", run_id: accepted ? "explanation" : "card-run", last_event_id: accepted ? 3 : 2 }));
+    });
+    await mount();
+    expect(controller.chatLoading).toBe(false);
+    await act(async () => { await controller.answerInteraction("q", undefined, 1); });
+    expect(controller.currentChatState.messages[0].inline_quiz?.answered_index).toBe(1);
+    expect(controller.currentChatState.messages.at(-1)?.content).toBe("Correct, 2 + 2 is 4.");
+    expect(controller.chatLoading).toBe(false);
+    expect(controller.chatError).toBeNull();
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/answer"))).toHaveLength(1);
+    const sent = request.mock.calls.find(([url]) => String(url).endsWith("/answer"))!;
+    expect(JSON.parse(sent[1]!.body as string)).toMatchObject({ model: "chosen", interaction_id: "q", choice_index: 1 });
+    expect(request.mock.calls.some(([url]) => String(url).endsWith("/stream"))).toBe(false);
+  });
+
   it("keeps graph names that match object prototypes scoped while loading", async () => {
     request.mockImplementation(() => new Promise<Response>(() => {}));
     await act(async () => root.render(<Harness activeGraph={{ ...graph, graph_id: "constructor" }} />));

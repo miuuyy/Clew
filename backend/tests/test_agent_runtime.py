@@ -34,13 +34,18 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.wait_for(asyncio.shield(run.done), 30)
 
     async def wait_question(self, run):
-        for _ in range(3000):
-            if run.interactions:
-                return next(iter(run.interactions))
-            if run.done.done():
-                self.fail(f"Turn ended: {run.error}")
-            await asyncio.sleep(.01)
-        self.fail("No interaction was delivered")
+        await self.complete(run)
+        for message in self.repo.chat_thread(run.graph_id, run.session_id).messages:
+            card = message.question or message.inline_quiz
+            if card and card.status == "pending":
+                return card.interaction_id
+        self.fail(f"No interaction was delivered: {run.error}")
+
+    async def answer(self, sid, interaction, *, answer=None, choice_index=None):
+        result = await self.runtime.answer(self.graph_id, sid, interaction, answer=answer, choice_index=choice_index)
+        continuation = self.runtime.runs[result["run_id"]]
+        await self.complete(continuation)
+        return continuation
 
     async def test_answer_stream_persists_and_replays_without_duplicates(self):
         sid, run = await self.start()
@@ -90,23 +95,29 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("Earlier conversation", json.dumps(users))
         self.assertEqual(len(self.repo.chat_thread(self.graph_id, sid).messages), 4)
 
-    async def test_question_waits_for_free_text_and_agent_receives_the_answer(self):
+    async def test_card_finishes_generation_and_answer_starts_a_separate_model_turn(self):
         sid, run = await self.start("question")
         interaction = await self.wait_question(run)
-        self.assertEqual(run.status, "waiting")
-        await self.runtime.answer(self.graph_id, sid, interaction, answer="Examples first", choice_index=None)
-        await self.complete(run)
+        self.assertEqual(run.status, "completed")
+        self.assertEqual(self.runtime.runs, {})
+        self.assertEqual(len(self.peer.requests), 1)
+        continuation = await self.answer(sid, interaction, answer="Examples first")
+        self.assertNotEqual(continuation.id, run.id)
         messages = self.repo.chat_thread(self.graph_id, sid).messages
         self.assertEqual(messages[1].question.answer, "Examples first")
         self.assertIn("Examples first", messages[-1].content)
+        self.assertEqual(messages[1].reply_id, run.id)
+        self.assertEqual(messages[-1].reply_id, continuation.id)
+        self.assertEqual(len([m for m in messages if m.role == "user"]), 1)
+        self.assertEqual(len([item for item in self.peer.requests[-1]["input"] if item.get("role") == "user"]), 1)
+        self.assertEqual(self.peer.requests[-1]["input"][-1]["role"], "developer")
         with self.assertRaises(ValueError):
             await self.runtime.answer(self.graph_id, sid, interaction, answer="again", choice_index=None)
 
     async def test_inline_quiz_is_graded_on_server(self):
         sid, run = await self.start("inline")
         interaction = await self.wait_question(run)
-        await self.runtime.answer(self.graph_id, sid, interaction, answer=None, choice_index=0)
-        await self.complete(run)
+        await self.answer(sid, interaction, choice_index=0)
         messages = self.repo.chat_thread(self.graph_id, sid).messages
         self.assertEqual(messages[1].inline_quiz.answered_index, 0)
         self.assertIn('"correct": false', messages[-1].content)
@@ -129,15 +140,31 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(messages[1].activity.status, "failed")
         self.assertIn("disconnected", messages[-1].content)
 
-    async def test_stop_while_question_pending_keeps_transcript_consistent(self):
+    async def test_stop_leaves_the_card_answerable_and_transcript_consistent(self):
         sid, run = await self.start("question")
-        await self.wait_question(run)
+        interaction = await self.wait_question(run)
         await self.runtime.interrupt(self.graph_id, sid)
-        await self.complete(run)
-        self.assertEqual(run.status, "interrupted")
-        self.assertEqual(self.repo.chat_thread(self.graph_id, sid).messages[1].question.status, "interrupted")
-        # A function call without its output would be rejected by the next request.
-        self.assertIsNone(self.runtime.store.transcript(sid))
+        self.assertEqual(run.status, "completed")
+        self.assertEqual(self.repo.chat_thread(self.graph_id, sid).messages[1].question.status, "pending")
+        transcript = self.runtime.store.transcript(sid)
+        self.assertEqual(transcript[-1]["type"], "function_call_output")
+        self.assertEqual(json.loads(transcript[-1]["output"])["status"], "awaiting_answer")
+        await self.answer(sid, interaction, choice_index=1)
+        self.assertEqual(self.repo.chat_thread(self.graph_id, sid).messages[1].question.answer, "Practice")
+
+    async def test_sending_and_stopping_another_reply_does_not_close_unanswered_cards(self):
+        sid, first = await self.start("inline")
+        interaction = await self.wait_question(first)
+        _, active = await self.start("hold", session_id=sid)
+        await asyncio.sleep(.02)
+        with self.assertRaisesRegex(ValueError, "active turn"):
+            await self.runtime.answer(self.graph_id, sid, interaction, answer=None, choice_index=1)
+        self.assertIsNone(self.repo.chat_thread(self.graph_id, sid).messages[1].inline_quiz.answered_index)
+        await self.runtime.interrupt(self.graph_id, sid)
+        await self.complete(active)
+        self.peer.scenario = "inline"
+        await self.answer(sid, interaction, choice_index=1)
+        self.assertTrue(self.repo.chat_thread(self.graph_id, sid).messages[1].inline_quiz.answered_index == 1)
 
     async def test_stop_during_stream_cancels_the_request(self):
         sid, run = await self.start("hold")
@@ -205,13 +232,33 @@ class AgentRuntimeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ChatGPTError, "without creating"):
             await asyncio.wait_for(self.runtime.generate_closure_quiz(self.graph_id, "arithmetics", 6, None), 30)
 
-    async def test_recovery_marks_pending_cards_interrupted(self):
+    async def test_restart_keeps_unanswered_cards_available_without_a_live_run(self):
         sid, run = await self.start("question")
-        await self.wait_question(run)
-        AgentStore(self.repo).recover_interrupted()
+        interaction = await self.wait_question(run)
+        await self.runtime.close()
+        self.runtime = fake_runtime(self.settings, self.repo, self.peer)
+        self.addAsyncCleanup(self.runtime.close)
         thread = self.runtime.store.thread_payload(self.graph_id, sid)
-        self.assertEqual(thread["agent_status"], "interrupted")
-        self.assertEqual(thread["messages"][1]["question"]["status"], "interrupted")
+        self.assertEqual(thread["agent_status"], "completed")
+        self.assertEqual(thread["messages"][1]["question"]["status"], "pending")
+        await self.answer(sid, interaction, answer="Examples")
+        self.assertIn("Examples", self.repo.chat_thread(self.graph_id, sid).messages[-1].content)
+
+    async def test_card_closed_by_old_stop_behavior_can_be_answered(self):
+        sid, run = await self.start("inline")
+        interaction = await self.wait_question(run)
+        card = self.repo.chat_thread(self.graph_id, sid).messages[1]
+        card.inline_quiz.status = "interrupted"
+        self.runtime.store.put_message(self.graph_id, sid, card)
+        await self.answer(sid, interaction, choice_index=1)
+        self.assertEqual(self.repo.chat_thread(self.graph_id, sid).messages[1].inline_quiz.status, "answered")
+
+    async def test_card_answer_uses_the_explicitly_selected_model(self):
+        sid, run = await self.start("question")
+        interaction = await self.wait_question(run)
+        result = await self.runtime.answer(self.graph_id, sid, interaction, answer="Examples", choice_index=None, model="second-model")
+        await self.complete(self.runtime.runs[result["run_id"]])
+        self.assertEqual(self.peer.requests[-1]["model"], "second-model")
 
     async def test_completed_turns_release_memory_and_keep_durable_replay(self):
         for _ in range(4):

@@ -221,6 +221,10 @@ class ChatGPTAuth:
         temporary.chmod(0o600)
         temporary.replace(self.registration_path)
 
+    def _clear_account_registration(self) -> None:
+        # The installation's host id survives sign-out; the workspace-bound client does not.
+        self._save_registration(client_id=None, subject=None, email=None, name=None)
+
     # Provider metadata
 
     async def discovery(self) -> dict:
@@ -327,6 +331,8 @@ class ChatGPTAuth:
         generation = self._login_generation
         provider = await self.discovery()
         self._check_generation(generation, login=True)
+        if self.connection() is None:
+            self._clear_account_registration()
         registration = self.registration()
         host_id = registration.get("ext_agent_host_id")
         if not host_id:
@@ -504,8 +510,10 @@ class ChatGPTAuth:
             connection = self.store.read()
         except ChatGPTError:
             self.store.delete()
+            self._clear_account_registration()
             return warning
         self.store.delete()
+        self._clear_account_registration()
         if connection is None:
             return None
         if not all(isinstance(connection.get(key), str) and connection[key] for key in ("client_id", "refresh_token")):

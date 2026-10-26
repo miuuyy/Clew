@@ -136,13 +136,16 @@ class FakeChatGPT:
         assert body["store"] is False and body["stream"] is True
         assert all(tool["type"] in {"function", "web_search"} for tool in body["tools"])
         items = body["input"]
-        last_user = max(index for index, item in enumerate(items) if item.get("role") == "user")
+        last_user = max(index for index, item in enumerate(items) if item.get("role") in {"user", "developer"})
         user = items[last_user]
         context = json.loads(user["content"][0]["text"].split("\n", 1)[1])
         prompt = user["content"][-1]["text"]
         outputs = [item for item in items[last_user:] if item.get("type") == "function_call_output"]
         step = len(outputs)
         scenario = self.scenario
+        if user.get("role") == "developer":
+            answer = json.loads(prompt.split("\n", 1)[1])
+            return self._reply("Card answer received.\n\n" + json.dumps(answer))
         if scenario == "hold":
             await asyncio.sleep(3600)
         if scenario == "usage-limit":

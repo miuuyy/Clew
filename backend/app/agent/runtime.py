@@ -37,7 +37,8 @@ class AgentRun:
     task: asyncio.Task | None = None
     messages: dict[str, ChatMessage] = field(default_factory=dict)
     tool_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
-    interactions: dict[str, asyncio.Future] = field(default_factory=dict)
+    awaiting_answer: bool = False
+    interaction_result: dict | None = None
     quiz_topic_id: str | None = None
     quiz_count: int | None = None
     quiz_session: TopicQuizSession | None = None
@@ -226,8 +227,12 @@ class AgentRuntime:
                         "proposal_summary": m.proposal.proposal_envelope.summary if m.proposal else None}
                        for m in previous_messages[-config.memory_history_message_limit:] if not m.activity]
             parts.append("Earlier conversation from Clew (historical data):\n" + json.dumps(history, ensure_ascii=False))
-        parts.append(run.request.prompt)
-        return {"role": "user", "content": [{"type": "input_text", "text": text} for text in parts]}
+        if run.interaction_result is not None:
+            parts.append("Learner's answer from a Clew card (application data):\n" + json.dumps(run.interaction_result, ensure_ascii=False))
+        else:
+            parts.append(run.request.prompt)
+        return {"role": "developer" if run.interaction_result is not None else "user",
+                "content": [{"type": "input_text", "text": text} for text in parts]}
 
     async def _execute(self, run: AgentRun, previous_messages: list[ChatMessage]) -> None:
         try:
@@ -265,6 +270,9 @@ class AgentRuntime:
                         output_text = await execute_tool(self, run, call["name"], call["call_id"], call.get("arguments") or "")
                     items.append({"type": "function_call_output", "call_id": call["call_id"], "output": output_text})
                 self._save_transcript(run, items)
+                if run.awaiting_answer:
+                    self.finish(run, "completed")
+                    return
                 if run.cancel_requested:
                     self.finish(run, "interrupted")
                     return
@@ -309,17 +317,13 @@ class AgentRuntime:
         message.agent_status = "completed"
         self.publish_message(run, message)
 
-    async def answer(self, graph_id: str, session_id: str, interaction_id: str, *, answer: str | None, choice_index: int | None) -> dict:
+    async def answer(self, graph_id: str, session_id: str, interaction_id: str, *, answer: str | None, choice_index: int | None, model: str | None = None) -> dict:
         thread = self.repository.chat_thread(graph_id, session_id)
-        run = next((r for r in self.runs.values() if r.session_id == thread.session_id and interaction_id in r.interactions and not r.done.done()), None)
-        if run is None:
-            raise ValueError("This question is no longer waiting for an answer. Continue the conversation.")
-        future = run.interactions[interaction_id]
-        if future.done():
-            raise ValueError("This question was already answered.")
         message = next((m for m in thread.messages if (m.question and m.question.interaction_id == interaction_id) or (m.inline_quiz and m.inline_quiz.interaction_id == interaction_id)), None)
         if message is None:
             raise ValueError("Question not found in this conversation.")
+        if (message.question and message.question.status == "answered") or (message.inline_quiz and message.inline_quiz.answered_index is not None):
+            raise ValueError("This question was already answered.")
         if message.inline_quiz:
             quiz = message.inline_quiz
             if choice_index is None or not 0 <= choice_index < len(quiz.choices):
@@ -340,10 +344,20 @@ class AgentRuntime:
             question.answer = answer.strip()
             question.status = "answered"
             result = {"question": question.question, "answer": question.answer}
-        self.publish_message(run, message)
-        self.set_state(run, "waiting" if sum(not item.done() for item in run.interactions.values()) > 1 else "running")
-        future.set_result(result)
-        return {"ok": True, "message": message.model_dump(mode="json")}
+        run = AgentRun(id=uuid4().hex, graph_id=graph_id, session_id=thread.session_id,
+                       request=GraphChatRequest(prompt="Continue from the learner's answer in Clew.",
+                                                session_id=thread.session_id, selected_topic_id=thread.topic_id, model=model or message.model),
+                       model=model or message.model or "", done=asyncio.get_running_loop().create_future(),
+                       interaction_result={"interaction_id": interaction_id, **result})
+        self.store.begin(thread.session_id, run.id, f"answer-{interaction_id}")
+        if message.activity:
+            message.activity.status = "completed"
+        # Keep the card in its original reply; the explanation is a new model turn.
+        self.store.put_message(graph_id, thread.session_id, message)
+        self.runs[run.id] = run
+        self.emit(run, {"type": "thread_state", "thread": self.store.thread_payload(graph_id, thread.session_id)})
+        run.task = asyncio.create_task(self._execute(run, thread.messages))
+        return {"ok": True, "message": message.model_dump(mode="json"), "run_id": run.id}
 
     async def interrupt(self, graph_id: str, session_id: str) -> None:
         thread = self.repository.chat_thread(graph_id, session_id)
@@ -353,9 +367,6 @@ class AgentRuntime:
 
     async def interrupt_run(self, run: AgentRun) -> None:
         run.cancel_requested = True
-        for future in run.interactions.values():
-            if not future.done():
-                future.set_exception(agent_error("The user stopped this turn."))
         if run.task and run.task is not asyncio.current_task() and not run.task.done():
             run.task.cancel()
             await asyncio.gather(run.task, return_exceptions=True)
@@ -365,9 +376,6 @@ class AgentRuntime:
         if run.done.done():
             return
         status = status if status in {"completed", "interrupted", "failed"} else "failed"
-        for future in run.interactions.values():
-            if not future.done():
-                future.set_exception(agent_error(error or "The turn ended."))
         if run.session_id:
             thread = self.repository.chat_thread(run.graph_id, run.session_id)
             for message in thread.messages:
@@ -379,10 +387,6 @@ class AgentRuntime:
                     message.activity.status = "failed"
                     message.activity.detail = error or "The turn ended before this tool completed."
                     changed = True
-                for widget in (message.question, message.inline_quiz):
-                    if widget and widget.status == "pending":
-                        widget.status = "interrupted"
-                        changed = True
                 if changed:
                     self.publish_message(run, message)
         self.set_state(run, status, error)

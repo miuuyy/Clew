@@ -12,10 +12,10 @@ ADR 0005 made the installed Codex CLI app-server the agent runtime. That require
 
 Clew owns a small agent loop on the Responses API, authenticated with Sign in with ChatGPT.
 
-- OAuth 2.0 authorization code with PKCE and an OIDC nonce, dynamic client registration (`dynamic_agent_client`), a loopback redirect on the backend port and verified RS256 ID tokens. The issued client id is reused for later sign-ins.
+- OAuth 2.0 authorization code with PKCE and an OIDC nonce, dynamic client registration (`dynamic_agent_client`), a loopback redirect on the backend port and verified RS256 ID tokens. The issued client id is reused for reauthorization of a connected account. Sign-out clears account-bound registration; sign-in without local credentials starts dynamic registration for the selected account while retaining the installation host id.
 - Access and refresh tokens live only in the OS credential store (`keyring`). There is no plaintext fallback. The non-secret registration and account label live next to the database.
 - Responses requests use `store: false`. Clew persists the conversation's input items (messages, function calls and outputs, encrypted reasoning) per chat session and re-sends them each step.
-- The Clew tools from ADR 0005 are unchanged in behavior and are supplied as Responses function tools. Handlers validate and execute application operations; they never invoke another model. One learner turn is bounded to a fixed number of model steps.
+- Clew tools are supplied as Responses function tools. Handlers validate and execute application operations; they never invoke another model. One learner turn is bounded to a fixed number of model steps. Question and checkpoint cards complete the current reply; their answers start a separate model turn as structured application data, without a user chat message. Stop and backend restarts preserve unanswered cards.
 - Only Plus and Pro plans are supported. Plan, limit and capability errors are shown as returned; there is no API-key or alternate-provider fallback.
 - The implementation is written independently in Python against the documented protocol. The OpenAI DevKit (Node SDK) is not vendored: its license is noncommercial.
 

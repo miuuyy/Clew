@@ -180,13 +180,14 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     const generation = graphGenerations.current.get(graphId) ?? 0;
     const previous = before.messages.find((message) => message.question?.interaction_id === interactionId || message.inline_quiz?.interaction_id === interactionId);
     const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/answer`, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, interaction_id: interactionId, answer, choice_index: choiceIndex }) });
+      body: JSON.stringify({ session_id: sessionId, interaction_id: interactionId, answer, choice_index: choiceIndex, model: selectedChatModel ?? defaultModel }) });
     if (!response.ok) throw new Error(await readErrorMessage(response, "Could not send your answer."));
     const result: unknown = await response.json();
     const message = parseChatMessage(result && typeof result === "object" && "message" in result ? result.message : null);
     if (!mounted.current || generation !== (graphGenerations.current.get(graphId) ?? 0)) return;
     update(key, (current) => current.messages.find((item) => item.id === message.id) !== previous ? current :
       { ...current, messages: upsertChatMessage(current.messages, message) });
+    setRevision((current) => current + 1);
   };
   const stopChat = async () => {
     const sessionId = statesRef.current[key]?.sessionId;

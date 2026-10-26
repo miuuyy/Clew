@@ -37,10 +37,10 @@ describe("nested assistant reply", () => {
     const html = render([part("partial", { content: "Not complete yet", agent_status: "streaming" }),
       part("tool", { activity: { id: "call", tool: "propose_expand", status: "running", detail: "Preparing a graph proposal" } })], "running");
     expect(html.match(/chatMessage-assistant/g)).toHaveLength(1);
-    expect(html).toContain("proposalInlinePending");
+    expect(html).toContain("assistantProgress");
     expect(html).toContain("Preparing a graph proposal");
     expect(html).not.toContain("Not complete yet");
-    expect(html).not.toContain("chatTypingDot");
+    expect(html.match(/class="chatTypingDot"/g)).toHaveLength(3);
   });
 
   it("does not leave a spinner under a pending question", () => {
@@ -50,12 +50,37 @@ describe("nested assistant reply", () => {
     expect(html).not.toContain("chatTypingDot");
   });
 
+  it("keeps a previously interrupted quiz clickable with its multiline formula rendered", () => {
+    const html = render([part("quiz", { inline_quiz: {
+      interaction_id: "q", question: "Evaluate:\n$$\n\\boxed{\\frac{1}{2}}\n$$", choices: ["1", "2", "3", "4"], correct_index: 1, status: "interrupted",
+    } })]);
+    expect(html).toContain("katex-display");
+    expect(html).not.toContain("katex-error");
+    expect(html).not.toContain("disabled");
+    expect(html).not.toContain("This question is closed");
+    expect(html).not.toContain("proposalInlinePending");
+  });
+
   it("starts a fresh pending reply for hidden button requests without reopening the old reply", () => {
     const html = render([part("old", { reply_id: "old-run", content: "Previous answer" }),
       part("hidden", { role: "user", hidden: true, content: "Button request" })], "starting", null);
     expect(html.match(/chatMessage-assistant/g)).toHaveLength(2);
-    expect(html).toContain("chatBubbleLoading");
+    expect(html).toContain("assistantProgress");
     expect(html).not.toContain("proposalInlinePending");
     expect(html).not.toContain("Button request");
+  });
+
+  it("keeps the same three-dot indicator before output, during text and during tools", () => {
+    for (const [messages, status, runId] of [
+      [[], "starting", null],
+      [[part("partial", { content: "Pending", agent_status: "streaming" })], "running", "run"],
+      [[part("tool", { activity: { id: "read", tool: "read_graph", status: "running", detail: "Reading your graph" } })], "running", "run"],
+      [[part("tool", { activity: { id: "expand", tool: "propose_expand", status: "running", detail: "Preparing a graph proposal" } })], "running", "run"],
+    ] as const) {
+      const html = render([...messages], status, runId);
+      expect(html.match(/class="assistantProgress"/g)).toHaveLength(1);
+      expect(html.match(/class="chatTypingDot"/g)).toHaveLength(3);
+      expect(html.replace(/<[^>]*>/g, "")).not.toMatch(/Working|Preparing|Reading/);
+    }
   });
 });

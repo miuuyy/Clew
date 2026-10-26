@@ -32,9 +32,11 @@ sequenceDiagram
         API->>DB: Revision check, snapshot and receipt in one transaction
     else Question or learning checkpoint
         API-->>UI: Interactive card
+        API->>DB: Persist card and awaiting_answer tool receipt
+        API-->>UI: Reply completed
         UI->>API: Answer
         API->>DB: Persist answer
-        API-->>C: function_call_output with answer
+        API->>C: New Responses request with structured card answer
         C-->>UI: Continue conversation through the backend stream
     end
 ```
@@ -51,19 +53,21 @@ Tools are supplied as Responses API function tools on every request (`parallel_t
 | `read_topic` | Full topic, resources, artifacts and prerequisite status |
 | `propose_ingest` | Validate a proposal based on supplied material and show review |
 | `propose_expand` | Validate a proposed learning-path expansion and show review |
-| `ask_question` | Await a choice or free-text reply in a persistent card |
-| `present_quiz` | Await one four-choice checkpoint; return server-graded correctness |
+| `ask_question` | Show a persistent choice or free-text card and complete the reply |
+| `present_quiz` | Show a persistent four-choice checkpoint; grade its answer on the server |
 | `create_closure_quiz` | Validate and register a full completion test; never award progress directly |
 
 Proposal tools accept explicit topic, edge and zone operations. They reject unknown references, disconnected islands, unsafe resource URLs, malformed operations and new topics claiming earned progress. They do not fabricate missing zones or silently repair semantics. The error goes back to the model, which may correct its call.
 
 The existing completion-test button starts a separate ephemeral turn with only the read and closure-quiz tools. The model supplies exactly the requested questions; Clew retains correct answers and grades submissions. The existing manual Finish action keeps its explicit prerequisite-closure behavior.
 
+Question and checkpoint tools return `awaiting_answer` and end the current generation. Cards remain answerable after Stop or a backend restart. Submitting a card persists the answer and starts a new model turn with structured Clew application data, without inserting a user chat message. Answering an already answered card is rejected. A concurrent model turn must finish or be stopped before another card answer is accepted.
+
 ## Authentication and plan usage
 
 Sign in with ChatGPT is OAuth 2.0 with PKCE, an OIDC nonce and dynamic client registration. `POST /api/v1/chatgpt/login` returns the authorization URL; the issuer redirects to `http://127.0.0.1:<backend port>/auth/callback`, which checks the loopback host and state, keeps the issued client id, exchanges the code, verifies the RS256 ID token against the issuer's JWKS and stores the credentials. Requested scopes include `offline_access` and `chatgpt.tokens.use.direct`; without the sharing scope the UI shows the connection as unusable rather than falling back.
 
-Access and refresh tokens live only in the OS credential store through `keyring` (macOS Keychain, Windows Credential Locker, Secret Service). If none is available, sign-in fails; there is no plaintext fallback. `chatgpt-registration.json`, next to the database, keeps the issued client id, installation id and verified account label. Tokens refresh one minute before expiry under a lock; a refreshed ID token must keep the same subject. Sign-out deletes local tokens first, then revokes the refresh token and reports when revocation is unconfirmed.
+Access and refresh tokens live only in the OS credential store through `keyring` (macOS Keychain, Windows Credential Locker, Secret Service). If none is available, sign-in fails; there is no plaintext fallback. `chatgpt-registration.json`, next to the database, keeps the issued client id, installation id and verified account label. Tokens refresh one minute before expiry under a lock; a refreshed ID token must keep the same subject. Sign-out deletes local tokens and account-bound registration, then revokes the refresh token and reports when revocation is unconfirmed. The installation id survives sign-out. Sign-in without local credentials starts dynamic registration without the previous client id or account hint; reauthorization of a connected account reuses its registration.
 
 Requests go to `https://api.openai.com/v1/responses` with the bearer token and `store: false`, and consume the learner's ChatGPT Plus or Pro allowance. Models come from `GET /v1/models` (entries with `visibility: list`); the first listed model is the plan default and an unavailable explicit selection fails without substitution. Plan errors (`subscription_sharing_*`), including the per-app weekly limit set in ChatGPT Settings → Usage, are shown as explicit failures. Chat turns always offer the hosted `web_search` tool and the model decides when to search; proposals record whether a search happened in that turn. Completion-quiz generation runs without it.
 
@@ -81,7 +85,7 @@ SQLite stores graph snapshots, chat sessions/messages, quiz sessions and these a
 - `agent_tool_results`: tool call receipts keyed by call id, conversation and exact arguments.
 - `proposal_applications`: accepted proposal identity, payload and snapshot receipt.
 
-The frontend merges text updates by message id, reconnects from the saved cursor, and keeps inputs separated by graph/session. Disconnecting the browser does not cancel the turn. Stop cancels the in-flight request and releases pending interactions. The transcript is saved only at consistent points (after a step's tool outputs, or at completion), so an interrupted or failed turn never leaves a function call without its output. After a backend restart, incomplete turns/cards are marked interrupted; the transcript and all completed messages remain.
+The frontend merges text updates by message id, reconnects from the saved cursor, and keeps inputs separated by graph/session. Disconnecting the browser does not cancel the turn. Stop cancels the in-flight request and preserves unanswered cards. The transcript is saved only at consistent points (after a step's tool outputs, or at completion), so an interrupted or failed turn never leaves a function call without its output. After a backend restart, incomplete generations are marked interrupted; unanswered cards, the transcript and all completed messages remain.
 
 Output items keep their individual ids and a persisted `reply_id` identifying the Clew turn. The UI presents one assistant reply with its text above nested proposal, question and quiz cards. It reveals text when the message item completes; streaming still drives progress, tool cards and reconnects. Typed `commentary` updates one preamble until an answer arrives, and completed reads do not become chat rows. An unknown message phase remains ordinary text, with no keyword-based classification. Reasoning items stay encrypted in the transcript and are not projected into the chat. Progress follows the explicit run id, so a new hidden button request cannot reopen an old reply's loader. Session counters count grouped replies and visible user messages.
 

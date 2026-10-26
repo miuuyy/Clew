@@ -19,7 +19,7 @@ export function AgentInteraction({ question, quiz, controls }: {
   const item = question ?? quiz;
   if (!item) return null;
   const answered = question?.status === "answered" || quiz?.answered_index != null;
-  const pending = item.status === "pending" && !!item.interaction_id;
+  const pending = !answered && !!item.interaction_id;
   const send = async (choiceIndex?: number) => {
     if (busy || !pending || !item.interaction_id) return;
     setBusy(true); setError(null);
@@ -43,7 +43,6 @@ export function AgentInteraction({ question, quiz, controls }: {
       <button className="agentQuestionSend" type="submit" aria-label="Send answer" disabled={busy || !value.trim()}>{busy ? "Sending…" : "Send"}</button>
     </form> : null}
     {question?.answer && !question.choices.includes(question.answer) ? <div className="inlineQuizNote">Your answer: {question.answer}</div> : null}
-    {!pending && !answered ? <div className="inlineQuizNote">This question is closed. Continue the conversation to ask again.</div> : null}
     {error ? <div className="inlineQuizNote inlineQuizNoteError" role="alert">{error}</div> : null}
   </div>;
 }

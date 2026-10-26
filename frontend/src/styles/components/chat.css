@@ -92,16 +92,15 @@
 .chatCopy table { border-collapse: collapse; font-size: var(--ui-text-sm); }
 .chatCopy th, .chatCopy td { padding: 5px 8px; border-bottom: 1px solid var(--ui-line); text-align: left; }
 
-/* Typing indicator before the first item of a reply arrives. */
-.chatBubbleLoading {
-  flex-direction: row;
+/* One progress indicator throughout a reply. */
+.assistantProgress {
+  display: flex;
   align-items: center;
   gap: 5px;
   padding: 6px 0;
 }
 
-.chatTypingDot,
-.proposalInlinePendingDots span {
+.chatTypingDot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -109,10 +108,8 @@
   animation: uiDotPulse 1.2s var(--ui-ease) infinite;
 }
 
-.chatTypingDot:nth-child(2),
-.proposalInlinePendingDots span:nth-child(2) { animation-delay: 0.15s; }
-.chatTypingDot:nth-child(3),
-.proposalInlinePendingDots span:nth-child(3) { animation-delay: 0.3s; }
+.chatTypingDot:nth-child(2) { animation-delay: 0.15s; }
+.chatTypingDot:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes uiDotPulse {
   0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
@@ -130,40 +127,6 @@
   border-radius: var(--ui-radius-block);
   background: var(--ui-fill-1);
   overflow: hidden;
-}
-
-/* Progress is a status line, not a card. */
-.proposalInlinePending {
-  display: flex;
-  align-items: center;
-  min-height: 22px;
-}
-
-.proposalInlinePendingRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.proposalInlinePendingLabel {
-  font-size: var(--ui-text-sm);
-  font-weight: 550;
-  background: linear-gradient(90deg, var(--ui-fg-3) 0%, var(--ui-fg) 50%, var(--ui-fg-3) 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: uiShimmer 2.4s linear infinite;
-}
-
-.proposalInlinePendingDots {
-  display: flex;
-  gap: 4px;
-}
-
-@keyframes uiShimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
 }
 
 .chatStopped {

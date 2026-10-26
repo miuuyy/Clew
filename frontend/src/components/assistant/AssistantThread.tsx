@@ -13,6 +13,14 @@ import { groupChatReplies, presentChatReply } from "../../lib/chatPresentation";
 type AssistantMessage = GraphChatState["messages"][number];
 type AssistantProposal = NonNullable<AssistantMessage["proposal"]>;
 
+function AssistantProgress({ label = "Working…" }: { label?: string }) {
+  return <div className="assistantProgress" role="status" aria-label={label}>
+    <span className="chatTypingDot" aria-hidden="true" />
+    <span className="chatTypingDot" aria-hidden="true" />
+    <span className="chatTypingDot" aria-hidden="true" />
+  </div>;
+}
+
 export type AssistantThreadProps = {
   copy: AppCopy;
   agentControls: AgentControls;
@@ -85,16 +93,7 @@ export function AssistantThread({
                   </div>
                 </div> : null}
                 {message.planning_status ? (
-                  <div className="proposalInlinePending">
-                    <div className="proposalInlinePendingRow">
-                      <div className="proposalInlinePendingLabel">{message.planning_status}</div>
-                      <div className="proposalInlinePendingDots" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                    </div>
-                  </div>
+                  <AssistantProgress label={message.planning_status} />
                 ) : null}
                 {message.planning_error ? (
                   <div className="inlineNotice inlineNoticeError">{message.planning_error}</div>
@@ -190,22 +189,15 @@ export function AssistantThread({
                 ) : null}
               </React.Fragment>;
             })}
-            {view.progress ? <div className="proposalInlinePending" role="status">
-              <div className="proposalInlinePendingRow">
-                <div className="proposalInlinePendingLabel">{view.progressLabel}</div>
-                <div className="proposalInlinePendingDots" aria-hidden="true"><span /><span /><span /></div>
-              </div>
-            </div> : null}
+            {view.progress ? <AssistantProgress label={view.progressLabel} /> : null}
             {view.interrupted ? <div className="chatStopped">Stopped</div> : null}
           </div>
         </div>;
       })}
       {chatLoading && currentChatState.status !== "waiting" && !activeReplyId && !hasInlinePlanningWidget ? (
         <div className="chatMessage chatMessage-assistant">
-          <div className="chatBubble chatBubbleLoading">
-            <span className="chatTypingDot" />
-            <span className="chatTypingDot" />
-            <span className="chatTypingDot" />
+          <div className="chatBubble">
+            <AssistantProgress />
           </div>
         </div>
       ) : null}
