@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import httpx
 
-from app.agent.chatgpt_auth import ChatGPTError, KeyringCredentialStore, api_error
+from app.agent.chatgpt_auth import LOGIN_TTL_SECONDS, ChatGPTError, KeyringCredentialStore, api_error
 from app.agent.runtime import AgentRuntime
 from app.core.config import Settings
 from app.services.repository import GraphRepository
@@ -60,6 +60,83 @@ class ChatGPTAuthTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await auth.access_token(), "access-1")
         self.assertNotIn("access-1", self.registration.read_text())
 
+    async def test_refreshing_a_completed_callback_does_not_exchange_the_code_again(self):
+        auth = await self.auth()
+        login = await auth.start_login()
+        self.peer.nonce = login.nonce
+        callback = {"state": [login.state], "code": ["code-1"], "client_id": [CLIENT_ID]}
+        await auth.complete_login(callback)
+        await auth.complete_login(callback)
+        self.assertTrue(auth.status()["authenticated"])
+        self.assertEqual(len(self.peer.token_requests), 1)
+
+        for key, value in (("state", "forged"), ("code", "another-code"), ("client_id", "another-client")):
+            with self.subTest(key=key), self.assertRaises(ChatGPTError):
+                await auth.complete_login({**callback, key: [value]})
+        self.assertEqual(len(self.peer.token_requests), 1)
+
+    async def test_repeated_failed_callback_preserves_the_original_error(self):
+        auth = await self.auth()
+        login = await auth.start_login()
+        callback = {"state": [login.state], "error": ["access_denied"]}
+        for _ in range(2):
+            with self.assertRaises(ChatGPTError) as raised:
+                await auth.complete_login(callback)
+            self.assertEqual(raised.exception.code, "access_denied")
+        self.assertEqual(self.peer.token_requests, [])
+
+    async def test_callback_result_is_invalidated_by_a_new_login_cancel_or_logout(self):
+        for action in ("start_login", "cancel_login", "logout"):
+            with self.subTest(action=action):
+                auth = await self.auth()
+                login = await auth.start_login()
+                self.peer.nonce = login.nonce
+                callback = {"state": [login.state], "code": ["code-1"], "client_id": [CLIENT_ID]}
+                await auth.complete_login(callback)
+                if action == "cancel_login":
+                    auth.cancel_login()
+                else:
+                    await getattr(auth, action)()
+                with self.assertRaises(ChatGPTError):
+                    await auth.complete_login(callback)
+
+    async def test_callback_result_cannot_report_success_after_credentials_are_rejected(self):
+        auth = await self.auth()
+        login = await auth.start_login()
+        self.peer.nonce = login.nonce
+        callback = {"state": [login.state], "code": ["code-1"], "client_id": [CLIENT_ID]}
+        await auth.complete_login(callback)
+        auth.reject_token("access-1", ChatGPTError("invalid_token", "Sign in again.", status=401))
+        with self.assertRaises(ChatGPTError):
+            await auth.complete_login(callback)
+        self.assertFalse(auth.status()["authenticated"])
+
+    async def test_callback_result_expires_and_cannot_report_success_without_credentials(self):
+        for expired in (False, True):
+            with self.subTest(expired=expired):
+                auth = await self.auth()
+                login = await auth.start_login()
+                self.peer.nonce = login.nonce
+                callback = {"state": [login.state], "code": ["code-1"], "client_id": [CLIENT_ID]}
+                await auth.complete_login(callback)
+                if not expired:
+                    auth.store.delete()
+                with patch("app.agent.chatgpt_auth.time.monotonic", return_value=time.monotonic() + (LOGIN_TTL_SECONDS if expired else 0)):
+                    with self.assertRaises(ChatGPTError):
+                        await auth.complete_login(callback)
+
+    async def test_callback_without_state_or_pending_login_explains_how_to_recover(self):
+        auth = await self.auth()
+        with self.assertRaises(ChatGPTError) as raised:
+            await auth.complete_login({"state": ["old"], "code": ["code-1"]})
+        self.assertEqual(raised.exception.code, "login_not_pending")
+        self.assertIn("Return to Clew", str(raised.exception))
+        login = await auth.start_login()
+        with self.assertRaises(ChatGPTError) as raised:
+            await auth.complete_login({"code": ["code-1"]})
+        self.assertEqual(raised.exception.code, "missing_state")
+        self.assertIs(auth.pending, login)
+        self.assertEqual(self.peer.token_requests, [])
 
     async def test_callback_keeps_polling_active_until_identity_and_credentials_are_saved(self):
         auth = await self.auth()
@@ -77,18 +154,23 @@ class ChatGPTAuthTests(unittest.IsolatedAsyncioTestCase):
         self.addAsyncCleanup(runtime.close)
         completion = asyncio.create_task(auth.complete_login({"state": [login.state], "code": ["code"], "client_id": [CLIENT_ID]}))
         await asyncio.wait_for(entered.wait(), 2)
+        duplicate = None
         try:
             account = await runtime.account()
             self.assertFalse(account["authenticated"])
             self.assertEqual(account["login"]["phase"], "completing")
             self.assertEqual((await auth.start_login()).login_id, login.login_id)
-            with self.assertRaises(ChatGPTError):
-                await auth.complete_login({"state": [login.state], "code": ["duplicate"], "client_id": [CLIENT_ID]})
+            duplicate = asyncio.create_task(auth.complete_login({"state": [login.state], "code": ["code"], "client_id": [CLIENT_ID]}))
+            await asyncio.sleep(0)
+            self.assertFalse(duplicate.done())
         finally:
             release.set()
             await completion
+            if duplicate is not None:
+                await duplicate
         self.assertIsNone(auth.completing)
         self.assertTrue(auth.status()["sharing"])
+        self.assertEqual(len(self.peer.token_requests), 1)
 
     async def test_repeat_sign_in_reuses_registration(self):
         auth = await self.auth()

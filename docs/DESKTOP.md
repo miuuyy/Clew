@@ -14,6 +14,12 @@ macOS builds are ad-hoc signed, without Apple Developer ID notarization. Windows
 
 Select **Continue with ChatGPT**, finish sign-in in your browser, and allow Clew to use your Plus or Pro plan. Return to the app. Cancelling or refusing permission leaves it on the sign-in screen. GitHub/X support actions are optional.
 
+Keep Clew open until sign-in finishes. Refreshing the browser's completed sign-in
+page preserves the result. If the app was restarted or the attempt was cancelled,
+return to Clew and start sign-in again. If the browser reports a missing security
+state, cancel the pending sign-in in Clew and choose **Continue with ChatGPT** to
+open a complete sign-in link.
+
 ## Local data
 
 Use **Help → Open Data Folder** to locate your installation's data. Default locations:

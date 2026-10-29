@@ -163,6 +163,14 @@ class PendingLogin:
     subject: str | None
 
 
+@dataclass
+class LoginCallbackResult:
+    digest: bytes
+    completed_at: float
+    generation: int
+    error: dict | None
+
+
 def _random() -> str:
     return secrets.token_urlsafe(32)
 
@@ -190,6 +198,8 @@ class ChatGPTAuth:
         self._discovery: dict | None = None
         self._jwks: dict | None = None
         self._refresh_lock = asyncio.Lock()
+        self._callback_lock = asyncio.Lock()
+        self._callback_result: LoginCallbackResult | None = None
         # Canceling a browser login must not discard a concurrent token rotation.
         self._generation = 0
         self._login_generation = 0
@@ -328,6 +338,7 @@ class ChatGPTAuth:
         if self.pending and time.time() - self.pending.created_at < LOGIN_TTL_SECONDS:
             return self.pending
         self._login_generation += 1
+        self._callback_result = None
         generation = self._login_generation
         provider = await self.discovery()
         self._check_generation(generation, login=True)
@@ -366,11 +377,41 @@ class ChatGPTAuth:
         self._login_generation += 1
         self.pending = None
         self.completing = None
+        self._callback_result = None
 
     async def complete_login(self, query: dict[str, list[str]]) -> None:
+        # Browser retries share the original outcome; a one-time code is never
+        # exchanged twice. Retain its fingerprint rather than the consumed code.
+        digest = hashlib.sha256(json.dumps(query, sort_keys=True).encode()).digest()
+        async with self._callback_lock:
+            result = self._callback_result
+            if result and (result.generation != self._generation
+                           or time.monotonic() - result.completed_at >= LOGIN_TTL_SECONDS):
+                self._callback_result = result = None
+            if result and hmac.compare_digest(digest, result.digest):
+                if result.error is not None:
+                    raise ChatGPTError(**result.error)
+                if self.connection() is not None:
+                    return
+            pending, generation = self.pending, self._login_generation
+            try:
+                await self._complete_login(query)
+            except ChatGPTError as exc:
+                if pending is not None and self.pending is not pending and generation == self._login_generation:
+                    self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation,
+                        {"code": exc.code, "message": str(exc), "retryable": exc.retryable, "status": exc.status})
+                raise
+            else:
+                self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation, None)
+
+    async def _complete_login(self, query: dict[str, list[str]]) -> None:
         pending = self.pending
+        if pending is None:
+            raise ChatGPTError("login_not_pending", "No sign-in is waiting in Clew. The attempt may have ended or the app restarted. Return to Clew and start sign-in again.")
         states = query.get("state", [])
-        if (pending is None or len(states) != 1 or not states[0].isascii()
+        if not states or states == [""]:
+            raise ChatGPTError("missing_state", "The sign-in link is missing its security state. Return to Clew, cancel the pending sign-in, and start again with Continue with ChatGPT.")
+        if (len(states) != 1 or not states[0].isascii()
                 or not hmac.compare_digest(states[0], pending.state)):
             raise ChatGPTError("invalid_state", "This sign-in link is not the one Clew started. Start sign-in again from Clew.")
         self.pending = None

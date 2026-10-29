@@ -7,12 +7,12 @@ from app.main import create_app
 from fake_chatgpt import FakeChatGPT, fake_runtime
 
 
-def install_client(test, scenario="answer", signed=True):
+def install_client(test, scenario="answer", signed=True, peer=None):
     temp = tempfile.TemporaryDirectory(prefix="clew-api-test-")
     test.addCleanup(temp.cleanup)
     root = Path(temp.name)
     settings = Settings(db_path=root/"state.sqlite3", debug_log_dir=root/"logs")
-    peer = FakeChatGPT(scenario)
+    peer = peer if peer is not None else FakeChatGPT(scenario)
     factory = patch("app.main.AgentRuntime", side_effect=lambda settings, repository: fake_runtime(settings, repository, peer, signed))
     factory.start()
     test.addCleanup(factory.stop)
