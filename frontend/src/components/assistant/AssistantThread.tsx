@@ -53,6 +53,11 @@ export function AssistantThread({
   const replies = groupChatReplies(visibleMessages);
   const activeReplyId = chatLoading && replies.some((reply) => reply.role === "assistant" && reply.id === currentChatState.runId)
     ? currentChatState.runId : null;
+  // The thread unmounts when the chat window closes; reopening it starts at the latest message.
+  React.useLayoutEffect(() => {
+    const viewport = chatViewportRef.current;
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+  }, [chatViewportRef]);
   return (
     <div ref={chatViewportRef} className="assistantThread">
       {chatThreadLoading ? (

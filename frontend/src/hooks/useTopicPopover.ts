@@ -65,6 +65,9 @@ export function useTopicPopover({
   const lastAnchorCommitAtRef = React.useRef(0);
   const previousGraphIdRef = React.useRef(activeGraph?.graph_id);
   const previousUserSelectRef = React.useRef<string | null>(null);
+  // Where the user dragged the popover. Selecting another topic keeps the window
+  // there instead of re-anchoring it to the new node; closing it forgets the spot.
+  const manualPositionRef = React.useRef<PopoverPosition | null>(null);
   const stopDrag = React.useCallback(() => {
     popoverDragRef.current = null;
     if (previousUserSelectRef.current !== null) {
@@ -82,6 +85,7 @@ export function useTopicPopover({
     const changedGraph = previousGraphIdRef.current !== activeGraph?.graph_id;
     previousGraphIdRef.current = activeGraph?.graph_id;
     if (!activeGraph || changedGraph) {
+      manualPositionRef.current = null;
       setSelectedTopicId(null);
       setSelectedTopicAnchor(null);
       setPopoverPosition(null);
@@ -96,12 +100,22 @@ export function useTopicPopover({
 
   React.useEffect(() => {
     stopDrag();
-    setPopoverFollowAnchor(true);
-    setPopoverDragOffset({ x: 0, y: 0 });
     if (!selectedTopicId) {
+      manualPositionRef.current = null;
+      setPopoverFollowAnchor(true);
+      setPopoverDragOffset({ x: 0, y: 0 });
       setSelectedTopicAnchor(null);
       setPopoverPosition(null);
+      return;
     }
+    const manual = manualPositionRef.current;
+    if (manual) {
+      setPopoverFollowAnchor(false);
+      setPopoverPosition((current) => (samePopoverPosition(current, manual) ? current : manual));
+      return;
+    }
+    setPopoverFollowAnchor(true);
+    setPopoverDragOffset({ x: 0, y: 0 });
   }, [selectedTopicId, stopDrag]);
 
   const handleSelectedTopicAnchorChange = React.useCallback(
@@ -234,6 +248,7 @@ export function useTopicPopover({
           top: boundedTop,
           side: current?.side ?? "right",
         } satisfies PopoverPosition;
+        manualPositionRef.current = next;
         return samePopoverPosition(current, next) ? current : next;
       });
     }
