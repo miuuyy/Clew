@@ -1,3 +1,4 @@
+import type { AppCopy } from "./appCopy";
 import type { ChatMessage } from "./types";
 
 export type ChatReply = {
@@ -22,7 +23,7 @@ export function groupChatReplies(messages: ChatMessage[]): ChatReply[] {
   return replies;
 }
 
-export function presentChatReply(reply: ChatReply, active: boolean, waiting: boolean) {
+export function presentChatReply(reply: ChatReply, active: boolean, waiting: boolean, copy: AppCopy["sessions"]) {
   const completeText = (message: ChatMessage) => !!message.content && message.agent_status !== "streaming";
   const texts = reply.messages.filter((message) => completeText(message) && message.message_phase !== "commentary");
   // Typed model commentary updates one status, never a transcript of internal steps.
@@ -30,8 +31,9 @@ export function presentChatReply(reply: ChatReply, active: boolean, waiting: boo
   const commentary = reply.messages.filter((message) => completeText(message) && message.message_phase === "commentary").at(-1);
   const progress = active && !waiting;
   const activeTool = reply.messages.filter((message) => message.activity?.status === "running").at(-1)?.activity;
-  const progressLabel = activeTool && ["propose_ingest", "propose_expand", "create_closure_quiz"].includes(activeTool.tool)
-    ? activeTool.detail : "Working…";
+  const tool = activeTool?.tool;
+  const progressLabel = tool === "propose_ingest" || tool === "propose_expand" || tool === "create_closure_quiz"
+    ? copy.progress[tool] : copy.working;
   const cards = reply.messages.filter((message) =>
     message.proposal || message.question || message.inline_quiz || message.closure_quiz
     || message.planning_status || message.planning_error || message.activity?.status === "failed",

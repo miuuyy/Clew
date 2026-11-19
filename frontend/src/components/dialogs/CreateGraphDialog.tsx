@@ -4,7 +4,7 @@ import { UploadSimple } from "@phosphor-icons/react";
 import { Modal } from "../ui/Modal";
 
 import type { AppCopy } from "../../lib/appCopy";
-import type { CreateGraphRequest } from "../../lib/types";
+import { GRAPH_LANGUAGES, type CreateGraphRequest } from "../../lib/types";
 
 export function CreateGraphDialog({
   open,
@@ -77,9 +77,7 @@ export function CreateGraphDialog({
         <label className="uiField">
           <span className="uiLabel">{copy.dialogs.language}</span>
           <select className="uiSelect" value={draft.language} onChange={(event) => patch({ language: event.target.value as CreateGraphRequest["language"] })}>
-            <option value="uk">{copy.dialogs.languageOptions.uk}</option>
-            <option value="ru">{copy.dialogs.languageOptions.ru}</option>
-            <option value="en">{copy.dialogs.languageOptions.en}</option>
+            {GRAPH_LANGUAGES.map((language) => <option key={language} value={language}>{copy.dialogs.languageOptions[language]}</option>)}
           </select>
         </label>
       </div>

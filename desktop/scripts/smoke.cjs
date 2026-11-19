@@ -28,12 +28,12 @@ try {
     if (result.error) throw result.error;
     if (result.status !== 0 || !fs.existsSync(report)) throw new Error(`Packaged app smoke failed (${result.status}). Diagnostics: ${dataDir}`);
     const receipt = JSON.parse(fs.readFileSync(report, 'utf8'));
-    if (!receipt.ok || !receipt.backendStopped || !receipt.backendGraceful || !receipt.persisted || receipt.storagePhase !== phase
+    if (!receipt.ok || !receipt.backendStopped || !receipt.backendGraceful || !receipt.persisted || !receipt.localized || receipt.storagePhase !== phase
         || receipt.platform !== process.platform || receipt.arch !== process.arch || receipt.version !== require('../../package.json').version) {
       throw new Error(`Packaged smoke failed: ${JSON.stringify(receipt)}. Diagnostics: ${dataDir}`);
     }
   }
-  console.log('Packaged Clew: onboarding, stable storage across restart, CORS, session protection, sandbox and backend shutdown passed.');
+  console.log('Packaged Clew: onboarding and language across restart, stable storage, CORS, session protection, sandbox and backend shutdown passed.');
   fs.rmSync(dataDir, { recursive: true, force: true });
 } catch (error) {
   const diagnostic = path.join(dataDir, 'logs', 'desktop.log');

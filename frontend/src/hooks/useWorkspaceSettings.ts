@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  MEMORY_MODE_OPTIONS,
   type SettingsDraftSetters,
   type SettingsDrafts,
   type ThemeMode,
@@ -27,8 +26,6 @@ type UseWorkspaceSettingsResult = {
   drafts: SettingsDrafts;
   setDrafts: SettingsDraftSetters;
   settingsDirty: boolean;
-  activeMemoryOption: (typeof MEMORY_MODE_OPTIONS)[number];
-  activeMemoryValues: string;
   liveDisableIdleAnimations: boolean;
   debugModeEnabled: boolean;
   saveSettings: () => void;
@@ -87,13 +84,6 @@ export function useWorkspaceSettings({
     [config, drafts, straightEdgeLinesEnabled],
   );
 
-  const activeMemoryOption = MEMORY_MODE_OPTIONS.find((option) => option.id === drafts.memoryMode) ?? MEMORY_MODE_OPTIONS[1];
-
-  const activeMemoryValues =
-    drafts.memoryMode === "custom"
-      ? `${drafts.memoryHistoryLimit} recent messages · graph ${drafts.memoryIncludeGraphContext ? "on" : "off"} · progress ${drafts.memoryIncludeProgressContext ? "on" : "off"} · quiz ${drafts.memoryIncludeQuizContext ? "on" : "off"} · frontier ${drafts.memoryIncludeFrontierContext ? "on" : "off"} · selected topic ${drafts.memoryIncludeSelectedTopicContext ? "on" : "off"}`
-      : activeMemoryOption.description;
-
   function updateDraft<K extends keyof SettingsDrafts>(key: K, value: SettingsDrafts[K] | ((current: SettingsDrafts[K]) => SettingsDrafts[K])): void {
     setDraftsState((current) => ({
       ...current,
@@ -141,8 +131,6 @@ export function useWorkspaceSettings({
     drafts,
     setDrafts,
     settingsDirty,
-    activeMemoryOption,
-    activeMemoryValues,
     liveDisableIdleAnimations: drafts.disableIdleAnimations,
     debugModeEnabled: drafts.debugModeEnabled,
     saveSettings,

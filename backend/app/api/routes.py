@@ -19,9 +19,11 @@ from app.api.route_helpers import (
     local_workspace_surface as _local_workspace_surface,
     normalize_resource_url as _normalize_resource_url,
     resource_label_from_url as _resource_label_from_url,
+    request_locale,
     workspace_config_payload as _workspace_config_payload,
 )
 from app.core.config import Settings, get_settings
+from app.core.locale import AppLocale
 from app.models.api import GraphExportRequest, GraphImportRequest, GraphLayoutPositionRequest, RenameGraphRequest, TopicArtifactInput, TopicResourceInput, UpdateGraphLayoutRequest
 from app.models.domain import Artifact, CreateGraphRequest, GraphProposalEnvelope, QuizStartRequest, QuizStartResponse, QuizSubmitRequest, QuizSubmitResponse, ResourceLink, UpdateWorkspaceConfigRequest
 from app.services.debug_log_service import DebugClientLogRequest, get_debug_log_service
@@ -289,12 +291,13 @@ def graph_assessment(
     graph_id: str,
     repository: GraphRepository = Depends(get_repository),
     assessment_service: AssessmentService = Depends(get_assessment_service),
+    locale: AppLocale = Depends(request_locale),
 ) -> dict:
     try:
         graph = repository.graph(graph_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"graph {graph_id} not found") from exc
-    return assessment_service.assess_graph(graph).model_dump(mode="json")
+    return assessment_service.assess_graph(graph, locale).model_dump(mode="json")
 
 
 @router.get("/api/v1/graph/current")

@@ -17,6 +17,9 @@ from urllib.parse import urlencode
 import httpx
 import jwt
 
+from app.agent.auth_copy import error_message, revoke_warning
+from app.core.locale import AppLocale
+
 ISSUER = "https://auth.openai.com"
 RESOURCE = "https://api.openai.com/v1"
 SCOPES = "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct"
@@ -28,11 +31,16 @@ REFRESH_MARGIN_SECONDS = 60
 
 
 class ChatGPTError(RuntimeError):
-    def __init__(self, code: str, message: str, *, retryable: bool = False, status: int | None = None):
+    def __init__(self, code: str, message: str, *, retryable: bool = False, status: int | None = None,
+                 locale: AppLocale | None = None):
         super().__init__(message)
         self.code = code
         self.retryable = retryable
         self.status = status
+        self.locale = locale
+
+    def public_message(self, locale: AppLocale) -> str:
+        return error_message(self.code, str(self), locale)
 
 
 # Messages for documented Sign in with ChatGPT error codes. Unknown codes keep the server message.
@@ -161,6 +169,7 @@ class PendingLogin:
     auth_url: str
     client_id: str
     subject: str | None
+    locale: AppLocale
 
 
 @dataclass
@@ -168,6 +177,7 @@ class LoginCallbackResult:
     digest: bytes
     completed_at: float
     generation: int
+    locale: AppLocale
     error: dict | None
 
 
@@ -194,7 +204,7 @@ class ChatGPTAuth:
         self.app_name = app_name
         self.pending: PendingLogin | None = None
         self.completing: PendingLogin | None = None
-        self.last_error: str | None = None
+        self.last_error: ChatGPTError | None = None
         self._discovery: dict | None = None
         self._jwks: dict | None = None
         self._refresh_lock = asyncio.Lock()
@@ -332,7 +342,7 @@ class ChatGPTAuth:
 
     # Sign-in flow
 
-    async def start_login(self) -> PendingLogin:
+    async def start_login(self, locale: AppLocale = "en") -> PendingLogin:
         if self.completing:
             return self.completing
         if self.pending and time.time() - self.pending.created_at < LOGIN_TTL_SECONDS:
@@ -370,7 +380,7 @@ class ChatGPTAuth:
         self.last_error = None
         self.pending = PendingLogin(login_id=_random()[:16], state=state, nonce=nonce, verifier=verifier,
                                     redirect_uri=self.redirect_uri, created_at=time.time(), auth_url=auth_url,
-                                    client_id=params["client_id"], subject=registration.get("subject"))
+                                    client_id=params["client_id"], subject=registration.get("subject"), locale=locale)
         return self.pending
 
     def cancel_login(self) -> None:
@@ -379,7 +389,7 @@ class ChatGPTAuth:
         self.completing = None
         self._callback_result = None
 
-    async def complete_login(self, query: dict[str, list[str]]) -> None:
+    async def complete_login(self, query: dict[str, list[str]]) -> AppLocale:
         # Browser retries share the original outcome; a one-time code is never
         # exchanged twice. Retain its fingerprint rather than the consumed code.
         digest = hashlib.sha256(json.dumps(query, sort_keys=True).encode()).digest()
@@ -392,19 +402,19 @@ class ChatGPTAuth:
                 if result.error is not None:
                     raise ChatGPTError(**result.error)
                 if self.connection() is not None:
-                    return
-            pending, generation = self.pending, self._login_generation
+                    return result.locale
+            generation = self._login_generation
             try:
-                await self._complete_login(query)
+                locale = await self._complete_login(query)
             except ChatGPTError as exc:
-                if pending is not None and self.pending is not pending and generation == self._login_generation:
-                    self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation,
-                        {"code": exc.code, "message": str(exc), "retryable": exc.retryable, "status": exc.status})
+                if exc.locale is not None and generation == self._login_generation:
+                    self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation, exc.locale,
+                        {"code": exc.code, "message": str(exc), "retryable": exc.retryable, "status": exc.status, "locale": exc.locale})
                 raise
-            else:
-                self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation, None)
+            self._callback_result = LoginCallbackResult(digest, time.monotonic(), self._generation, locale, None)
+            return locale
 
-    async def _complete_login(self, query: dict[str, list[str]]) -> None:
+    async def _complete_login(self, query: dict[str, list[str]]) -> AppLocale:
         pending = self.pending
         if pending is None:
             raise ChatGPTError("login_not_pending", "No sign-in is waiting in Clew. The attempt may have ended or the app restarted. Return to Clew and start sign-in again.")
@@ -446,9 +456,11 @@ class ChatGPTAuth:
             self.store.write({"client_id": client_id, "subject": identity["subject"],
                               "id_token": data["id_token"], **credentials})
             self.last_error = None
+            return pending.locale
         except ChatGPTError as exc:
+            exc.locale = pending.locale
             if generation == self._login_generation:
-                self.last_error = str(exc)
+                self.last_error = exc
             raise
         finally:
             if self.completing is pending:
@@ -474,19 +486,21 @@ class ChatGPTAuth:
             raise ChatGPTError("credential_storage_corrupt", "The saved ChatGPT connection does not match this Clew install. Sign out and sign in again.")
         return connection
 
-    def status(self) -> dict:
+    def status(self, locale: AppLocale = "en") -> dict:
         registration = self.registration()
         try:
             connection = self.connection()
         except ChatGPTError as exc:
             return {"authenticated": False, "sharing": False, "can_disconnect": exc.code == "credential_storage_corrupt",
-                    "account": None, "error": str(exc)}
+                    "account": None, "error": exc.public_message(locale)}
+        error = self.last_error.public_message(locale) if self.last_error else None
         if connection is None:
-            return {"authenticated": False, "sharing": False, "can_disconnect": False, "account": None, "error": self.last_error}
+            return {"authenticated": False, "sharing": False, "can_disconnect": False, "account": None, "error": error}
         sharing = SHARING_SCOPE in connection.get("scopes", [])
         return {"authenticated": True, "sharing": sharing, "can_disconnect": True,
                 "account": {"email": registration.get("email"), "name": registration.get("name")},
-                "error": self.last_error or (None if sharing else "Plan sharing was not granted. Sign in again and allow Clew to use your ChatGPT plan.")}
+                "error": error or (None if sharing else error_message("sharing_not_granted",
+                    "Plan sharing was not granted. Sign in again and allow Clew to use your ChatGPT plan.", locale))}
 
     async def access_token(self) -> str:
         connection = self.connection()
@@ -523,7 +537,7 @@ class ChatGPTAuth:
                 if exc.status == 401 or exc.code in REJECTED_CREDENTIALS | {"invalid_id_token", "account_mismatch", "invalid_token_response"}:
                     self.store.delete()
                     self._generation += 1
-                    self.last_error = str(exc)
+                    self.last_error = exc
                 raise
             self.store.write({**connection, **credentials})
             if SHARING_SCOPE not in credentials["scopes"]:
@@ -539,14 +553,14 @@ class ChatGPTAuth:
             self.store.delete()
             self._generation += 1
             self.cancel_login()
-            self.last_error = str(error)
+            self.last_error = error
 
-    async def logout(self) -> str | None:
+    async def logout(self, locale: AppLocale = "en") -> str | None:
         """Remove local tokens, then try remote revocation. Returns a warning when revocation is unconfirmed."""
         self._generation += 1
         self.cancel_login()
         self.last_error = None
-        warning = "Local credentials were removed, but ChatGPT did not confirm the disconnect. Remove Clew in ChatGPT Settings → Connected apps."
+        warning = revoke_warning(locale)
         try:
             connection = self.store.read()
         except ChatGPTError:

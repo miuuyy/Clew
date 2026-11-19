@@ -2,23 +2,18 @@ import React from "react";
 
 import { X } from "@phosphor-icons/react";
 import { ChatGPTAccountPanel } from "./ChatGPTAccountPanel";
+import { LanguageSelect } from "./LanguageSelect";
 import { SectionHead } from "./SettingsSection";
 import { SwitchRow } from "./ui/SwitchRow";
 import type { ChatGPTAccountController } from "../hooks/useChatGPTAccount";
-import { MEMORY_MODE_OPTIONS, type MemoryMode, type SettingsDraftSetters, type SettingsDrafts } from "../lib/appContracts";
+import { MEMORY_MODES, type SettingsDraftSetters, type SettingsDrafts } from "../lib/appContracts";
+import type { LocalePreference } from "../lib/appLocale";
 import type { AppCopy } from "../lib/appCopy";
 import type { GraphEnvelope, SnapshotRecord, WorkspaceConfig, WorkspaceEnvelope } from "../lib/types";
 import { useModalAccessibility } from "../lib/useModalAccessibility";
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
-type ModeOption<T extends string> = {
-  id: T;
-  label: string;
-  title: string;
-  description: string;
-};
-
-type SettingsModalProps = {
+type SettingsModalProps = LocalePreference & {
   isSettingsOpen: boolean;
   copy: AppCopy;
   setSettingsOpen: StateSetter<boolean>;
@@ -26,8 +21,6 @@ type SettingsModalProps = {
   drafts: SettingsDrafts;
   setDrafts: SettingsDraftSetters;
   chatgpt: ChatGPTAccountController;
-  activeMemoryOption: ModeOption<MemoryMode>;
-  activeMemoryValues: string;
   activeGraph: GraphEnvelope | null;
   loadSnapshots: () => Promise<void>;
   historyLoading: boolean;
@@ -49,8 +42,8 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     drafts,
     setDrafts,
     chatgpt,
-    activeMemoryOption,
-    activeMemoryValues,
+    locale,
+    changeLocale,
     activeGraph,
     loadSnapshots,
     historyLoading,
@@ -104,6 +97,9 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
     return null;
   }
 
+  const activeMemoryOption = copy.settingsPanel.memoryModes[memoryModeDraft];
+  const activeMemoryValues = memoryModeDraft === "custom" ? copy.settingsPanel.customMemory(drafts) : activeMemoryOption.description;
+
   return (
     <div className="stOverlay">
       <div ref={modalRef} className="stModal" role="dialog" aria-modal="true" aria-label={copy.settings.workspaceConfiguration} tabIndex={-1}>
@@ -117,10 +113,11 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
         <div className="stScroll">
           <div className="stGrid">
             <div className="stColumn">
-              <ChatGPTAccountPanel chatgpt={chatgpt} drafts={drafts} setDrafts={setDrafts} />
+              <ChatGPTAccountPanel copy={copy} chatgpt={chatgpt} drafts={drafts} setDrafts={setDrafts} />
 
               <section className="stSection">
-                <SectionHead eyebrow="Preferences" title="Assistant and workspace" />
+                <SectionHead eyebrow={copy.settingsPanel.preferences} title={copy.settingsPanel.assistantAndWorkspace} />
+                <LanguageSelect locale={locale} changeLocale={changeLocale} copy={copy.locale} />
                 <label className="uiField">
                   <span className="uiLabel">{copy.settingsPanel.assistantNickname}</span>
                   <input
@@ -150,26 +147,26 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
 
               <section className="stSection">
                 <SectionHead eyebrow={copy.settingsPanel.aiBehavior} title={copy.settingsPanel.memory} />
-                <p className="stLead">Clew keeps each conversation. These settings control the fresh graph context and the initial import of an existing chat.</p>
+                <p className="stLead">{copy.settingsPanel.memoryLead}</p>
                 <div className="uiSegmented">
-                  {MEMORY_MODE_OPTIONS.map((option) => (
+                  {MEMORY_MODES.map((id) => (
                     <button
-                      key={option.id}
-                      className={memoryModeDraft === option.id ? "uiSegmentedActive" : undefined}
-                      onClick={() => setMemoryModeDraft(option.id)}
+                      key={id}
+                      className={memoryModeDraft === id ? "uiSegmentedActive" : undefined}
+                      onClick={() => setMemoryModeDraft(id)}
                       type="button"
-                      aria-pressed={memoryModeDraft === option.id}
+                      aria-pressed={memoryModeDraft === id}
                     >
-                      <span>{option.label}</span>
-                      <span>{option.title}</span>
+                      <span>{copy.settingsPanel.memoryModes[id].label}</span>
+                      <span>{copy.settingsPanel.memoryModes[id].title}</span>
                     </button>
                   ))}
                 </div>
-                <p className="uiHelp"><strong>{activeMemoryOption.label}</strong>: {activeMemoryValues}</p>
+                <p className="uiHelp"><strong>{activeMemoryOption.label}</strong> · {activeMemoryValues}</p>
                 {memoryModeDraft === "custom" ? (
                   <>
                     <label className="uiField">
-                      <span className="uiLabel">Messages to import when connecting an existing chat</span>
+                      <span className="uiLabel">{copy.settingsPanel.memoryHistoryLimit}</span>
                       <input
                         className="uiInput stNarrow"
                         type="number"
@@ -194,7 +191,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
               {activeGraph ? (
                 <section className="stSection">
                   <SectionHead
-                    eyebrow="History"
+                    eyebrow={copy.settingsPanel.history}
                     title={copy.settingsPanel.snapshots}
                     action={<button className="uiButton uiButtonQuiet uiButtonSmall" onClick={() => void loadSnapshots()} type="button">{historyLoading ? copy.settingsPanel.refreshing : copy.settingsPanel.refresh}</button>}
                   />
@@ -203,13 +200,15 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
                     <div className="stSnapshots">
                       {snapshots.map((snapshot) => {
                         const current = data?.snapshot.id === snapshot.id;
+                        const sources = copy.settingsPanel.snapshotSources;
+                        const source = Object.hasOwn(sources, snapshot.source) ? sources[snapshot.source as keyof typeof sources] : snapshot.source;
                         return (
                           <div key={snapshot.id} className={`stSnapshot${current ? " stSnapshotCurrent" : ""}`}>
                             <div className="stSnapshotMain">
                               <div className="stSnapshotTitle">{copy.settingsPanel.snapshotLabel(snapshot.id)}</div>
                               <div className="stSnapshotMeta">
-                                <span>{snapshot.source}</span>
-                                {snapshot.reason ? <span>{snapshot.reason}</span> : null}
+                                <span>{source}</span>
+                                {snapshot.reason && snapshot.source !== "seed" ? <span>{snapshot.reason}</span> : null}
                               </div>
                             </div>
                             {current ? (
@@ -259,7 +258,7 @@ export function SettingsModal(props: SettingsModalProps): React.JSX.Element | nu
         </div>
 
         <footer className="stFooter">
-          <span className="uiHelp">{settingsDirty ? "Unsaved changes" : "All changes saved"}</span>
+          <span className="uiHelp">{settingsDirty ? copy.settingsPanel.unsaved : copy.settingsPanel.saved}</span>
           <button className="uiButton uiButtonPrimary" disabled={configSaving || !currentConfig || !settingsDirty} onClick={saveSettings} type="button">
             {configSaving ? copy.settingsPanel.saving : copy.settingsPanel.save}
           </button>

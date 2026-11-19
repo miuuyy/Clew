@@ -1,3 +1,6 @@
+export const GRAPH_LANGUAGES = ["uk", "ru", "en", "zh-CN"] as const;
+export type GraphLanguage = (typeof GRAPH_LANGUAGES)[number];
+
 export type TopicState =
   | "not_started"
   | "learning"
@@ -69,7 +72,7 @@ export type GraphEnvelope = {
   graph_id: string;
   subject: string;
   title: string;
-  language: "en" | "uk" | "ru";
+  language: GraphLanguage;
   version: number;
   topics: Topic[];
   edges: Edge[];
@@ -126,7 +129,7 @@ export type QuizSubmitResponse = {
 export type CreateGraphRequest = {
   title: string;
   subject: string;
-  language: "en" | "uk" | "ru";
+  language: GraphLanguage;
   description: string;
 };
 
@@ -204,6 +207,7 @@ export type GraphChatStreamEvent = ({ event_id?: number; session_id?: string; ru
 export type GraphAssessment = {
   graph_id: string;
   cards: Array<{
+    kind: "roadmap" | "level" | "closure" | "review";
     label: string;
     value: string;
     tone: "neutral" | "good" | "warn";

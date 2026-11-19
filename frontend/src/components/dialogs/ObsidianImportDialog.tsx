@@ -6,7 +6,7 @@ import { SwitchRow } from "../ui/SwitchRow";
 
 import type { AppCopy } from "../../lib/appCopy";
 import type { ObsidianImportOptions, ObsidianImportPreview } from "../../lib/obsidianImport";
-import type { CreateGraphRequest } from "../../lib/types";
+import { GRAPH_LANGUAGES, type GraphLanguage } from "../../lib/types";
 
 type ObsidianIssue = ObsidianImportPreview["issues"][number];
 
@@ -101,10 +101,8 @@ export function ObsidianImportDialog({
             </label>
             <label className="uiField">
               <span className="uiLabel">{copy.dialogs.language}</span>
-              <select className="uiSelect" value={draft.language} onChange={(event) => patch({ language: event.target.value as CreateGraphRequest["language"] })}>
-                <option value="uk">{copy.dialogs.languageOptions.uk}</option>
-                <option value="ru">{copy.dialogs.languageOptions.ru}</option>
-                <option value="en">{copy.dialogs.languageOptions.en}</option>
+              <select className="uiSelect" value={draft.language} onChange={(event) => patch({ language: event.target.value as GraphLanguage })}>
+                {GRAPH_LANGUAGES.map((language) => <option key={language} value={language}>{copy.dialogs.languageOptions[language]}</option>)}
               </select>
             </label>
             <label className="uiField">

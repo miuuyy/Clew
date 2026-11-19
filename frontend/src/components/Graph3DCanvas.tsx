@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
+import type { AppCopy } from "../lib/appCopy";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -44,12 +45,18 @@ function plainLabel(value: string): string {
     .trim();
 }
 
-function createLabelVisual(text: string, themeMode: GraphCanvasThemeMode, accent = false): LabelVisual {
+function createLabelVisual(text: string, themeMode: GraphCanvasThemeMode, untitled: string, accent = false): LabelVisual {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d")!;
-  const label = plainLabel(text).slice(0, 76) || "Untitled";
+  const letters = Array.from(plainLabel(text) || untitled);
   const fontSize = accent ? 27 : 23;
   context.font = `${accent ? 650 : 520} ${fontSize}px Manrope, Inter, sans-serif`;
+  const prefix = letters.slice(0, 76);
+  let label = prefix.join("") + (prefix.length < letters.length ? "…" : "");
+  while (context.measureText(label).width > 604 && prefix.length) {
+    prefix.pop();
+    label = prefix.join("") + "…";
+  }
   const measuredWidth = Math.ceil(context.measureText(label).width);
   canvas.width = Math.min(640, Math.max(128, measuredWidth + 36));
   canvas.height = accent ? 58 : 52;
@@ -454,6 +461,7 @@ function applyAppearance(args: {
 }
 
 export function Graph3DCanvas({
+  copy,
   topics,
   edges,
   zones,
@@ -466,6 +474,7 @@ export function Graph3DCanvas({
   onSelectedTopicAnchorChange,
   themeMode,
 }: {
+  copy: AppCopy["graphStats"];
   topics: Topic[];
   edges: Edge[];
   zones: Zone[];
@@ -595,7 +604,7 @@ export function Graph3DCanvas({
       scene.add(mesh);
       const memberPositions = zone.topic_ids.map((topicId) => positions.get(topicId)).filter((point): point is THREE.Vector3 => Boolean(point));
       const zoneCenter = memberPositions.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / memberPositions.length);
-      const label = createLabelVisual(zone.title, themeMode, true);
+      const label = createLabelVisual(zone.title, themeMode, copy.untitled, true);
       label.sprite.position.copy(zoneCenter).add(new THREE.Vector3(0, Math.min(...cloud.envelopeRadii.toArray()) * 0.24, 0));
       label.material.opacity = 0.3;
       label.sprite.renderOrder = 3;
@@ -645,7 +654,7 @@ export function Graph3DCanvas({
     );
     topics.forEach((topic) => {
       const position = positions.get(topic.id)!;
-      const label = createLabelVisual(topic.title, themeMode);
+      const label = createLabelVisual(topic.title, themeMode, copy.untitled);
       label.sprite.position.copy(position).add(new THREE.Vector3(0, 7.2, 0));
       label.sprite.userData.baseWidth = label.sprite.scale.x;
       label.sprite.userData.baseHeight = label.sprite.scale.y;
@@ -909,7 +918,7 @@ export function Graph3DCanvas({
       sceneRef.current = null;
       onSelectedTopicAnchorChangeRef.current(null);
     };
-  }, [layout, themeMode, topics, edges, zones, rootSignature]);
+  }, [layout, themeMode, topics, edges, zones, rootSignature, copy.untitled]);
 
   useEffect(() => {
     const state = sceneRef.current;
@@ -920,12 +929,12 @@ export function Graph3DCanvas({
   }, [edges, frontierEdgeIds, onSelectedTopicAnchorChange, pathEdgeIds, pathNodeIds, rootIds, selectedTopicId, themeMode, topics, zones]);
 
   return (
-    <div ref={containerRef} className="graph3dSurface" tabIndex={0} aria-label="Interactive 3D knowledge graph">
+    <div ref={containerRef} className="graph3dSurface" tabIndex={0} aria-label={copy.interactive3d}>
       <div ref={mountRef} className="graph3dMount" />
       <div ref={hoverRef} className="graph3dHoverLabel" hidden />
       <div className="graph3dNavigationHint">
-        <span>Hold RMB to look · WASD to fly · Q/E vertical · Shift to boost</span>
-        <button type="button" onClick={() => resetViewRef.current()}>Reset view</button>
+        <span>{copy.navigation3d}</span>
+        <button type="button" onClick={() => resetViewRef.current()}>{copy.resetView}</button>
       </div>
     </div>
   );

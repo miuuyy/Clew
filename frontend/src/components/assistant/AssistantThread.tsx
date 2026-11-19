@@ -13,7 +13,7 @@ import { groupChatReplies, presentChatReply } from "../../lib/chatPresentation";
 type AssistantMessage = GraphChatState["messages"][number];
 type AssistantProposal = NonNullable<AssistantMessage["proposal"]>;
 
-function AssistantProgress({ label = "Working…" }: { label?: string }) {
+function AssistantProgress({ label }: { label: string }) {
   return <div className="assistantProgress" role="status" aria-label={label}>
     <span className="chatTypingDot" aria-hidden="true" />
     <span className="chatTypingDot" aria-hidden="true" />
@@ -61,8 +61,8 @@ export function AssistantThread({
   return (
     <div ref={chatViewportRef} className="assistantThread">
       {chatThreadLoading ? (
-        <div className="assistantHello assistantHelloLoading" role="status" aria-label="Loading chat thread">
-          <ClewLoader size={56} />
+        <div className="assistantHello assistantHelloLoading">
+          <ClewLoader size={56} label={copy.sessions.loadingThread} />
         </div>
       ) : null}
       {currentChatState.messages.length === 0 && !chatThreadLoading ? (
@@ -72,7 +72,7 @@ export function AssistantThread({
         </div>
       ) : null}
       {replies.map((reply) => {
-        const view = presentChatReply(reply, reply.id === activeReplyId, currentChatState.status === "waiting");
+        const view = presentChatReply(reply, reply.id === activeReplyId, currentChatState.status === "waiting", copy.sessions);
         if (!view.texts.length && !view.cards.length && !view.commentary && !view.progress && !view.interrupted) return null;
         return <div key={reply.id} className={`chatMessage chatMessage-${reply.role}`}>
           <div className="chatBubble">
@@ -86,22 +86,22 @@ export function AssistantThread({
               const proposalHighlights = proposal ? summarizeTopOperations(proposal, copy) : [];
               return <React.Fragment key={message.id}>
                 {message.activity?.status === "failed" && message.question?.status !== "interrupted" && message.inline_quiz?.status !== "interrupted"
-                  ? <div className="inlineNotice inlineNoticeError">{message.activity.detail}</div> : null}
-                {message.question || message.inline_quiz ? <AgentInteraction question={message.question} quiz={message.inline_quiz} controls={agentControls} /> : null}
+                  ? <div className="inlineNotice inlineNoticeError">{copy.errors.request(copy.sessions.toolFailed, message.activity.detail)}</div> : null}
+                {message.question || message.inline_quiz ? <AgentInteraction question={message.question} quiz={message.inline_quiz} controls={agentControls} copy={copy} /> : null}
                 {message.closure_quiz ? <div className="proposalInlineCard">
                   <div className="proposalInlineHead">
                     <div>
-                      <div className="proposalInlineTitle">Completion test ready</div>
-                      <div className="proposalInlineNote">{message.closure_quiz.question_count} questions</div>
+                      <div className="proposalInlineTitle">{copy.sessions.completionReady}</div>
+                      <div className="proposalInlineNote">{copy.sessions.questionCount(message.closure_quiz.question_count)}</div>
                     </div>
-                    <button className="proposalOpenButton" type="button" onClick={() => agentControls.openQuiz(message.closure_quiz!)}>Open test</button>
+                    <button className="proposalOpenButton" type="button" onClick={() => agentControls.openQuiz(message.closure_quiz!)}>{copy.sessions.openTest}</button>
                   </div>
                 </div> : null}
                 {message.planning_status ? (
                   <AssistantProgress label={message.planning_status} />
                 ) : null}
                 {message.planning_error ? (
-                  <div className="inlineNotice inlineNoticeError">{message.planning_error}</div>
+                  <div className="inlineNotice inlineNoticeError">{copy.errors.request(copy.sessions.planningFailed, message.planning_error)}</div>
                 ) : null}
                 {proposal ? (
                   <div className="proposalInlineCard">
@@ -151,7 +151,7 @@ export function AssistantThread({
                             onClick={() => {
                               updateCurrentChatState((current) => ({
                                 ...current,
-                                input: `Expand from topic ${item.target} to topic: `,
+                                input: copy.sessions.expandFromTopic(item.target),
                               }));
                               window.requestAnimationFrame(() => chatComposerRef.current?.focus());
                             }}
@@ -163,10 +163,10 @@ export function AssistantThread({
                       </div>
                     ) : null}
                     <details className="proposalReviewDetails">
-                      <summary>Review changes</summary>
+                      <summary>{copy.sessions.reviewChanges}</summary>
                       {proposal.proposal_envelope.operations.map((operation) => <div key={operation.op_id} className="proposalReviewItem">
                         {operation.topic ? <><strong>{operation.topic.title}</strong><AssistantMarkdown content={operation.topic.description} />
-                          {operation.topic.estimated_minutes > 0 ? <div className="proposalReviewMeta">Estimated study time: {operation.topic.estimated_minutes} minutes</div> : null}
+                          {operation.topic.estimated_minutes > 0 ? <div className="proposalReviewMeta">{copy.sessions.studyTime(operation.topic.estimated_minutes)}</div> : null}
                           {operation.topic.resources.map((resource, index) => <a key={`${resource.url}-${index}`} href={resource.url} target="_blank" rel="noopener noreferrer">{resource.label}</a>)}
                         </> : operation.zone ? <strong>{operation.zone.title}</strong> : operation.edge ? <div>{operation.edge.source_topic_id} → {operation.edge.target_topic_id}</div> : null}
                         {operation.rationale ? <div className="proposalReviewMeta">{operation.rationale}</div> : null}
@@ -195,14 +195,14 @@ export function AssistantThread({
               </React.Fragment>;
             })}
             {view.progress ? <AssistantProgress label={view.progressLabel} /> : null}
-            {view.interrupted ? <div className="chatStopped">Stopped</div> : null}
+            {view.interrupted ? <div className="chatStopped">{copy.sessions.stopped}</div> : null}
           </div>
         </div>;
       })}
       {chatLoading && currentChatState.status !== "waiting" && !activeReplyId && !hasInlinePlanningWidget ? (
         <div className="chatMessage chatMessage-assistant">
           <div className="chatBubble">
-            <AssistantProgress />
+            <AssistantProgress label={copy.sessions.working} />
           </div>
         </div>
       ) : null}

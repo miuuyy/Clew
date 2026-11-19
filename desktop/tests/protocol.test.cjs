@@ -36,12 +36,13 @@ test('application protocol serves only bundle files with a private-origin CSP', 
     assert.equal((await serve('clew://app/', 'GET', 'https://evil.example')).status, 403);
     assert.equal((await handler({ url: 'clew://app/', method: 'GET' })).status, 200);
     const request = { url: 'clew://app/api/v1/chat?cursor=1', method: 'POST', initiatorOrigin: 'clew://app',
-      headers: new Headers({ 'X-Clew-Session': 'private-session', 'content-type': 'application/json', Host: 'evil.example' }), body: '{"message":"hello"}' };
+      headers: new Headers({ 'X-Clew-Session': 'private-session', 'content-type': 'application/json', 'Accept-Language': 'zh-CN', Host: 'evil.example' }), body: '{"message":"hello"}' };
     assert.equal(await (await handler(request)).text(), 'stream-data');
     assert.equal(forwarded.url, 'http://127.0.0.1:45678/api/v1/chat?cursor=1');
     assert.equal(forwarded.options.body, request.body);
     assert.equal(forwarded.options.headers.get('Host'), null);
     assert.equal(forwarded.options.headers.get('Origin'), 'clew://app');
+    assert.equal(forwarded.options.headers.get('Accept-Language'), 'zh-CN');
     assert.equal(forwarded.options.redirect, 'error');
     assert.equal((await handler({ ...request, headers: new Headers() })).status, 403);
     assert.equal((await handler({ ...request, initiatorOrigin: undefined })).status, 403);

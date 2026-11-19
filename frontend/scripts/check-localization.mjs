@@ -3,10 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
-const COPY_TARGET = {
-  file: "src/lib/appCopy.ts",
-  variable: "APP_COPY",
-};
+const COPY_TARGETS = [
+  { file: "src/lib/appCopy.ts", variable: "APP_COPY" },
+  { file: "src/lib/appCopy.zh-CN.ts", variable: "APP_COPY_ZH_CN" },
+];
 
 function unwrap(node) {
   let current = node;
@@ -103,7 +103,7 @@ function validateCopy(projectRoot, descriptor) {
 }
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const failures = validateCopy(projectRoot, COPY_TARGET);
+const failures = COPY_TARGETS.flatMap((target) => validateCopy(projectRoot, target));
 
 if (failures.length > 0) {
   console.error("Localization check failed:");
@@ -113,4 +113,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Localization check passed for ${COPY_TARGET.variable}.`);
+console.log("Localization check passed for English and Simplified Chinese.");

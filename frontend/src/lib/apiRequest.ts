@@ -23,6 +23,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     ...(init ?? {}),
     credentials: "include",
   });
+  if (typeof document !== "undefined" && document.documentElement.lang && !request.headers.has("Accept-Language")) {
+    request.headers.set("Accept-Language", document.documentElement.lang);
+  }
   if (typeof window !== "undefined" && window.clewDesktop) {
     const destination = new URL(request.url);
     const backend = new URL(window.clewDesktop.apiBase);

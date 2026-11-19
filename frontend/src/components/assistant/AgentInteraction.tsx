@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { AppCopy } from "../../lib/appCopy";
 import type { AgentQuestion, InlineChatQuiz, TopicQuizSession } from "../../lib/types";
 import { renderDisplayText } from "../../lib/appUiHelpers";
 
@@ -10,8 +11,8 @@ export type AgentControls = {
   connect: () => void;
   openQuiz: (session: TopicQuizSession) => void;
 };
-export function AgentInteraction({ question, quiz, controls }: {
-  question?: AgentQuestion | null; quiz?: InlineChatQuiz | null; controls: AgentControls;
+export function AgentInteraction({ question, quiz, controls, copy }: {
+  question?: AgentQuestion | null; quiz?: InlineChatQuiz | null; controls: AgentControls; copy: AppCopy;
 }) {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +25,7 @@ export function AgentInteraction({ question, quiz, controls }: {
     if (busy || !pending || !item.interaction_id) return;
     setBusy(true); setError(null);
     try { await controls.answer(item.interaction_id, value || undefined, choiceIndex); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not send your answer."); }
+    catch (cause) { setError(copy.errors.request(copy.sessions.answerFailed, cause instanceof Error ? cause.message : "")); }
     finally { setBusy(false); }
   };
   return <div className="inlineQuizCard">
@@ -38,11 +39,11 @@ export function AgentInteraction({ question, quiz, controls }: {
       })}
     </div>
     {question && pending ? <form className="agentQuestionForm" onSubmit={(event) => { event.preventDefault(); void send(); }}>
-      <textarea className="agentQuestionInput" rows={1} aria-label="Your answer" placeholder={question.choices.length ? "Or write your own answer…" : "Your answer…"} value={value} disabled={busy} maxLength={12000} onChange={(event) => setValue(event.target.value)}
+      <textarea className="agentQuestionInput" rows={1} aria-label={copy.sessions.yourAnswer} placeholder={question.choices.length ? copy.sessions.customAnswer : copy.sessions.answerPlaceholder} value={value} disabled={busy} maxLength={12000} onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }} />
-      <button className="agentQuestionSend" type="submit" aria-label="Send answer" disabled={busy || !value.trim()}>{busy ? "Sending…" : "Send"}</button>
+      <button className="agentQuestionSend" type="submit" aria-label={copy.sessions.sendAnswer} disabled={busy || !value.trim()}>{busy ? copy.sessions.sending : copy.shell.send}</button>
     </form> : null}
-    {question?.answer && !question.choices.includes(question.answer) ? <div className="inlineQuizNote">Your answer: {question.answer}</div> : null}
+    {question?.answer && !question.choices.includes(question.answer) ? <div className="inlineQuizNote">{copy.quiz.yourAnswer(question.answer)}</div> : null}
     {error ? <div className="inlineQuizNote inlineQuizNoteError" role="alert">{error}</div> : null}
   </div>;
 }

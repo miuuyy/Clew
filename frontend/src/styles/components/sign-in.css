@@ -20,6 +20,11 @@
 .signInFooter { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 28px; }
 .signInFooter a { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 32px; color: #8c8c8c; font-size: 12px; text-decoration: none; transition: color .15s; }
 .signInFooter a:hover { color: #fff; }
+.signInLanguage { position: relative; }
+.signInLanguageControl { display: inline-flex; align-items: center; gap: 5px; color: #b0b0b0; }
+.signInLanguageControl .uiSelect { width: auto; min-height: 32px; padding: 0 23px 0 4px; border: 0; background-color: transparent; color: inherit; font-size: 12px; color-scheme: dark; }
+.signInLanguageControl:hover, .signInLanguageControl:focus-within { color: #fff; }
+.signInLanguage .signInError { position: absolute; right: 0; width: 180px; text-align: right; }
 .signIn button:focus-visible, .signIn a:focus-visible { outline: 2px solid #aaa; outline-offset: 5px; }
 
 .launchError { max-width: 400px; padding: 24px; text-align: center; font-size: 13px; line-height: 1.6; }

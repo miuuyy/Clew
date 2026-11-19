@@ -13,6 +13,71 @@ INVALID_PATH_CHARS_RE = re.compile(r'[\\/:*?"<>|]+')
 WHITESPACE_RE = re.compile(r"\s+")
 
 
+EXPORT_COPY = {
+    "en": {
+        "export_folder": "Clew Export",
+        "intro": "Exported from Clew for Obsidian.",
+        "summary": "Graph summary",
+        "subject": "Subject",
+        "language": "Language",
+        "topics": "Topics",
+        "edges": "Edges",
+        "zones": "Zones",
+        "closed": "Closed topics",
+        "zone_count": "{title} ({count} topics)",
+        "orphans": "Topics without primary zone",
+        "metadata": "Study metadata",
+        "level": "Level",
+        "minutes": "Estimated minutes",
+        "state": "State",
+        "resources": "Resources",
+        "artifacts": "Artifacts",
+        "empty_artifact": "_Empty artifact body._",
+        "requires": "Requires",
+        "supports": "Supports",
+        "bridges": "Bridges",
+        "extends": "Extends",
+        "reviews": "Reviews",
+        "via": " via {links}",
+    },
+    "zh-CN": {
+        "export_folder": "Clew 导出",
+        "intro": "由 Clew 导出，可在 Obsidian 中打开。",
+        "summary": "图谱概览",
+        "subject": "学科",
+        "language": "语言",
+        "topics": "主题",
+        "edges": "关系",
+        "zones": "分区",
+        "closed": "已完成的主题",
+        "zone_count": "{title}（{count} 个主题）",
+        "orphans": "未归入主分区的主题",
+        "metadata": "学习信息",
+        "level": "层级",
+        "minutes": "预计时长（分钟）",
+        "state": "状态",
+        "resources": "学习资源",
+        "artifacts": "学习笔记",
+        "empty_artifact": "_此笔记没有正文。_",
+        "requires": "先修",
+        "supports": "支撑",
+        "bridges": "关联",
+        "extends": "扩展",
+        "reviews": "复习",
+        "via": "（经由 {links}）",
+    },
+}
+
+ZH_CN_TOPIC_STATES = {
+    "not_started": "未开始",
+    "learning": "学习中",
+    "shaky": "尚不熟练",
+    "solid": "已掌握",
+    "mastered": "熟练掌握",
+    "needs_review": "待复习",
+}
+
+
 def build_obsidian_export_package(
     graph: StudyGraph,
     *,
@@ -20,13 +85,14 @@ def build_obsidian_export_package(
     include_progress: bool,
     options: ObsidianExportOptions,
 ) -> ObsidianGraphExportPackage:
-    folder_name = _sanitize_path_segment(title, fallback="Clew Export")
+    copy = EXPORT_COPY["zh-CN" if graph.language == "zh-CN" else "en"]
+    folder_name = _sanitize_path_segment(title, fallback=copy["export_folder"])
     zones_by_id = {zone.id: zone for zone in graph.zones}
     topics_by_id = {topic.id: topic for topic in graph.topics}
     topic_basenames = _build_topic_basenames(graph.topics)
 
     files = [
-        ObsidianExportFile(path="README.md", body=_build_readme(graph, title=title, include_progress=include_progress, zones_by_id=zones_by_id)),
+        ObsidianExportFile(path="README.md", body=_build_readme(graph, copy, title=title, include_progress=include_progress, zones_by_id=zones_by_id)),
     ]
 
     for topic in graph.topics:
@@ -40,6 +106,7 @@ def build_obsidian_export_package(
                 path=path,
                 body=_build_topic_markdown(
                     topic,
+                    copy,
                     graph=graph,
                     include_progress=include_progress,
                     options=options,
@@ -63,6 +130,7 @@ def build_obsidian_export_package(
 
 def _build_readme(
     graph: StudyGraph,
+    copy: dict[str, str],
     *,
     title: str,
     include_progress: bool,
@@ -72,30 +140,32 @@ def _build_readme(
     lines = [
         f"# {title}",
         "",
-        "Exported from Clew for Obsidian.",
+        copy["intro"],
         "",
-        "## Graph summary",
-        f"- Subject: {graph.subject}",
-        f"- Language: {graph.language}",
-        f"- Topics: {len(graph.topics)}",
-        f"- Edges: {len(graph.edges)}",
-        f"- Zones: {len(graph.zones)}",
+        f"## {copy['summary']}",
+        f"- {copy['subject']}: {graph.subject}",
+        f"- {copy['language']}: {graph.language}",
+        f"- {copy['topics']}: {len(graph.topics)}",
+        f"- {copy['edges']}: {len(graph.edges)}",
+        f"- {copy['zones']}: {len(graph.zones)}",
     ]
     if include_progress:
-        lines.append(f"- Closed topics: {closed_count}")
+        lines.append(f"- {copy['closed']}: {closed_count}")
     if graph.zones:
-        lines.extend(["", "## Zones"])
+        lines.extend(["", f"## {copy['zones']}"])
         for zone in graph.zones:
-            lines.append(f"- {zone.title} ({len(zone.topic_ids)} topics)")
+            row = copy["zone_count"].format(title=zone.title, count=len(zone.topic_ids))
+            lines.append(f"- {row}")
     orphan_topics = [topic.title for topic in graph.topics if not _primary_zone_for_topic(topic, zones_by_id=zones_by_id, graph_zones=graph.zones)]
     if orphan_topics:
-        lines.extend(["", "## Topics without primary zone"])
+        lines.extend(["", f"## {copy['orphans']}"])
         lines.extend(f"- {label}" for label in orphan_topics)
     return "\n".join(lines).strip() + "\n"
 
 
 def _build_topic_markdown(
     topic: Topic,
+    copy: dict[str, str],
     *,
     graph: StudyGraph,
     include_progress: bool,
@@ -105,7 +175,6 @@ def _build_topic_markdown(
     topic_basenames: dict[str, str],
 ) -> str:
     outgoing_edges = [edge for edge in graph.edges if edge.source_topic_id == topic.id]
-    incoming_edges = [edge for edge in graph.edges if edge.target_topic_id == topic.id]
     frontmatter_lines = _build_frontmatter(
         topic,
         include_progress=include_progress,
@@ -118,28 +187,20 @@ def _build_topic_markdown(
     if options.include_descriptions and topic.description.strip():
         sections.extend(["", topic.description.strip()])
 
-    if include_progress:
-        sections.extend(
-            [
-                "",
-                "## Study metadata",
-                f"- Level: {topic.level}",
-                f"- Estimated minutes: {topic.estimated_minutes}",
-                f"- State: {topic.state}",
-            ]
-        )
-    elif topic.level or topic.estimated_minutes:
-        sections.extend(
-            [
-                "",
-                "## Study metadata",
-                f"- Level: {topic.level}",
-                f"- Estimated minutes: {topic.estimated_minutes}",
-            ]
-        )
+    if include_progress or topic.level or topic.estimated_minutes:
+        sections.extend([
+            "",
+            f"## {copy['metadata']}",
+            f"- {copy['level']}: {topic.level}",
+            f"- {copy['minutes']}: {topic.estimated_minutes}",
+        ])
+        if include_progress:
+            state = ZH_CN_TOPIC_STATES[topic.state] if graph.language == "zh-CN" else topic.state
+            sections.append(f"- {copy['state']}: {state}")
 
     sections.extend(
         _build_relation_sections(
+            copy,
             topic_id=topic.id,
             graph=graph,
             outgoing_edges=outgoing_edges,
@@ -149,14 +210,14 @@ def _build_topic_markdown(
     )
 
     if options.include_resources and topic.resources:
-        sections.extend(["", "## Resources"])
+        sections.extend(["", f"## {copy['resources']}"])
         for resource in topic.resources:
             sections.append(f"- [{resource.label}]({resource.url})")
 
     if options.include_artifacts and topic.artifacts:
-        sections.extend(["", "## Artifacts"])
+        sections.extend(["", f"## {copy['artifacts']}"])
         for artifact in topic.artifacts:
-            sections.extend(["", f"### {artifact.title}", artifact.body.strip() or "_Empty artifact body._"])
+            sections.extend(["", f"### {artifact.title}", artifact.body.strip() or copy["empty_artifact"]])
 
     body = "\n".join(sections).strip()
     return f"{frontmatter_lines}\n{body}\n"
@@ -201,6 +262,7 @@ def _build_frontmatter(
 
 
 def _build_relation_sections(
+    copy: dict[str, str],
     *,
     topic_id: str,
     graph: StudyGraph,
@@ -214,13 +276,14 @@ def _build_relation_sections(
         outgoing_by_relation[edge.relation].append(edge)
 
     prerequisite_lines = _build_full_prerequisite_lines(
+        copy,
         topic_id=topic_id,
         graph=graph,
         topics_by_id=topics_by_id,
         topic_basenames=topic_basenames,
     )
     if prerequisite_lines:
-        lines.extend(["", "## Requires", *prerequisite_lines])
+        lines.extend(["", f"## {copy['requires']}", *prerequisite_lines])
 
     for relation in ["requires", "supports", "bridges", "extends", "reviews"]:
         if relation == "requires":
@@ -228,7 +291,7 @@ def _build_relation_sections(
         edges = outgoing_by_relation.get(relation, [])
         if not edges:
             continue
-        lines.extend(["", f"## {_titleize_relation(relation)}"])
+        lines.extend(["", f"## {copy[relation]}"])
         for edge in edges:
             target = topics_by_id.get(edge.target_topic_id)
             if target is None:
@@ -242,6 +305,7 @@ def _build_relation_sections(
 
 
 def _build_full_prerequisite_lines(
+    copy: dict[str, str],
     *,
     topic_id: str,
     graph: StudyGraph,
@@ -273,7 +337,7 @@ def _build_full_prerequisite_lines(
                 if node_id in topic_basenames
             )
             if via_links:
-                line += f" via {via_links}"
+                line += copy["via"].format(links=via_links)
         lines.append(line)
 
         for parent_id in parent_map.get(current_id, []):
@@ -325,10 +389,6 @@ def _sanitize_path_segment(value: str, *, fallback: str) -> str:
     if not cleaned or cleaned in {".", ".."}:
         raise ValueError("Obsidian export requires a valid filename or directory name.")
     return cleaned[:120]
-
-
-def _titleize_relation(relation: str) -> str:
-    return relation.title()
 
 
 def _yaml_string(value: str) -> str:

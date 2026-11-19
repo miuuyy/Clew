@@ -20,7 +20,7 @@ import {
 import { readErrorMessage, type apiFetch } from "../lib/apiRequest";
 import { renderDisplayText, safeExternalUrl, type ManualLayoutPositions, type PopoverPosition } from "../lib/appUiHelpers";
 import type { AppCopy } from "../lib/appCopy";
-import { formatMinutes, formatTopicState, getTopicStateTone } from "../lib/graph";
+import { formatMinutes, getTopicStateTone } from "../lib/graph";
 import { useModalAccessibility } from "../lib/useModalAccessibility";
 import { GraphCanvas } from "./GraphCanvas";
 import type { TopicAnchorPoint } from "./GraphCanvas";
@@ -756,7 +756,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
       if (topicAssetDialog.kind === "resource") {
         const safeUrl = safeExternalUrl(topicResourceUrlDraft);
         if (!safeUrl) {
-          throw new Error("A valid link is required.");
+          throw new Error(copy.errors.validLink);
         }
         await addTopicResource(topicAssetDialog.topicId, safeUrl);
       } else {
@@ -1022,7 +1022,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
           </button>
           <a
             className="sidebarAccountTrigger sidebarAccountLink"
-            href="https://clew.my/docs"
+            href={copy.locale.docsUrl}
             target="_blank"
             rel="noreferrer"
           >
@@ -1211,8 +1211,9 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                   </button>
                 ) : null}
                 {activeGraph && graphViewMode === "3d" ? (
-                  <React.Suspense fallback={<div className="graph3dLoading">Preparing 3D space…</div>}>
+                  <React.Suspense fallback={<div className="graph3dLoading">{copy.graphStats.loading3d}</div>}>
                     <Graph3DCanvas
+                      copy={copy.graphStats}
                       key={`graph-3d:${activeGraph.graph_id}`}
                       topics={activeGraph.topics}
                       edges={activeGraph.edges}
@@ -1346,7 +1347,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                     </div>
                     <div className="topicPopoverTitle">{selectedTopic.title}</div>
                     <div className="topicPopoverMeta">
-                      <span className={`topicPopoverState topicPopoverState-${getTopicStateTone(selectedTopic.state)}`}>{formatTopicState(selectedTopic.state)}</span>
+                      <span className={`topicPopoverState topicPopoverState-${getTopicStateTone(selectedTopic.state)}`}>{copy.topic.states[selectedTopic.state]}</span>
                       <span className="topicPopoverMetaItem">{formatMinutes(selectedTopic.estimated_minutes, copy)}</span>
                       {selectedZoneLabel ? <span className="topicPopoverMetaItem">{selectedZoneLabel}</span> : null}
                     </div>
@@ -1580,7 +1581,7 @@ export function WorkspaceShell(props: WorkspaceShellProps): React.JSX.Element {
                 <button className={`lightDockButton ${isSettingsOpen ? "lightDockButtonActive" : ""}`} onClick={openConfigurationSettings} title={copy.shell.configuration} type="button">
                   <GearSix size={21} weight={getDockIconWeight(isSettingsOpen)} />
                 </button>
-                <a className="lightDockButton lightDockButtonLink" href="https://clew.my/docs" rel="noreferrer" target="_blank" title={copy.sidebar.documentation}>
+                <a className="lightDockButton lightDockButtonLink" href={copy.locale.docsUrl} rel="noreferrer" target="_blank" title={copy.sidebar.documentation}>
                   <BookBookmark size={21} weight={getDockIconWeight(false)} />
                 </a>
                 {debugModeEnabled ? (

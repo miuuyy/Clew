@@ -41,9 +41,9 @@ export function AssistantComposer({
 }: AssistantComposerProps): React.JSX.Element {
   return (
     <div className="assistantComposerWrap">
-      {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{chatError}<button className="composerInlineAction" type="button" onClick={agentControls.reconnect}>Reconnect</button></div> : null}
-      {!agentControls.authenticated ? <div className="chatgptChatConnect"><span>Sign in with ChatGPT to start learning.</span><button className="composerInlineAction" type="button" onClick={agentControls.connect}>Sign in</button></div> : null}
-      {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{chatSessionsError}</div> : null}
+      {chatError ? <div className="inlineNotice inlineNoticeError" role="alert">{copy.errors.request(copy.sessions.chatFailed, chatError)}<button className="composerInlineAction" type="button" onClick={agentControls.reconnect}>{copy.sessions.reconnect}</button></div> : null}
+      {!agentControls.authenticated ? <div className="chatgptChatConnect"><span>{copy.account.signInToLearn}</span><button className="composerInlineAction" type="button" onClick={agentControls.connect}>{copy.account.shortSignIn}</button></div> : null}
+      {chatSessionsError ? <div className="inlineNotice inlineNoticeError">{copy.errors.request(copy.errors.loadChatSessions, chatSessionsError)}</div> : null}
       {applyError ? <div className="inlineNotice inlineNoticeError">{applyError}</div> : null}
       <div className="assistantTemplates">
         {assistantTemplates.map((template) => (
@@ -86,8 +86,8 @@ export function AssistantComposer({
           className="composerSendButton"
           disabled={chatThreadLoading || (!chatLoading && (!currentChatState.input.trim() || !agentControls.authenticated))}
           onClick={() => chatLoading ? void agentControls.stop() : sendChat()}
-          aria-label={chatLoading ? "Stop reply" : "Send message"}
-          title={chatLoading ? "Stop reply" : "Send message"}
+          aria-label={chatLoading ? copy.sessions.stopReply : copy.sessions.sendMessage}
+          title={chatLoading ? copy.sessions.stopReply : copy.sessions.sendMessage}
           type="button"
         >
           {chatLoading ? (

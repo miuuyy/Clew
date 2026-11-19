@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { APP_COPY } from "./appCopy";
 import { groupChatReplies, presentChatReply } from "./chatPresentation";
 import type { ChatMessage } from "./types";
 
@@ -6,7 +7,7 @@ const part = (id: string, patch: Partial<ChatMessage> = {}): ChatMessage => ({
   id, role: "assistant", reply_id: "run", content: "", created_at: "2026-09-06T00:00:00Z", ...patch,
 });
 const view = (messages: ChatMessage[], active = false, waiting = false) =>
-  presentChatReply(groupChatReplies(messages)[0], active, waiting);
+  presentChatReply(groupChatReplies(messages)[0], active, waiting, APP_COPY.sessions);
 
 describe("Clew reply presentation", () => {
   it("nests native items in their turn without merging separate turns or old messages", () => {

@@ -1,5 +1,7 @@
 # Desktop app
 
+[English](DESKTOP.md) · [简体中文](DESKTOP.zh-CN.md)
+
 Clew 1.0.0 ships an Electron window, the existing React graph UI, and a bundled Python backend. The backend runs only on `127.0.0.1`, on a port assigned for that launch. The UI and its API use the stable secure `clew://app` origin through Electron, so themes and view preferences survive restarts. Closing the app stops its backend.
 
 ## Install
@@ -13,6 +15,8 @@ Get the native installer from [Releases](https://github.com/miuuyy/Clew/releases
 macOS builds are ad-hoc signed, without Apple Developer ID notarization. Windows builds are not Authenticode signed. The OS can show an unidentified-publisher warning. No release script disables platform protections.
 
 Select **Continue with ChatGPT**, finish sign-in in your browser, and allow Clew to use your Plus or Pro plan. Return to the app. Cancelling or refusing permission leaves it on the sign-in screen. GitHub/X support actions are optional.
+
+The sign-in screen and **Settings → Assistant and workspace → Interface language** offer English and Simplified Chinese. Clew uses the device's preferred language until you choose one. The preference belongs to the installation and is available before sign-in.
 
 Keep Clew open until sign-in finishes. Refreshing the browser's completed sign-in
 page preserves the result. If the app was restarted or the attempt was cancelled,

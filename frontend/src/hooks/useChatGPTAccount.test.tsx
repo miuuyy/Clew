@@ -18,7 +18,7 @@ function deferred<T>() {
 }
 let root: Root;
 let controller: ChatGPTAccountController;
-function Harness() { controller = useChatGPTAccount(); return null; }
+function Harness() { controller = useChatGPTAccount("en"); return null; }
 async function mount(account = signedIn) {
   request.mockResolvedValueOnce(response(account));
   await act(async () => { root.render(<Harness />); });
@@ -78,7 +78,8 @@ describe("ChatGPT account lifecycle", () => {
     await mount(signedOut);
     const login = deferred<Response>();
     const openExternal = vi.fn().mockRejectedValue(new Error("Browser could not open"));
-    window.clewDesktop = { apiBase: "clew://app", sessionToken: "test", platform: "linux", version: "1.0.0", openExternal, exportObsidian: vi.fn() };
+    window.clewDesktop = { apiBase: "clew://app", sessionToken: "test", platform: "linux", version: "1.0.0",
+      getLocale: vi.fn(), setLocale: vi.fn(), openExternal, exportObsidian: vi.fn() };
     request.mockReturnValueOnce(login.promise);
     let first!: Promise<void>;
     await act(async () => { first = controller.login(); void controller.login(); });

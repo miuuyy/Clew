@@ -6,7 +6,7 @@ import type { ChatGPTAccountController } from "../hooks/useChatGPTAccount";
 function render(overrides: Partial<ChatGPTAccountController> = {}) {
   vi.stubGlobal("window", {});
   const chatgpt = { account: null, loading: false, error: null, warning: null, refresh: vi.fn(), login: vi.fn(), logout: vi.fn(), cancelLogin: vi.fn(), ...overrides } as ChatGPTAccountController;
-  return renderToStaticMarkup(<SignIn chatgpt={chatgpt} />);
+  return renderToStaticMarkup(<SignIn chatgpt={chatgpt} locale="en" changeLocale={vi.fn()} />);
 }
 
 describe("sign-in onboarding", () => {

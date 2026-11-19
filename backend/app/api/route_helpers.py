@@ -3,8 +3,15 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+from fastapi import Request
+
 from app.core.config import Settings
+from app.core.locale import AppLocale, preferred_locale
 from app.services.repository import GraphRepository
+
+
+def request_locale(request: Request) -> AppLocale:
+    return preferred_locale(request.headers.get("accept-language"))
 
 
 def workspace_config_payload(envelope, settings: Settings) -> dict:

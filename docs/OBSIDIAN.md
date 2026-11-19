@@ -1,5 +1,7 @@
 # Obsidian Bridge
 
+[English](OBSIDIAN.md) · [简体中文](OBSIDIAN.zh-CN.md)
+
 Clew can move structure in both directions:
 
 - Obsidian vault to Clew graph
@@ -61,6 +63,7 @@ The import dialog lets you choose:
 
 - graph title
 - subject
+- graph language
 - fallback relation for untyped links
 - whether folders become zones
 - whether descriptions are autofilled from note bodies

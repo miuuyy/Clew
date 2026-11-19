@@ -2,6 +2,7 @@ import React from "react";
 
 import { Modal } from "./ui/Modal";
 
+import type { AppLocale } from "../lib/appLocale";
 import type { AppCopy } from "../lib/appCopy";
 import type { DebugLogEntry, DebugLogSnapshot } from "../lib/types";
 
@@ -32,14 +33,14 @@ function flattenLogs(copy: AppCopy, logs: DebugLogSnapshot | null): FlatLogEntry
   return rows;
 }
 
-function renderEntry(copy: AppCopy, { source, entry }: FlatLogEntry): React.JSX.Element {
+function renderEntry(copy: AppCopy, locale: AppLocale, { source, entry }: FlatLogEntry): React.JSX.Element {
   const hasDetails = Boolean(entry.request_excerpt || entry.response_excerpt || entry.stack);
 
   return (
     <li key={`${source}:${entry.id}`} className="debugLogRow">
       <div className="debugLogRowLine">
         <span className="debugLogRowSource">{source}</span>
-        <span className="debugLogRowTime">{new Date(entry.created_at).toLocaleTimeString()}</span>
+        <span className="debugLogRowTime">{new Date(entry.created_at).toLocaleTimeString(locale)}</span>
         {entry.method ? <span className="debugLogRowMethod">{entry.method}</span> : null}
         {entry.path ? <span className="debugLogRowPath">{entry.path}</span> : null}
         {entry.status_code != null ? <span className="debugLogRowStatus">HTTP {entry.status_code}</span> : null}
@@ -76,6 +77,7 @@ function renderEntry(copy: AppCopy, { source, entry }: FlatLogEntry): React.JSX.
 
 export function DebugLogsModal({
   copy,
+  locale,
   open,
   onClose,
   logs,
@@ -83,6 +85,7 @@ export function DebugLogsModal({
   error,
 }: {
   copy: AppCopy;
+  locale: AppLocale;
   open: boolean;
   onClose(): void;
   logs: DebugLogSnapshot | null;
@@ -107,7 +110,7 @@ export function DebugLogsModal({
       {loading && !logs ? <div className="debugLogPlaceholder">{copy.settingsPanel.refreshing}</div> : null}
       {error ? <div className="inlineNotice inlineNoticeError">{error}</div> : null}
       {!loading && !error && entries.length === 0 ? <div className="debugLogPlaceholder">{copy.settingsPanel.logsEmpty}</div> : null}
-      {entries.length > 0 ? <ul className="debugLogsFlatList">{entries.map((entry) => renderEntry(copy, entry))}</ul> : null}
+      {entries.length > 0 ? <ul className="debugLogsFlatList">{entries.map((entry) => renderEntry(copy, locale, entry))}</ul> : null}
     </Modal>
   );
 }

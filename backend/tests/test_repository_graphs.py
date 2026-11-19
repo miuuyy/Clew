@@ -90,6 +90,20 @@ class RepositoryGraphTests(unittest.TestCase):
 
         self.assertEqual(assessment.cards[0].value, "Empty graph")
         self.assertEqual(assessment.cards[0].tone, "warn")
+        chinese = AssessmentService().assess_graph(graph, "zh-CN")
+        self.assertEqual((chinese.cards[0].kind, chinese.cards[0].value), ("roadmap", "空图谱"))
+
+    def test_chinese_graph_round_trips_through_a_clew_package_and_exports_to_obsidian(self) -> None:
+        workspace = self.repository.create_graph(CreateGraphRequest(title="线性代数", subject="数学", language="zh-CN"))
+        graph_id = workspace.workspace.active_graph_id
+        package = self.repository.export_graph_package(graph_id, title="线性代数", include_progress=True)
+        restored = self.repository.import_graph_package(package)
+        graph = self.repository.graph(restored.workspace.active_graph_id)
+        self.assertEqual((graph.title, graph.subject, graph.language), ("线性代数", "数学", "zh-CN"))
+        obsidian = build_obsidian_export_package(graph, title=graph.title, include_progress=True, options=ObsidianExportOptions())
+        self.assertEqual(obsidian.folder_name, "线性代数")
+        self.assertIn("图谱概览", obsidian.files[0].body)
+        self.assertIn("语言: zh-CN", obsidian.files[0].body)
 
     def test_export_graph_package_can_strip_progress(self) -> None:
         current = self.repository.current()

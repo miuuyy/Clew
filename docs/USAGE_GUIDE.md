@@ -1,5 +1,7 @@
 # Usage Guide
 
+[简体中文使用指南](USAGE_GUIDE.zh-CN.md)
+
 This guide is for the part of the workflow where you or another model prepare raw source material for graph ingest.
 
 Clew does **not** want a polished final curriculum here. It wants clean, structured source material that can later be turned into a connected proposal.
@@ -16,7 +18,7 @@ Use this when you want to:
 
 Good ingest material is:
 
-- English
+- written in the graph's language
 - markdown
 - topic-bounded
 - compact but structured

@@ -12,6 +12,7 @@ from app.services.repository import RepositoryConflictError
 
 from app.api.routes import router
 from app.api.chatgpt_routes import callback_router
+from app.api.route_helpers import request_locale
 from app.api.deps import get_repository
 from app.agent.runtime import AgentRuntime
 from app.core.config import Settings, get_settings
@@ -55,7 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     await request.app.state.agent_runtime.auth.access_token()
                 except ChatGPTError as exc:
                     return JSONResponse(status_code=503 if exc.retryable else 401,
-                                        content={"detail": str(exc), "code": exc.code})
+                                        content={"detail": exc.public_message(request_locale(request)), "code": exc.code})
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"

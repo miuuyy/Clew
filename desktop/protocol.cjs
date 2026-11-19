@@ -34,7 +34,7 @@ async function createProtocolHandler({ frontendDir, apiBase, sessionToken, fetch
       if (request.initiatorOrigin !== APP_ORIGIN || request.headers.get('X-Clew-Session') !== sessionToken) return new Response('Forbidden', { status: 403 });
       if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
       const headers = new Headers({ 'X-Clew-Session': sessionToken, Origin: APP_ORIGIN });
-      for (const name of ['content-type', 'accept']) {
+      for (const name of ['content-type', 'accept', 'accept-language']) {
         const value = request.headers.get(name);
         if (value) headers.set(name, value);
       }

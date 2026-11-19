@@ -12,6 +12,7 @@ from app.agent.context import BASE_INSTRUCTIONS, developer_instructions, turn_co
 from app.agent.contracts import CLOSURE_QUIZ_TOOLS, tool_specs
 from app.agent.store import AgentStore
 from app.core.config import Settings
+from app.core.locale import AppLocale
 from app.models.domain import ChatMessage, GraphChatRequest, TopicQuizSession
 from app.services.repository import GraphRepository
 
@@ -80,8 +81,8 @@ class AgentRuntime:
                  "description": m.get("description") or "", "isDefault": index == 0}
                 for index, m in enumerate(await self.client.list_models())]
 
-    async def account(self) -> dict:
-        status = self.auth.status()
+    async def account(self, locale: AppLocale = "en") -> dict:
+        status = self.auth.status(locale)
         login = self.auth.pending or self.auth.completing
         result = {"connected": True, **status, "models": [],
                   "login": {"loginId": login.login_id, "authUrl": login.auth_url,
@@ -90,25 +91,25 @@ class AgentRuntime:
             try:
                 result["models"] = await self.models()
             except ChatGPTError as exc:
-                result.update(self.auth.status())
-                result["error"] = str(exc)
+                result.update(self.auth.status(locale))
+                result["error"] = exc.public_message(locale)
             else:
-                result.update(self.auth.status())
+                result.update(self.auth.status(locale))
                 if not result["authenticated"] or not result["sharing"]:
                     result["models"] = []
         return result
 
-    async def start_login(self) -> dict:
+    async def start_login(self, locale: AppLocale = "en") -> dict:
         if self._active():
-            raise agent_error("Stop active conversations before changing the ChatGPT account.")
-        login = await self.auth.start_login()
+            raise ChatGPTError("account_change_active", "Stop active conversations before changing the ChatGPT account.")
+        login = await self.auth.start_login(locale)
         return {"loginId": login.login_id, "authUrl": login.auth_url,
                 "phase": "completing" if self.auth.completing is login else "pending"}
 
-    async def logout(self) -> str | None:
+    async def logout(self, locale: AppLocale = "en") -> str | None:
         if self._active():
-            raise agent_error("Stop active conversations before signing out.")
-        return await self.auth.logout()
+            raise ChatGPTError("sign_out_active", "Stop active conversations before signing out.")
+        return await self.auth.logout(locale)
 
     async def _select_model(self, requested: str | None) -> str:
         models = await self.models()

@@ -2,6 +2,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { APP_COPY, type AppCopy } from "../lib/appCopy";
+import { APP_COPY_ZH_CN } from "../lib/appCopy.zh-CN";
 import { apiFetch } from "../lib/apiRequest";
 import type { ChatMessage, GraphChatThread, GraphEnvelope } from "../lib/types";
 import { useGraphChatController } from "./useGraphChatController";
@@ -20,8 +22,10 @@ function deferred<T>() {
 }
 let root: Root;
 let controller: ReturnType<typeof useGraphChatController>;
-function Harness({ activeGraph = graph, selectedTopicId = null }: { activeGraph?: GraphEnvelope; selectedTopicId?: string | null }) {
-  controller = useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel: "chosen", defaultModel: null, loadChatError: "Chat failed", loadChatSessionsError: "Sessions failed" });
+function Harness({ activeGraph = graph, selectedTopicId = null, copy = APP_COPY }: {
+  activeGraph?: GraphEnvelope; selectedTopicId?: string | null; copy?: AppCopy;
+}) {
+  controller = useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel: "chosen", defaultModel: null, copy });
   return null;
 }
 async function mount() { await act(async () => root.render(<Harness />)); }
@@ -35,6 +39,28 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); });
 
 describe("graph chat lifecycle", () => {
+  it("lets a running reply finish when the interface language changes", async () => {
+    const pending = deferred<Response>();
+    request.mockImplementation(async (url) => {
+      if (String(url).endsWith("/sessions")) return json([]);
+      if (String(url).includes("/events?")) return pending.promise;
+      return json(thread({ run_id: "run", agent_status: "running", last_event_id: 1 }));
+    });
+    await mount();
+    const [entry] = request.mock.calls.filter(([url]) => String(url).includes("/events?"));
+    await act(async () => root.render(<Harness copy={APP_COPY_ZH_CN} />));
+    expect(entry[1]?.signal?.aborted).toBe(false);
+    expect(request.mock.calls.filter(([url]) => String(url).includes("/events?"))).toHaveLength(1);
+    await act(async () => {
+      pending.resolve(events([
+        { type: "message", message: message("result", "The graph's language is English."), event_id: 2, session_id: "s", run_id: "run" },
+        { type: "turn_completed", status: "completed", event_id: 3, session_id: "s", run_id: "run" },
+      ]));
+    });
+    expect(controller.chatLoading).toBe(false);
+    expect(controller.currentChatState.messages[0]?.content).toBe("The graph's language is English.");
+  });
+
   it("finishes the card reply and automatically follows the new turn started by its answer", async () => {
     const card: ChatMessage = { ...message("card", ""), inline_quiz: { interaction_id: "q", question: "2 + 2?", choices: ["3", "4", "5", "6"], correct_index: 1, status: "pending" } };
     const answered: ChatMessage = { ...card, inline_quiz: { ...card.inline_quiz!, status: "answered", answered_index: 1 } };

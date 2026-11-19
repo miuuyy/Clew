@@ -1,6 +1,11 @@
+import { APP_COPY } from "./appCopy";
+import { APP_COPY_ZH_CN } from "./appCopy.zh-CN";
 import { describe, expect, it } from "vitest";
 
-import { buildObsidianImportPreview, type ObsidianImportOptions } from "./obsidianImport";
+import { buildObsidianImportPreview as buildPreview, type ObsidianImportOptions } from "./obsidianImport";
+
+const buildObsidianImportPreview = (entries: Parameters<typeof buildPreview>[0], options: ObsidianImportOptions) =>
+  buildPreview(entries, options, APP_COPY.obsidian);
 
 const baseOptions: ObsidianImportOptions = {
   vaultName: "organise",
@@ -13,6 +18,20 @@ const baseOptions: ObsidianImportOptions = {
   createArtifactsFromNotes: false,
   createPlaceholderTopics: false,
 };
+
+it("reports import issues in the UI language and keeps the selected language in the graph", () => {
+  const preview = buildPreview(
+    [{ path: "矩阵.md", content: "学习 [[行列式]]" }],
+    { ...baseOptions, language: "zh-CN", createArtifactsFromNotes: true },
+    APP_COPY_ZH_CN.obsidian,
+  );
+  expect(preview.issues[0].message).toContain("找不到 矩阵.md");
+  expect(preview.package?.graph.language).toBe("zh-CN");
+  expect(preview.package?.graph.topics[0]).toMatchObject({
+    title: "矩阵",
+    artifacts: [{ title: "从 Obsidian 导入的笔记", body: "学习 [[行列式]]" }],
+  });
+});
 
 describe("buildObsidianImportPreview", () => {
   it("preserves quoted YAML commas and recognizes Windows line endings", () => {

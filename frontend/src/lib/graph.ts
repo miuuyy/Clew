@@ -1,19 +1,13 @@
 import type {
   ChatMessage,
   GraphEnvelope,
+  GraphAssessment,
   GraphOperation,
   ProposalGenerateResponse,
   Topic,
   TopicClosureStatus,
 } from "./types";
 import type { AppCopy } from "./appCopy";
-
-export function formatTopicState(state: Topic["state"]): string {
-  return state
-    .split("_")
-    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
-    .join(" ");
-}
 
 export function getTopicStateTone(state: Topic["state"]): "neutral" | "good" | "warn" {
   if (state === "solid" || state === "mastered") return "good";
@@ -23,11 +17,10 @@ export function getTopicStateTone(state: Topic["state"]): "neutral" | "good" | "
 
 export function formatMinutes(minutes: number, copy: AppCopy): string {
   if (minutes <= 0) return copy.graphText.timeNotSet;
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return copy.graphText.minutes(minutes);
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  if (!rest) return `${hours}h`;
-  return `${hours}h ${rest}m`;
+  return copy.graphText.hours(hours, rest);
 }
 
 export function isPrerequisiteEdge(relation: string): boolean {
@@ -77,7 +70,7 @@ export function computeGraphSummary(graph: GraphEnvelope | null): {
 }
 
 export function buildFallbackAssessment(graph: GraphEnvelope | null, copy: AppCopy): {
-  cards: Array<{ label: string; value: string; tone: "neutral" | "good" | "warn"; rationale: string }>;
+  cards: GraphAssessment["cards"];
 } {
   if (!graph) return { cards: [] };
   const closed = graph.topics.filter((topic) => topic.state === "solid" || topic.state === "mastered").length;
@@ -85,12 +78,14 @@ export function buildFallbackAssessment(graph: GraphEnvelope | null, copy: AppCo
   return {
     cards: [
       {
+        kind: "roadmap",
         label: copy.graphText.roadmapLabel,
         value: maxLevel >= 4 ? copy.graphText.roadmapMlRunway : maxLevel >= 2 ? copy.graphText.roadmapUsableRunway : copy.graphText.roadmapThinRunway,
         tone: maxLevel >= 4 ? "good" : maxLevel >= 2 ? "neutral" : "warn",
         rationale: copy.graphText.roadmapRationale,
       },
       {
+        kind: "level",
         label: copy.graphText.levelAchievedLabel,
         value: closed > 0 ? copy.graphText.levelAchievedFoundationMoving : copy.graphText.levelAchievedNoBaseline,
         tone: closed > 0 ? "neutral" : "warn",

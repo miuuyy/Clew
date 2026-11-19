@@ -11,7 +11,7 @@ function nextUid(): string {
   return `clewLoader-${uidCounter}`;
 }
 
-export function ClewLoader({ size = 48, label = "Loading" }: { size?: number; label?: string }): React.JSX.Element {
+export function ClewLoader({ size = 48, label }: { size?: number; label: string }): React.JSX.Element {
   // Stable unique ids prevent multiple loaders from colliding in SVG defs.
   const idRef = React.useRef<string | null>(null);
   if (!idRef.current) idRef.current = nextUid();

@@ -2,7 +2,7 @@
 
 Copy-paste brief for another LLM when you want it to produce ingest-ready Markdown for Clew.
 
-Replace `{{USER_REQUEST}}` with the subject or goal you want to study. Paste the result into the ingest dialog in Clew.
+Replace `{{USER_REQUEST}}` with the subject or goal you want to study and name the graph language. Paste the result into the ingest prompt in the Clew chat.
 
 See [USAGE_GUIDE.md](../USAGE_GUIDE.md) for when and how to use it.
 
@@ -21,7 +21,7 @@ What the application is for:
 
 Important output rules:
 - output only Markdown
-- use English
+- use the graph language named in the request
 - one topic per block
 - keep topic titles concise and canonical
 - do not output JSON

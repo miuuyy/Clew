@@ -61,7 +61,7 @@ beforeEach(async () => {
     throw new Error(`Unexpected request: ${url}`);
   });
   root = createRoot(document.createElement("div"));
-  await act(async () => root.render(<WorkspaceApp chatgpt={{ account: null } as ChatGPTAccountController} />));
+  await act(async () => root.render(<WorkspaceApp chatgpt={{ account: null } as ChatGPTAccountController} locale="en" changeLocale={vi.fn()} />));
   await select("arithmetics");
 });
 afterEach(async () => { await act(async () => root.unmount()); vi.restoreAllMocks(); vi.unstubAllGlobals(); });

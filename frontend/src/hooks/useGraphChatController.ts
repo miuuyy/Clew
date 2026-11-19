@@ -5,17 +5,19 @@ import { apiFetch, readErrorMessage } from "../lib/apiRequest";
 import { makeMessageId } from "../lib/appUiHelpers";
 import { fetchChatSessions } from "../lib/chatRequests";
 import { activeAgentStatus, consumeAgentEvents, parseChatMessage, parseChatThread, reduceAgentEvent, stateFromThread, upsertChatMessage } from "../lib/agentEvents";
+import type { AppCopy } from "../lib/appCopy";
 import type { GraphChatState } from "../lib/appContracts";
 import type { ChatMessage, ChatSessionSummary, GraphEnvelope } from "../lib/types";
 
 type Params = {
   activeGraph: GraphEnvelope | null; selectedTopicId: string | null; selectedChatModel: string | null;
-  defaultModel: string | null; loadChatError: string; loadChatSessionsError: string;
+  defaultModel: string | null; copy: AppCopy;
 };
 const empty = (): GraphChatState => ({ input: "", messages: [] });
 
-export function useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel, defaultModel,
-  loadChatError, loadChatSessionsError }: Params) {
+export function useGraphChatController({ activeGraph, selectedTopicId, selectedChatModel, defaultModel, copy }: Params) {
+  const copyRef = useRef(copy);
+  copyRef.current = copy;
   const graphId = activeGraph?.graph_id ?? "";
   const [selectedSessions, setSelectedSessions] = useState<Record<string, string | null>>({});
   const activeSessionId = Object.prototype.hasOwnProperty.call(selectedSessions, graphId) ? selectedSessions[graphId] : readStoredActiveChatSession(graphId);
@@ -68,22 +70,22 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     const controller = new AbortController();
     sessionRequests.current.set(graphId, controller);
     try {
-      const result = await fetchChatSessions(apiFetch, `${API_BASE}/api/v1/graphs/${graphId}/chat/sessions`, loadChatSessionsError, { signal: controller.signal });
+      const result = await fetchChatSessions(apiFetch, `${API_BASE}/api/v1/graphs/${graphId}/chat/sessions`, copyRef.current.errors.loadChatSessions, { signal: controller.signal });
       if (controller.signal.aborted || !mounted.current) return;
       if (result.some((session) => session.graph_id !== graphId)) throw new Error("The chat session list belongs to another graph.");
       setSessions((current) => ({ ...current, [graphId]: result }));
       setSessionErrors((current) => ({ ...current, [graphId]: null }));
     } catch (cause) {
-      if (!controller.signal.aborted && mounted.current) setSessionErrors((current) => ({ ...current, [graphId]: cause instanceof Error ? cause.message : loadChatSessionsError }));
+      if (!controller.signal.aborted && mounted.current) setSessionErrors((current) => ({ ...current, [graphId]: cause instanceof Error ? cause.message : copyRef.current.errors.loadChatSessions }));
     } finally {
       if (sessionRequests.current.get(graphId) === controller) sessionRequests.current.delete(graphId);
     }
-  }, [graphId, loadChatSessionsError]);
+  }, [graphId]);
   useEffect(() => { void loadSessions(); }, [loadSessions, revision]);
 
   const readStream = useCallback(async (response: Response, target: string, signal: AbortSignal) => {
     signal.throwIfAborted();
-    if (!response.ok) throw new Error(await readErrorMessage(response, loadChatError));
+    if (!response.ok) throw new Error(await readErrorMessage(response, copyRef.current.errors.loadChat));
     await consumeAgentEvents(response, (event) => {
       if (event.type !== "heartbeat" && activeSessionId && event.session_id !== activeSessionId) throw new Error("The chat event belongs to another conversation.");
       if (event.type === "thread_state" && event.thread.graph_id !== graphId) throw new Error("The chat response belongs to another graph.");
@@ -94,9 +96,9 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
       });
     }, signal);
     if (activeAgentStatus(statesRef.current[target]?.status)) {
-      throw new Error("The chat connection closed. Reconnect to keep following the reply.");
+      throw new Error(copyRef.current.sessions.connectionClosed);
     }
-  }, [graphId, activeSessionId, loadChatError, update]);
+  }, [graphId, activeSessionId, update]);
 
   useEffect(() => {
     if (!graphId) return;
@@ -107,7 +109,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
       try {
         const query = activeSessionId ? `?session_id=${encodeURIComponent(activeSessionId)}` : "";
         const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat${query}`, { signal: controller.signal });
-        if (!response.ok) throw new Error(await readErrorMessage(response, loadChatError));
+        if (!response.ok) throw new Error(await readErrorMessage(response, copyRef.current.errors.loadChat));
         const thread = parseChatThread(await response.json());
         if (controller.signal.aborted) return;
         if (thread.graph_id !== graphId || (activeSessionId && thread.session_id !== activeSessionId)) throw new Error("The chat response belongs to another conversation.");
@@ -119,7 +121,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
           await readStream(events, key, controller.signal);
         }
       } catch (cause) {
-        if (!controller.signal.aborted) update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : loadChatError }));
+        if (!controller.signal.aborted) update(key, (current) => ({ ...current, error: cause instanceof Error ? cause.message : copyRef.current.errors.loadChat }));
       } finally {
         if (streams.current.get(key) === controller) {
           streams.current.delete(key);
@@ -133,14 +135,14 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
       if (busy.current.get(key)?.signal.aborted) busy.current.delete(key);
       controller.abort();
     };
-  }, [graphId, activeSessionId, key, loadChatError, readStream, revision, update]);
+  }, [graphId, activeSessionId, key, readStream, revision, update]);
 
   const sendChat = useCallback(async (overridePrompt?: string, options?: { hiddenUserMessage?: boolean; baseMessages?: ChatMessage[] }) => {
     const state = statesRef.current[key] ?? empty();
     const prompt = (overridePrompt ?? state.input).trim();
     if (!mounted.current || !graphId || !prompt || busy.current.has(key) || activeAgentStatus(state.status)) return;
     if (activeSessionId && !topicBindings.current.has(key)) {
-      update(key, (current) => ({ ...current, error: current.error ?? "Conversation is still loading. Reconnect before sending a message." }));
+      update(key, (current) => ({ ...current, error: current.error ?? copyRef.current.sessions.reconnectBeforeSend }));
       return;
     }
     const user: ChatMessage = { id: makeMessageId(), role: "user", content: prompt, hidden: options?.hiddenUserMessage ?? false, created_at: new Date().toISOString() };
@@ -163,7 +165,7 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     } catch (cause) {
       if (!controller.signal.aborted) update(key, (current) => ({ ...current,
         status: rejected ? "failed" : current.status,
-        error: cause instanceof Error ? cause.message : loadChatError,
+        error: cause instanceof Error ? cause.message : copyRef.current.errors.loadChat,
         ...(rejected ? { input: user.hidden ? current.input : current.input || prompt, messages: current.messages.filter((message) => message.id !== user.id) } : {}),
       }));
     } finally {
@@ -171,17 +173,17 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
       if (streams.current.get(key) === controller) streams.current.delete(key);
       if (!controller.signal.aborted && mounted.current) void loadSessions();
     }
-  }, [graphId, key, activeSessionId, selectedTopicId, selectedChatModel, defaultModel, loadChatError, loadSessions, readStream, update]);
+  }, [graphId, key, activeSessionId, selectedTopicId, selectedChatModel, defaultModel, loadSessions, readStream, update]);
 
   const answerInteraction = async (interactionId: string, answer?: string, choiceIndex?: number) => {
     const before = statesRef.current[key];
     const sessionId = before?.sessionId;
-    if (!sessionId) throw new Error("Conversation is still loading.");
+    if (!sessionId) throw new Error(copyRef.current.sessions.conversationLoading);
     const generation = graphGenerations.current.get(graphId) ?? 0;
     const previous = before.messages.find((message) => message.question?.interaction_id === interactionId || message.inline_quiz?.interaction_id === interactionId);
     const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/answer`, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, interaction_id: interactionId, answer, choice_index: choiceIndex, model: selectedChatModel ?? defaultModel }) });
-    if (!response.ok) throw new Error(await readErrorMessage(response, "Could not send your answer."));
+    if (!response.ok) throw new Error(await readErrorMessage(response, copyRef.current.sessions.answerFailed));
     const result: unknown = await response.json();
     const message = parseChatMessage(result && typeof result === "object" && "message" in result ? result.message : null);
     if (!mounted.current || generation !== (graphGenerations.current.get(graphId) ?? 0)) return;
@@ -197,13 +199,13 @@ export function useGraphChatController({ activeGraph, selectedTopicId, selectedC
     const currentOperation = () => mounted.current && generation === (graphGenerations.current.get(graphId) ?? 0);
     try {
       const response = await apiFetch(`${API_BASE}/api/v1/graphs/${graphId}/chat/interrupt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
-      if (!response.ok) throw new Error(await readErrorMessage(response, "Could not stop the reply."));
+      if (!response.ok) throw new Error(await readErrorMessage(response, copyRef.current.sessions.stopFailed));
       const thread = parseChatThread(await response.json());
       if (thread.graph_id !== graphId || thread.session_id !== sessionId) throw new Error("The stop response belongs to another conversation.");
       if (currentOperation()) update(key, (current) => current.runId !== runId ? current : stateFromThread(current, thread));
     } catch (cause) {
       if (currentOperation()) update(key, (current) => current.runId !== runId ? current :
-        { ...current, error: cause instanceof Error ? cause.message : "Could not stop the reply." });
+        { ...current, error: cause instanceof Error ? cause.message : copyRef.current.sessions.stopFailed });
     }
   };
   const clearChatStateForGraph = (target: string | null | undefined) => {

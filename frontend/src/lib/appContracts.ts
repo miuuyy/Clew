@@ -11,33 +11,8 @@ export const APP_TAGLINE = "AI-native workspace for structured learning";
 export const APP_FAVICON_LIGHT_SRC = "/clew-favicon-light-accent.png";
 export const APP_FAVICON_DARK_SRC = "/clew-mark.svg";
 
-export type MemoryMode = "balanced" | "max" | "custom";
-
-export const MEMORY_MODE_OPTIONS: Array<{
-  id: MemoryMode;
-  label: string;
-  title: string;
-  description: string;
-}> = [
-  {
-    id: "balanced",
-    label: "Balanced",
-    title: "Recommended",
-    description: "Graph, progress, quizzes, frontier, and selected topic. Imports 32 messages when connecting an existing chat.",
-  },
-  {
-    id: "max",
-    label: "Max",
-    title: "Wider recall",
-    description: "All graph context. Imports 64 messages when connecting an existing chat.",
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    title: "Manual context mix",
-    description: "Choose fresh graph context and how much existing chat history to import. Clew keeps ongoing conversations.",
-  },
-];
+export const MEMORY_MODES = ["balanced", "max", "custom"] as const;
+export type MemoryMode = (typeof MEMORY_MODES)[number];
 
 export type GraphChatState = {
   input: string;

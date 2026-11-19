@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 
 TopicState = Literal["not_started", "learning", "shaky", "solid", "mastered", "needs_review"]
 EdgeRelation = Literal["requires", "supports", "bridges", "extends", "reviews"]
-GraphLanguage = Literal["en", "uk", "ru"]
+GraphLanguage = Literal["en", "uk", "ru", "zh-CN"]
 ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
 ChatAction = Literal["answer", "propose_ingest", "propose_expand"]
 MemoryMode = Literal["balanced", "max", "custom"]
@@ -409,6 +409,7 @@ class GraphChatRequest(BaseModel):
 
 
 class GraphAssessmentCard(BaseModel):
+    kind: Literal["roadmap", "level", "closure", "review"]
     label: str
     value: str
     tone: Literal["neutral", "good", "warn"]

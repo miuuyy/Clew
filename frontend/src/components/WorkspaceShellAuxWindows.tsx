@@ -4,7 +4,7 @@ import { CaretDown, CaretRight, Check, DownloadSimple, FolderOpen, FolderSimple,
 
 import type { GraphChatState } from "../lib/appContracts";
 import type { AppCopy } from "../lib/appCopy";
-import { computeRootTopicIds, formatTopicState, getTopicStateTone } from "../lib/graph";
+import { computeRootTopicIds, getTopicStateTone } from "../lib/graph";
 import { AssistantComposer } from "./assistant/AssistantComposer";
 import { AssistantSessionList } from "./assistant/AssistantSessionList";
 import { AssistantThread } from "./assistant/AssistantThread";
@@ -278,7 +278,7 @@ export function LightWorkspaceWindow({
                         <button
                           key={topic.id}
                           className={`lightWorkspaceTopicItem ${isSelectedTopic ? "lightWorkspaceTopicItemActive" : ""}`}
-                          aria-label={`${topic.title} — ${formatTopicState(topic.state)}`}
+                          aria-label={`${topic.title} — ${copy.topic.states[topic.state]}`}
                           onClick={() => {
                             setActiveGraphId(graph.graph_id);
                             handleSelectTopic(topic.id, null);

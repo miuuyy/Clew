@@ -6,12 +6,14 @@ const { APP_URL, applicationUrl, externalUrl, trustedFrame } = require('./securi
 const { createProtocolHandler, fetchBackend } = require('./protocol.cjs');
 const { createLogger, redact } = require('./logging.cjs');
 const { checkLatestRelease } = require('./updates.cjs');
+const { DESKTOP_COPY, localeFromSystem, readLocale, saveLocale } = require('./locale.cjs');
 const { validateExport, writeExport, nativeCommit } = require('./export.cjs');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'clew', privileges: {
   standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true
 } }]);
 
+let locale = 'en';
 let mainWindow;
 let backend;
 let quitting = false;
@@ -42,16 +44,22 @@ async function fatal(error) {
     fs.mkdirSync(path.dirname(smokePath), { recursive: true });
     fs.writeFileSync(smokePath, JSON.stringify({ ...previous, ok: false, error: redact(error.message) }, null, 2));
   }
-  else dialog.showErrorBox('Clew could not continue', `${redact(error.message)}\n\nLogs: ${app.getPath('logs')}`);
+  else {
+    const copy = DESKTOP_COPY[locale];
+    dialog.showErrorBox(copy.fatal, `${redact(error.message)}\n\n${copy.logLocation(app.getPath('logs'))}`);
+  }
   process.exitCode = 1;
   app.quit();
 }
 
 async function start() {
   log = createLogger(app.getPath('logs'));
+  const userData = app.getPath('userData');
+  locale = localeFromSystem(app.getPreferredSystemLanguages()[0] ?? app.getLocale());
+  locale = readLocale(userData, locale);
   backend = launchBackend({ root, resources: process.resourcesPath, dataDir: path.join(app.getPath('userData'), 'data'),
     logsDir: app.getPath('logs'), packaged: app.isPackaged, log, version: app.getVersion(),
-    onExit: (code, signal) => { if (!quitting) void fatal(new Error(`The local backend stopped (${code ?? signal}). Restart Clew.`)); },
+    onExit: (code, signal) => { if (!quitting) void fatal(new Error(DESKTOP_COPY[locale].backendStopped(code ?? signal))); },
     python });
   const connection = await backend.startup;
   const bootstrap = { ...connection, apiBase: 'clew://app', version: app.getVersion(), platform: process.platform };
@@ -63,17 +71,29 @@ async function start() {
     if (!trustedFrame(event, mainWindow?.webContents)) throw new Error('Untrusted window.');
     return shell.openExternal(externalUrl(url));
   });
+  ipcMain.handle('clew:get-locale', event => {
+    if (!trustedFrame(event, mainWindow?.webContents)) throw new Error('Untrusted window.');
+    return locale;
+  });
+  ipcMain.handle('clew:set-locale', (event, next) => {
+    if (!trustedFrame(event, mainWindow?.webContents)) throw new Error('Untrusted window.');
+    if (next === locale) return;
+    saveLocale(userData, next);
+    locale = next;
+    installMenu();
+  });
   ipcMain.handle('clew:export-obsidian', async (event, exportPackage) => {
     if (!trustedFrame(event, mainWindow?.webContents)) throw new Error('Untrusted window.');
-    if (exporting) throw new Error('An Obsidian export is already in progress.');
+    const copy = DESKTOP_COPY[locale];
+    if (exporting) throw new Error(copy.exportBusy);
     validateExport(exportPackage);
     exporting = true;
     try {
       const choice = await dialog.showOpenDialog(mainWindow, {
-        title: 'Choose a parent folder for the Obsidian export', properties: ['openDirectory', 'createDirectory']
+        title: copy.exportFolder, properties: ['openDirectory', 'createDirectory']
       });
       if (choice.canceled) return false;
-      if (choice.filePaths.length !== 1) throw new Error('Choose one export directory.');
+      if (choice.filePaths.length !== 1) throw new Error(copy.chooseOne);
       return await writeExport(exportPackage, choice.filePaths[0], nativeCommit({ root, resources: process.resourcesPath, packaged: app.isPackaged, python }));
     } finally { exporting = false; }
   });
@@ -84,9 +104,9 @@ async function start() {
       nodeIntegration: false, webSecurity: true,
       additionalArguments: [`--clew-bootstrap=${encodeURIComponent(JSON.stringify(bootstrap))}`] }
   });
-  mainWindow.webContents.on('preload-error', (_event, _path, error) => void fatal(new Error(`The desktop bridge failed: ${error.message}`)));
+  mainWindow.webContents.on('preload-error', (_event, _path, error) => void fatal(new Error(DESKTOP_COPY[locale].bridgeFailed(error.message))));
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    if (!quitting) void fatal(new Error(`The renderer stopped (${details.reason}). Restart Clew.`));
+    if (!quitting) void fatal(new Error(DESKTOP_COPY[locale].rendererStopped(details.reason)));
   });
   mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   mainWindow.webContents.session.setPermissionCheckHandler(() => false);
@@ -104,36 +124,50 @@ async function start() {
   mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
   mainWindow.once('ready-to-show', () => { if (!smokePath) mainWindow.show(); });
   mainWindow.on('closed', () => { mainWindow = null; });
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(process.platform === 'darwin' ? [{ label: 'Clew', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { type: 'separator' }, { role: 'quit' }] }] : []),
-    ...(process.platform !== 'darwin' ? [{ label: 'File', submenu: [{ role: 'close' }, { type: 'separator' }, { role: 'quit' }] }] : []),
-    { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: 'View', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }] },
-    { role: 'windowMenu' },
-    { label: 'Help', submenu: [
-      { label: 'Documentation', click: () => void openWeb('https://clew.my/docs') },
-      { label: 'Check for Updates…', click: checkForUpdates },
-      { label: 'Open Data Folder', click: () => void openFolder(app.getPath('userData')) },
-      { label: 'Open Logs', click: () => void openFolder(app.getPath('logs')) },
-      { label: 'Report an Issue', click: () => void openWeb('https://github.com/miuuyy/Clew/issues') }
-    ] }
-  ]));
+  installMenu();
   await mainWindow.loadURL(APP_URL);
   if (smokePath) await smoke(connection);
 }
 
+function installMenu() {
+  const copy = DESKTOP_COPY[locale];
+  const label = copy.menu;
+  const mac = process.platform === 'darwin';
+  const roles = (...names) => names.map(role => role
+    ? { role, label: label[role] } : { type: 'separator' });
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    mac ? { label: 'Clew', submenu: roles('about', null, 'hide', 'hideOthers', null, 'quit') }
+      : { label: label.file, submenu: roles('close', null, 'quit') },
+    { label: label.edit, submenu: roles('undo', 'redo', null, 'cut', 'copy', 'paste', 'selectAll') },
+    { label: label.view, submenu: roles('resetZoom', 'zoomIn', 'zoomOut', null, 'togglefullscreen') },
+    { role: 'windowMenu', label: label.window, submenu: mac
+      ? roles('minimize', 'zoom', null, 'front') : roles('minimize', 'close') },
+    { label: label.help, submenu: [
+      { label: label.documentation, click: () => void openWeb(copy.docsUrl) },
+      { label: label.updates, click: checkForUpdates },
+      { label: label.data, click: () => void openFolder(app.getPath('userData')) },
+      { label: label.logs, click: () => void openFolder(app.getPath('logs')) },
+      { label: label.reportIssue, click: () => void openWeb('https://github.com/miuuyy/Clew/issues') }
+    ] }
+  ]));
+}
+
 async function checkForUpdates() {
-  if (!app.isPackaged) { dialog.showErrorBox('Development build', 'Install a release build to check for updates.'); return; }
+  if (!app.isPackaged) {
+    const copy = DESKTOP_COPY[locale];
+    dialog.showErrorBox(copy.devBuild, copy.devUpdates);
+    return;
+  }
   if (checkingUpdates) return;
   checkingUpdates = true;
   try {
     const result = await checkLatestRelease(app.getVersion(), process.platform, process.arch);
-    if (!result.available) { await dialog.showMessageBox({ message: 'Clew is up to date.' }); return; }
-    const { response } = await dialog.showMessageBox({ message: `Clew ${result.version} is available.`,
-      detail: 'Download the installer from the release page, close Clew, and install it. Your local data is retained.',
-      buttons: ['View Release', 'Later'], cancelId: 1 });
+    const copy = DESKTOP_COPY[locale];
+    if (!result.available) { await dialog.showMessageBox({ message: copy.upToDate, buttons: [copy.ok] }); return; }
+    const { response } = await dialog.showMessageBox({ message: copy.updateAvailable(result.version),
+      detail: copy.updateDetail, buttons: [copy.viewRelease, copy.later], cancelId: 1 });
     if (response === 0) await openWeb(result.url);
-  } catch (error) { dialog.showErrorBox('Could not check for updates', redact(error.message)); }
+  } catch (error) { dialog.showErrorBox(DESKTOP_COPY[locale].updateFailed, redact(error.message)); }
   finally { checkingUpdates = false; }
 }
 
@@ -146,7 +180,7 @@ async function openFolder(folder) {
   try {
     const error = await shell.openPath(folder);
     if (error) throw new Error(error);
-  } catch (error) { dialog.showErrorBox('Could not open folder', redact(error.message)); }
+  } catch (error) { dialog.showErrorBox(DESKTOP_COPY[locale].folderFailed, redact(error.message)); }
 }
 
 async function smoke(bootstrap) {
@@ -156,13 +190,27 @@ async function smoke(bootstrap) {
     headers: { Origin: 'clew://app', 'Access-Control-Request-Method': 'GET', 'Access-Control-Request-Headers': 'x-clew-session' },
     signal: AbortSignal.timeout(5000) });
   const cors = preflight.ok && preflight.headers.get('Access-Control-Allow-Origin') === 'clew://app';
-  const deadline = Date.now() + 20000;
-  let visible;
-  do {
-    visible = await mainWindow.webContents.executeJavaScript(`({ title: document.title, text: document.body.innerText, isolated: typeof require === 'undefined', bridge: !!window.clewDesktop, origin: location.origin, secure: isSecureContext, ready: !!document.querySelector('.signInContinue:not(:disabled)'), svgReady: (document.querySelector('.signInMark use')?.getBBox().width ?? 0) > 0, whiteMark: !!document.querySelector('.signInMark') && getComputedStyle(document.querySelector('.signInMark')).color === 'rgb(255, 255, 255)', github: !!document.querySelector('a[aria-label="Star on GitHub"]'), x: !!document.querySelector('a[aria-label="Follow on X"]') })`);
-    if (visible.ready && visible.svgReady) break;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  } while (Date.now() < deadline);
+  const write = process.env.CLEW_SMOKE_STORAGE_PHASE === 'write';
+  const initialLocale = write ? localeFromSystem(app.getPreferredSystemLanguages()[0] ?? app.getLocale()) : 'zh-CN';
+  const initial = await smokeOnboarding(initialLocale);
+  const languages = write && initialLocale === 'zh-CN' ? ['en', 'zh-CN'] : [write ? 'zh-CN' : 'en'];
+  let visible = initial;
+  for (const next of languages) {
+    await mainWindow.webContents.executeJavaScript(`(() => {
+      const select = document.querySelector('.signInLanguage select');
+      select.value = ${JSON.stringify(next)};
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    visible = await smokeOnboarding(next);
+  }
+  if (write) {
+    await mainWindow.loadURL(APP_URL);
+    visible = await smokeOnboarding('zh-CN');
+  }
+  const lastLocale = languages.at(-1);
+  const menu = Menu.getApplicationMenu().items.find(item => item.label === DESKTOP_COPY[lastLocale].menu.help);
+  const localized = initial.localized && visible.localized && locale === lastLocale
+    && !!menu?.submenu.items.some(item => item.label === DESKTOP_COPY[lastLocale].menu.updates);
   const rendererAccess = await mainWindow.webContents.executeJavaScript(`(async () => {
     const response = await fetch(window.clewDesktop.apiBase + '/api/v1/chatgpt/account', {
       headers: { 'X-Clew-Session': window.clewDesktop.sessionToken }, signal: AbortSignal.timeout(5000)
@@ -170,7 +218,6 @@ async function smoke(bootstrap) {
     return response.status;
   })()`);
   const storageValue = JSON.stringify(process.env.CLEW_SMOKE_STORAGE_VALUE);
-  const write = process.env.CLEW_SMOKE_STORAGE_PHASE === 'write';
   const persisted = await mainWindow.webContents.executeJavaScript(`(() => {
     ${write ? `localStorage.setItem('clew-smoke-preference', ${storageValue}); localStorage.setItem('knowledge_graph_theme_mode_v1', 'light');` : ''}
     return localStorage.getItem('clew-smoke-preference') === ${storageValue};
@@ -188,15 +235,43 @@ async function smoke(bootstrap) {
   const sandbox = preferences.sandbox && preferences.contextIsolation && !preferences.nodeIntegration && preferences.webSecurity;
   const ok = health.ok && blocked.status === 403 && rendererAccess === 200 && cors && exportCommit && sandbox && persisted
     && visible.origin === 'clew://app' && visible.secure && visible.isolated && visible.bridge && visible.ready
-    && visible.text.includes('Continue with ChatGPT') && visible.github && visible.x && visible.whiteMark && visible.svgReady;
+    && localized && visible.whiteMark && visible.svgReady;
   fs.writeFileSync(smokePath, JSON.stringify({ ok, version: app.getVersion(), platform: process.platform, arch: process.arch,
     health: health.status, blocked: blocked.status, rendererAccess, cors, exportCommit, origin: visible.origin, secure: visible.secure,
-    sandbox, persisted, whiteMark: visible.whiteMark, svgReady: visible.svgReady, storagePhase: process.env.CLEW_SMOKE_STORAGE_PHASE, isolated: visible.isolated,
+    sandbox, persisted, localized, initialLocale, locale, whiteMark: visible.whiteMark, svgReady: visible.svgReady, storagePhase: process.env.CLEW_SMOKE_STORAGE_PHASE, isolated: visible.isolated,
     bridge: visible.bridge, onboarding: visible.text }, null, 2));
   const image = await mainWindow.webContents.capturePage();
   fs.writeFileSync(smokePath.replace(/\.json$/, '.png'), image.toPNG());
   if (!ok) throw new Error('Packaged onboarding smoke check failed.');
   app.quit();
+}
+
+async function smokeOnboarding(expectedLocale) {
+  const expected = DESKTOP_COPY[expectedLocale];
+  const deadline = Date.now() + 20000;
+  let visible;
+  do {
+    visible = await mainWindow.webContents.executeJavaScript(`(() => {
+      const button = document.querySelector('.signInContinue');
+      const github = document.querySelector('a[href="https://github.com/miuuyy/Clew"]');
+      const x = document.querySelector('a[href="https://x.com/miu21590"]');
+      const select = document.querySelector('.signInLanguage select');
+      const logo = document.querySelector('.signInMark');
+      return { text: document.body.innerText, isolated: typeof require === 'undefined', bridge: !!window.clewDesktop,
+        origin: location.origin, secure: isSecureContext, ready: !!button && !button.disabled && !select?.disabled,
+        svgReady: (logo?.querySelector('use')?.getBBox().width ?? 0) > 0,
+        whiteMark: !!logo && getComputedStyle(logo).color === 'rgb(255, 255, 255)',
+        localized: document.documentElement.lang === ${JSON.stringify(expectedLocale)}
+          && select?.value === ${JSON.stringify(expectedLocale)}
+          && button?.textContent.trim() === ${JSON.stringify(expected.continue)}
+          && github?.getAttribute('aria-label') === ${JSON.stringify(expected.github)}
+          && x?.getAttribute('aria-label') === ${JSON.stringify(expected.x)}
+      };
+    })()`);
+    if (visible.ready && visible.svgReady && visible.localized) return visible;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } while (Date.now() < deadline);
+  throw new Error(`Onboarding did not render in ${expectedLocale}. ${JSON.stringify(visible)}`);
 }
 
 app.on('window-all-closed', () => app.quit());

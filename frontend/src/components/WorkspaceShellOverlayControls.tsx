@@ -52,7 +52,7 @@ export function GraphStatItems({
   return (
     <>
       <div className="statStrip">
-        {activeGraph ? <span className="statSeg statSegLang">{activeGraph.language.toUpperCase()}</span> : null}
+        {activeGraph ? <span className="statSeg statSegLang" title={copy.dialogs.languageOptions[activeGraph.language]}>{activeGraph.language.toUpperCase()}</span> : null}
         <span className="statSeg">
           <strong>{graphSummary.topicCount}</strong>
           <span className="statSegLabel">{copy.graphStats.topics}</span>
@@ -133,8 +133,8 @@ export function OverlayControls({
             setGraphViewMode((current) => current === "2d" ? "3d" : "2d");
           }}
           type="button"
-          title={graphViewMode === "2d" ? "Switch to 3D graph" : "Switch to 2D graph"}
-          aria-label={graphViewMode === "2d" ? "Switch to 3D graph" : "Switch to 2D graph"}
+          title={graphViewMode === "2d" ? copy.graphStats.view3d : copy.graphStats.view2d}
+          aria-label={graphViewMode === "2d" ? copy.graphStats.view3d : copy.graphStats.view2d}
           aria-pressed={graphViewMode === "3d"}
         >
           {graphViewMode === "2d" ? <Cube size={15} weight="bold" /> : <Graph size={15} weight="bold" />}

@@ -11,8 +11,8 @@ class ChatGPTCallbackTests(unittest.TestCase):
         self.client, self.repo, self.runtime = install_client(self, signed=False, peer=self.peer)
         self.host = {"host": "127.0.0.1:8787"}
 
-    def start_login(self):
-        response = self.client.post("/api/v1/chatgpt/login", json={})
+    def start_login(self, locale="en"):
+        response = self.client.post("/api/v1/chatgpt/login", json={}, headers={"Accept-Language": locale})
         self.assertEqual(response.status_code, 200, response.text)
         return parse_qs(urlparse(response.json()["authUrl"]).query)
 
@@ -32,6 +32,18 @@ class ChatGPTCallbackTests(unittest.TestCase):
         self.assertTrue(account["authenticated"] and account["sharing"])
         self.assertIsNone(account["login"])
         self.assertEqual(self.client.get("/api/v1/workspace/current").status_code, 200)
+        self.assertEqual(len(self.peer.token_requests), 1)
+
+    def test_callback_uses_the_chosen_language_even_in_an_english_browser(self):
+        query = self.start_login("zh-CN")
+        self.peer.nonce = query["nonce"][0]
+        params = {"state": query["state"][0], "code": "one-time-code", "client_id": CLIENT_ID}
+        for _ in range(2):
+            response = self.client.get("/auth/callback", params=params, headers={**self.host, "Accept-Language": "en-US"})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.headers["Content-Language"], "zh-CN")
+            self.assertIn('lang="zh-CN"', response.text)
+            self.assertIn("返回 Clew", response.text)
         self.assertEqual(len(self.peer.token_requests), 1)
 
     def test_missing_or_duplicate_state_does_not_consume_the_pending_login(self):
@@ -56,3 +68,5 @@ class ChatGPTCallbackTests(unittest.TestCase):
         self.assertFalse(account["authenticated"])
         self.assertEqual(account["error"], "Sign-in was not completed.")
         self.assertIsNone(account["login"])
+        chinese_account = self.client.get("/api/v1/chatgpt/account", headers={"Accept-Language": "zh-CN"}).json()
+        self.assertEqual(chinese_account["error"], "登录未完成。")

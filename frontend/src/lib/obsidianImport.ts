@@ -1,5 +1,9 @@
 import { parseDocument } from "yaml";
-import type { Edge, GraphExportPackagePayload, Topic, Zone } from "./types";
+import type { AppCopy } from "./appCopy";
+import { getAppCopy } from "./appLocale";
+import type { Edge, GraphExportPackagePayload, GraphLanguage, Topic, Zone } from "./types";
+
+type ObsidianCopy = AppCopy["obsidian"];
 
 type FrontmatterValue = string | string[];
 class FrontmatterError extends Error {}
@@ -13,7 +17,7 @@ export type ObsidianImportOptions = {
   vaultName: string;
   graphTitle: string;
   subject: string;
-  language: "en" | "uk" | "ru";
+  language: GraphLanguage;
   relation: Edge["relation"];
   useFoldersAsZones: boolean;
   autofillDescriptions: boolean;
@@ -80,7 +84,9 @@ const SUPPORTED_RELATIONS = new Set<Edge["relation"]>(["requires", "supports", "
 export function buildObsidianImportPreview(
   entries: ObsidianVaultEntry[],
   options: ObsidianImportOptions,
+  copy: ObsidianCopy,
 ): ObsidianImportPreview {
+  const graphCopy = getAppCopy(options.language === "zh-CN" ? "zh-CN" : "en").obsidian;
   const issues: ObsidianImportIssue[] = [];
   const markdownEntries = entries
     .map((entry) => ({
@@ -102,7 +108,7 @@ export function buildObsidianImportPreview(
         {
           code: "no_markdown_notes",
           level: "error",
-          message: "No Markdown notes were found in the selected Obsidian vault.",
+          message: copy.noMarkdown,
         },
       ],
     };
@@ -113,21 +119,21 @@ export function buildObsidianImportPreview(
   const seenIds = new Set<string>();
   for (const entry of markdownEntries) {
     if (seenPaths.has(entry.path)) {
-      issues.push({ code: "duplicate_note_path", level: "error", message: `Duplicate note path: ${entry.path}.` });
+      issues.push({ code: "duplicate_note_path", level: "error", message: copy.duplicatePath(entry.path) });
       continue;
     }
     seenPaths.add(entry.path);
     try {
-      const parsed = parseNote(entry, options.autofillDescriptions, options.createArtifactsFromNotes);
+      const parsed = parseNote(entry, options.autofillDescriptions, options.createArtifactsFromNotes, copy);
       if (seenIds.has(parsed.note.id)) {
-        issues.push({ code: "note_id_collision", level: "error", message: `Two note paths produce the same topic ID. Rename ${entry.path} before importing.` });
+        issues.push({ code: "note_id_collision", level: "error", message: copy.idCollision(entry.path) });
         continue;
       }
       seenIds.add(parsed.note.id);
       parsedNotes.push(parsed);
     } catch (cause) {
       if (!(cause instanceof FrontmatterError)) throw cause;
-      issues.push({ code: "invalid_frontmatter", level: "error", message: `${entry.path}: ${cause.message}` });
+      issues.push({ code: "invalid_frontmatter", level: "error", message: copy.invalidFrontmatter(entry.path, cause.message) });
     }
   }
   const notes = parsedNotes.map((result) => result.note);
@@ -155,7 +161,7 @@ export function buildObsidianImportPreview(
 
   const topics = new Map<string, Topic>();
   for (const note of notes) {
-    topics.set(note.id, noteToTopic(note, options.createArtifactsFromNotes));
+    topics.set(note.id, noteToTopic(note, options.createArtifactsFromNotes, graphCopy));
   }
 
   const edgeIds = new Set<string>();
@@ -171,16 +177,16 @@ export function buildObsidianImportPreview(
           level: resolved.error === "ambiguous" ? "error" : "warning",
           message:
             resolved.error === "ambiguous"
-              ? `Ambiguous Obsidian link "${link.target}" in ${note.path}. Use a path-qualified link before import.`
-              : `Unresolved Obsidian link "${link.target}" in ${note.path}.`,
+              ? copy.ambiguousLink(link.target, note.path)
+              : copy.unresolvedLink(link.target, note.path),
         });
       }
 
       let target = resolved.note;
       if (!target && options.createPlaceholderTopics) {
-        target = makePlaceholderNote(link.target, options.autofillDescriptions, options.createArtifactsFromNotes, dirname(note.path));
+        target = makePlaceholderNote(link.target, options.autofillDescriptions, graphCopy, dirname(note.path));
         if (!topics.has(target.id)) {
-          topics.set(target.id, noteToTopic(target, options.createArtifactsFromNotes));
+          topics.set(target.id, noteToTopic(target, options.createArtifactsFromNotes, graphCopy));
         }
       }
       if (!target) {
@@ -197,13 +203,13 @@ export function buildObsidianImportPreview(
         source_topic_id: note.id,
         target_topic_id: target.id,
         relation,
-        rationale: `Imported from Obsidian link in ${note.title}.`,
+        rationale: graphCopy.edgeRationale(note.title),
       });
     }
   }
 
   const zones = options.useFoldersAsZones ? buildZones([...topics.values()], notes, options.vaultName) : [];
-  const graphTitle = options.graphTitle.trim() || options.vaultName.trim() || "Obsidian import";
+  const graphTitle = options.graphTitle.trim() || options.vaultName.trim() || graphCopy.importTitle;
   const subject = options.subject.trim() || graphTitle;
 
   const errorCount = issues.filter((issue) => issue.level === "error").length;
@@ -283,7 +289,7 @@ function buildZones(topics: Topic[], notes: ParsedNote[], vaultName: string): Zo
   }));
 }
 
-function noteToTopic(note: ParsedNote, includeArtifact: boolean): Topic {
+function noteToTopic(note: ParsedNote, includeArtifact: boolean, copy: ObsidianCopy): Topic {
   return {
     id: note.id,
     title: note.title,
@@ -300,7 +306,7 @@ function noteToTopic(note: ParsedNote, includeArtifact: boolean): Topic {
         ? [
             {
               id: `obsidian-artifact-${stableHash(note.path)}`,
-              title: "Imported Obsidian note",
+              title: copy.noteTitle,
               kind: "obsidian_note",
               body: note.body.trim(),
               created_at: new Date().toISOString(),
@@ -317,17 +323,17 @@ function noteToTopic(note: ParsedNote, includeArtifact: boolean): Topic {
   };
 }
 
-function parseNote(entry: ObsidianVaultEntry, autofillDescriptions: boolean, createArtifactsFromNotes: boolean): ParsedNoteResult {
-  const { body, frontmatter } = parseFrontmatter(entry.content);
+function parseNote(entry: ObsidianVaultEntry, autofillDescriptions: boolean, createArtifactsFromNotes: boolean, copy: ObsidianCopy): ParsedNoteResult {
+  const { body, frontmatter } = parseFrontmatter(entry.content, copy);
   const title = stripMdExtension(entry.path).split("/").at(-1) ?? entry.path;
   const folderPath = dirname(entry.path);
   const aliases = normalizeStringArray(frontmatter.aliases);
   const tags = normalizeStringArray(frontmatter.tags);
   const cleanBody = body.trim();
   const description = autofillDescriptions ? deriveDescription(cleanBody) : "";
-  const explicitRelationLinks = extractExplicitRelationEntries(frontmatter, entry.path);
-  const wikilinks = extractWikilinks(cleanBody, entry.path);
-  const markdownLinks = extractMarkdownInternalLinks(cleanBody, entry.path);
+  const explicitRelationLinks = extractExplicitRelationEntries(frontmatter, entry.path, copy);
+  const wikilinks = extractWikilinks(cleanBody, entry.path, copy);
+  const markdownLinks = extractMarkdownInternalLinks(cleanBody, entry.path, copy);
 
   return {
     note: {
@@ -347,19 +353,18 @@ function parseNote(entry: ObsidianVaultEntry, autofillDescriptions: boolean, cre
   };
 }
 
-function makePlaceholderNote(rawLink: string, autofillDescriptions: boolean, createArtifactsFromNotes: boolean, sourceFolderPath?: string): ParsedNote {
+function makePlaceholderNote(rawLink: string, autofillDescriptions: boolean, copy: ObsidianCopy, sourceFolderPath: string): ParsedNote {
   const target = normalizeLinkTarget(rawLink);
-  const title = stripMdExtension(target.split("/").at(-1) ?? target) || "Missing note";
+  const title = stripMdExtension(target.split("/").at(-1) ?? target) || copy.missingNote;
   const folderPath = sourceFolderPath || dirname(target);
-  const placeholderBody = "";
   return {
     id: `obsidian-topic-${stableHash(`placeholder:${target}`)}`,
     path: target,
     folderPath,
     title,
     slug: makeUnicodeSlug(title),
-    description: autofillDescriptions ? `Placeholder created from unresolved Obsidian link: ${title}` : "",
-    body: createArtifactsFromNotes ? placeholderBody : "",
+    description: autofillDescriptions ? copy.placeholderDescription(title) : "",
+    body: "",
     aliases: [],
     tags: [],
     links: [],
@@ -400,25 +405,25 @@ function resolveInternalLink(
   return { note: null, error: "unresolved" };
 }
 
-function parseFrontmatter(content: string): { body: string; frontmatter: Record<string, FrontmatterValue> } {
+function parseFrontmatter(content: string, copy: ObsidianCopy): { body: string; frontmatter: Record<string, FrontmatterValue> } {
   const normalized = content.replace(/^\uFEFF/, "");
   if (!/^---[ \t]*\r?\n/.test(normalized)) return { body: normalized, frontmatter: {} };
   const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(normalized);
-  if (!match) throw new FrontmatterError("Frontmatter has no closing delimiter.");
+  if (!match) throw new FrontmatterError(copy.missingDelimiter);
   const document = parseDocument(match[1], { uniqueKeys: true });
-  if (document.errors.length) throw new FrontmatterError(`Invalid YAML frontmatter: ${document.errors[0].message}`);
+  if (document.errors.length) throw new FrontmatterError(copy.invalidYaml(document.errors[0].message));
   let parsed: unknown;
   try { parsed = document.toJS({ maxAliasCount: 100 }); }
-  catch { throw new FrontmatterError("Frontmatter contains excessive YAML aliases."); }
+  catch { throw new FrontmatterError(copy.tooManyAliases); }
   if (parsed !== null && (typeof parsed !== "object" || Array.isArray(parsed))) {
-    throw new FrontmatterError("Frontmatter must be a YAML mapping.");
+    throw new FrontmatterError(copy.expectedMapping);
   }
   const frontmatter: Record<string, FrontmatterValue> = {};
   for (const key of ["aliases", "tags", "mapmind_relations", "mapmind_edges"]) {
     const value = (parsed as Record<string, unknown> | null)?.[key];
     if (value == null) continue;
     if (typeof value !== "string" && (!Array.isArray(value) || !value.every((item) => typeof item === "string"))) {
-      throw new FrontmatterError(`${key} must be a string or a list of strings.`);
+      throw new FrontmatterError(copy.expectedStrings(key));
     }
     frontmatter[key] = value as FrontmatterValue;
   }
@@ -438,13 +443,13 @@ function normalizeStringArray(value: FrontmatterValue | undefined): string[] {
     .filter(Boolean);
 }
 
-function extractWikilinks(body: string, notePath: string): { links: ParsedNoteLink[]; issues: ObsidianImportIssue[] } {
+function extractWikilinks(body: string, notePath: string, copy: ObsidianCopy): { links: ParsedNoteLink[]; issues: ObsidianImportIssue[] } {
   const links: ParsedNoteLink[] = [];
   const issues: ObsidianImportIssue[] = [];
   for (const match of body.matchAll(INTERNAL_LINK_RE)) {
     const target = match[1]?.trim();
     if (!target) continue;
-    const relationResult = parseRelationSuffix(body.slice((match.index ?? 0) + match[0].length), notePath, target);
+    const relationResult = parseRelationSuffix(body.slice((match.index ?? 0) + match[0].length), notePath, target, copy);
     if (relationResult.relation) {
       links.push({ target, relation: relationResult.relation });
     } else {
@@ -455,7 +460,7 @@ function extractWikilinks(body: string, notePath: string): { links: ParsedNoteLi
   return { links, issues };
 }
 
-function extractMarkdownInternalLinks(body: string, notePath: string): { links: ParsedNoteLink[]; issues: ObsidianImportIssue[] } {
+function extractMarkdownInternalLinks(body: string, notePath: string, copy: ObsidianCopy): { links: ParsedNoteLink[]; issues: ObsidianImportIssue[] } {
   const links: ParsedNoteLink[] = [];
   const issues: ObsidianImportIssue[] = [];
   for (const match of body.matchAll(MARKDOWN_LINK_RE)) {
@@ -463,7 +468,7 @@ function extractMarkdownInternalLinks(body: string, notePath: string): { links: 
     if (!target) continue;
     if (isExternalUrl(target) || target.startsWith("#")) continue;
     if (!target.endsWith(".md") && !target.includes("/")) continue;
-    const relationResult = parseRelationSuffix(body.slice((match.index ?? 0) + match[0].length), notePath, target);
+    const relationResult = parseRelationSuffix(body.slice((match.index ?? 0) + match[0].length), notePath, target, copy);
     links.push({ target, relation: relationResult.relation });
     if (relationResult.issue) issues.push(relationResult.issue);
   }
@@ -473,6 +478,7 @@ function extractMarkdownInternalLinks(body: string, notePath: string): { links: 
 function extractExplicitRelationEntries(
   frontmatter: Record<string, FrontmatterValue>,
   notePath: string,
+  copy: ObsidianCopy,
 ): { links: ParsedNoteLink[]; issues: ObsidianImportIssue[] } {
   const entries = [
     ...normalizeStringArray(frontmatter.mapmind_relations),
@@ -487,7 +493,7 @@ function extractExplicitRelationEntries(
       issues.push({
         code: "invalid_relation_annotation",
         level: "error",
-        message: `Invalid Clew relation entry "${entry}" in ${notePath}. Use requires::[[Target]] or [[Target]]::requires.`,
+        message: copy.invalidRelationEntry(entry, notePath),
       });
       continue;
     }
@@ -517,6 +523,7 @@ function parseRelationSuffix(
   trailingText: string,
   notePath: string,
   target: string,
+  copy: ObsidianCopy,
 ): { relation: Edge["relation"] | null; issue: ObsidianImportIssue | null } {
   const match = trailingText.match(RELATION_SUFFIX_RE);
   if (!match) return { relation: null, issue: null };
@@ -527,7 +534,7 @@ function parseRelationSuffix(
     issue: {
       code: "invalid_relation_annotation",
       level: "error",
-      message: `Invalid relation annotation on Obsidian link "${target}" in ${notePath}.`,
+      message: copy.invalidRelationLink(target, notePath),
     },
   };
 }
