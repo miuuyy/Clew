@@ -160,7 +160,9 @@ jobs:
           test -n "$(find release-assets -name '*linux-x64.AppImage' -print -quit)"
           test -n "$(find release-assets -name '*linux-arm64.AppImage' -print -quit)"
           cp LICENSE release-assets/LICENSE
-          cp docs/releases/1.0.0.md release-assets/RELEASE_NOTES.md
+          notes="docs/releases/${GITHUB_REF_NAME#v}.md"
+          test -s "$notes"
+          cp "$notes" release-assets/RELEASE_NOTES.md
           cd release-assets
           find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
           sha256sum -c SHA256SUMS
@@ -169,4 +171,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" release-assets/* --repo "$GITHUB_REPOSITORY" \
-            --title "Clew ${GITHUB_REF_NAME#v}" --notes-file docs/releases/1.0.0.md --draft
+            --title "Clew ${GITHUB_REF_NAME#v}" --notes-file release-assets/RELEASE_NOTES.md --draft

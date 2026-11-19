@@ -1,6 +1,6 @@
 # Desktop release validation
 
-Clew 1.0.0 targets Windows x64, macOS arm64/x64 and Linux x64/arm64. Build each on
+Clew targets Windows x64, macOS arm64/x64 and Linux x64/arm64. Build each on
 its matching host. PyInstaller and Electron must use the same architecture.
 `before-pack.cjs` rejects a version, OS or architecture mismatch.
 
@@ -25,8 +25,9 @@ data and smoke directories. Browser source development retains its separate
 `connection` namespace. Development tooling requires Node 22.22.2+.
 
 The renderer bridge exposes `apiBase=clew://app`, the private launch session,
-version, platform, `openExternal(url)` and
-`exportObsidian(package): Promise<boolean>`. Export returns `false` only when the
+version, platform, `openExternal(url)`, `getLocale()`, `setLocale(locale)`, and
+`exportObsidian(package): Promise<boolean>`. The native process owns the saved
+language and updates the application menu on a successful change. Export returns `false` only when the
 native picker is cancelled; the frontend must carry that cancellation through to
 its export action. Other failures reject. Browser export remains File System
 Access.
@@ -61,7 +62,8 @@ must pass its schema validation.
 Each packaged smoke launches twice with one isolated data directory. It checks
 the ready accessible onboarding CTA, optional GitHub/X links, secure fixed origin,
 renderer isolation, exact CORS preflight, protected loopback API, renderer API
-access, localStorage persistence, packaged atomic export and backend shutdown.
+access, language changes on the sign-in screen and in the native menu, locale and
+localStorage persistence, packaged atomic export and backend shutdown.
 No account, graph or credential from the user's installation is used. Failed
 smokes retain their temporary diagnostics.
 

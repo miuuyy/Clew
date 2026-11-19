@@ -2,7 +2,7 @@
 
 [English](DESKTOP.md) · [简体中文](DESKTOP.zh-CN.md)
 
-Clew 1.0.0 ships an Electron window, the existing React graph UI, and a bundled Python backend. The backend runs only on `127.0.0.1`, on a port assigned for that launch. The UI and its API use the stable secure `clew://app` origin through Electron, so themes and view preferences survive restarts. Closing the app stops its backend.
+Clew ships an Electron window, the React graph UI, and a bundled Python backend. The backend runs only on `127.0.0.1`, on a port assigned for that launch. The UI and its API use the stable secure `clew://app` origin through Electron, so themes and view preferences survive restarts. Closing the app stops its backend.
 
 ## Install
 

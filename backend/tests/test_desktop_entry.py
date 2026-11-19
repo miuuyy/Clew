@@ -11,6 +11,7 @@ import threading
 import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+from app import __version__
 
 
 class DesktopEntryTests(unittest.TestCase):
@@ -40,7 +41,7 @@ class DesktopEntryTests(unittest.TestCase):
             try:
                 message = json.loads(ready.get(timeout=15))
                 self.assertEqual(message["event"], "ready")
-                self.assertEqual(message["version"], "1.0.0")
+                self.assertEqual(message["version"], __version__)
                 base = f"http://127.0.0.1:{message['port']}"
                 with urlopen(base + "/healthz", timeout=5) as response:
                     self.assertTrue(json.load(response)["ok"])

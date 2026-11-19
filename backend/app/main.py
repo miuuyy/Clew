@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from app import __version__
 from app.services.repository import RepositoryConflictError
 
 from app.api.routes import router
@@ -31,7 +32,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await runtime.close()
 
-    app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan, docs_url=None, redoc_url=None)
+    app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None)
     app.dependency_overrides[get_settings] = lambda: settings
     debug_logs = get_debug_log_service(settings.debug_log_dir)
     app.add_middleware(

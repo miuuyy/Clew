@@ -1,6 +1,6 @@
 {
   "name": "clew",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "A graph-first learning workspace powered by your ChatGPT plan.",
   "author": { "name": "Aleksandr Vechenkov", "email": "147659719+miuuyy@users.noreply.github.com" },
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "2.6.2",
-    "electron": "44.5.1",
+    "electron": "44.11.5",
     "electron-builder": "26.15.3",
     "yaml": "2.9.1"
   },

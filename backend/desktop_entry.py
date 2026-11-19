@@ -23,6 +23,7 @@ def main() -> None:
         raise RuntimeError("The desktop frontend origin must be clew://app.")
     if getattr(sys, "frozen", False):
         os.environ["KG_ROOT_DIR"] = str(Path(sys._MEIPASS))
+    from app import __version__
     from app.main import create_app
     from app.core.config import Settings
     app = create_app(Settings())
@@ -31,7 +32,7 @@ def main() -> None:
         async def startup(self, sockets=None):
             await super().startup(sockets=sockets)
             if self.started and not self.should_exit:
-                print(json.dumps({"event": "ready", "port": port, "version": "1.0.0"}), flush=True)
+                print(json.dumps({"event": "ready", "port": port, "version": __version__}), flush=True)
 
     server = DesktopServer(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False))
 
